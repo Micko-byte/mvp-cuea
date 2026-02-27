@@ -120,7 +120,7 @@ const responseTimeData = [
 ];
 
 const AdminPage = () => {
-  const { user, logout } = useAuth();
+  const { user, profile, role, logout, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -128,7 +128,7 @@ const AdminPage = () => {
   const [docSearch, setDocSearch] = useState("");
   const [dragOver, setDragOver] = useState(false);
 
-  if (!user || user.role !== "admin") {
+  if (!isLoading && (!isAuthenticated || role !== "admin")) {
     navigate("/");
     return null;
   }
@@ -879,10 +879,10 @@ const AdminPage = () => {
               A
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name}</p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.name || user?.email}</p>
               <p className="text-xs text-sidebar-foreground/50">Administrator</p>
             </div>
-            <button onClick={() => { logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground">
+            <button onClick={async () => { await logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
