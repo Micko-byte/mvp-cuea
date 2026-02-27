@@ -7,7 +7,7 @@ import ReactMarkdown from "react-markdown";
 import {
   MessageSquarePlus, Send, BookOpen, Calendar, FileText, ClipboardList,
   Menu, X, LogOut, Trash2, GraduationCap, ChevronDown, Mic, Paperclip,
-  Settings, FolderOpen, Sparkles, HelpCircle, Loader2
+  Settings, FolderOpen, Sparkles, HelpCircle, Loader2, Shield, Image as ImageIcon, File
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,7 +37,7 @@ const TypingIndicator = () => (
 );
 
 const ChatPage = () => {
-  const { user, profile, logout, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, profile, role, logout, isAuthenticated, isLoading: authLoading } = useAuth();
   const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, loadChats } = useChat();
   const navigate = useNavigate();
   const [input, setInput] = useState("");
@@ -45,8 +45,10 @@ const ChatPage = () => {
   const [unitsOpen, setUnitsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"chats" | "projects">("chats");
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate("/login");
@@ -185,6 +187,9 @@ const ChatPage = () => {
                   <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
                   <p className="text-xs text-sidebar-foreground/50 truncate">{profile?.course_name || "Student"}</p>
                 </div>
+                {role === "admin" && (
+                  <button onClick={() => navigate("/admin")} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1" title="Admin Dashboard"><Shield className="w-4 h-4" /></button>
+                )}
                 <button onClick={() => setSettingsOpen(true)} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1"><Settings className="w-4 h-4" /></button>
                 <button onClick={async () => { await logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1"><LogOut className="w-4 h-4" /></button>
               </div>
@@ -262,8 +267,32 @@ const ChatPage = () => {
         <div className="p-4 border-t border-border bg-card/50 backdrop-blur-sm">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center gap-2">
-              <button className="p-2.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted"><Paperclip className="w-5 h-5" /></button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.txt,.csv"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+                  }
+                  e.target.value = "";
+                }}
+              />
+              <button onClick={() => fileInputRef.current?.click()} className="p-2.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted"><Paperclip className="w-5 h-5" /></button>
               <div className="flex-1">
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {attachedFiles.map((file, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-lg border border-border">
+                        {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
+                        <span className="max-w-[120px] truncate">{file.name}</span>
+                        <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder="Ask CUEA AI anything..." className="w-full px-4 py-3 rounded-xl bg-muted border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all" disabled={isStreaming} />
               </div>
               <Button onClick={handleSend} disabled={!input.trim() || isStreaming} size="icon" className="bg-gradient-maroon hover:opacity-90 rounded-xl h-11 w-11 flex-shrink-0 disabled:opacity-40">
