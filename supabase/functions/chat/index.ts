@@ -111,24 +111,28 @@ serve(async (req) => {
     let ragContext = "";
     const lastUserMessage = messages[messages.length - 1]?.content || "";
     
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (GEMINI_API_KEY && lastUserMessage) {
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (OPENAI_API_KEY && lastUserMessage) {
       try {
         const embResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}`,
+          "https://api.openai.com/v1/embeddings",
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            },
             body: JSON.stringify({
-              model: "models/gemini-embedding-001",
-              content: { parts: [{ text: lastUserMessage }] },
+              model: "text-embedding-3-small",
+              input: lastUserMessage,
+              dimensions: 768,
             }),
           }
         );
         
         if (embResponse.ok) {
           const embData = await embResponse.json();
-          const queryEmbedding = embData.embedding?.values;
+          const queryEmbedding = embData.data?.[0]?.embedding;
           
           if (queryEmbedding) {
             const { data: docs } = await supabaseAdmin.rpc("match_documents", {
