@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { GraduationCap, Lock, Mail, User, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,23 @@ const LoginPage = () => {
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Sign In <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email) { setError("Enter your email first"); return; }
+                    setLoading(true);
+                    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    });
+                    setLoading(false);
+                    if (err) setError(err.message);
+                    else toast.success("Password reset link sent! Check your email.");
+                  }}
+                  className="w-full text-center text-sm text-primary hover:underline font-medium"
+                >
+                  Forgot password?
+                </button>
 
                 <p className="text-center text-sm text-muted-foreground">
                   Don't have an account?{" "}

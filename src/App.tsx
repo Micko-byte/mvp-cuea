@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
