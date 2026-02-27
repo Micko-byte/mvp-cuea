@@ -14,16 +14,375 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      courses: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          faculty: string
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          faculty: string
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          faculty?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      document_embeddings: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          material_id: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          material_id?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          material_id?: string | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_embeddings_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          created_at: string
+          downloads: number
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          storage_path: string | null
+          title: string
+          unit_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          downloads?: number
+          file_name: string
+          file_size?: number
+          file_type: string
+          id?: string
+          storage_path?: string | null
+          title: string
+          unit_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          downloads?: number
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          storage_path?: string | null
+          title?: string
+          unit_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          admission_number: string | null
+          avatar_url: string | null
+          course: string | null
+          course_name: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          program: string | null
+          semester: string | null
+          updated_at: string
+          user_id: string
+          year: string | null
+        }
+        Insert: {
+          admission_number?: string | null
+          avatar_url?: string | null
+          course?: string | null
+          course_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          program?: string | null
+          semester?: string | null
+          updated_at?: string
+          user_id: string
+          year?: string | null
+        }
+        Update: {
+          admission_number?: string | null
+          avatar_url?: string | null
+          course?: string | null
+          course_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          program?: string | null
+          semester?: string | null
+          updated_at?: string
+          user_id?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
+      student_units: {
+        Row: {
+          created_at: string
+          id: string
+          unit_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          unit_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          unit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_units_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      token_usage: {
+        Row: {
+          created_at: string
+          id: string
+          model: string
+          tokens_used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model: string
+          tokens_used: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model?: string
+          tokens_used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      units: {
+        Row: {
+          code: string
+          course_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          lecturer: string | null
+          name: string
+          semester: number
+          year: number
+        }
+        Insert: {
+          code: string
+          course_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          lecturer?: string | null
+          name: string
+          semester: number
+          year: number
+        }
+        Update: {
+          code?: string
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          lecturer?: string | null
+          name?: string
+          semester?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "units_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_daily_token_usage: { Args: { _user_id: string }; Returns: number }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      match_documents: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          metadata: Json
+          similarity: number
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "student" | "lecturer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +509,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "student", "lecturer"],
+    },
   },
 } as const
