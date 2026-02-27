@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,10 +39,11 @@ const LoginPage = () => {
   const [semester, setSemester] = useState("");
 
   // Redirect if already authenticated
-  if (isAuthenticated && !authLoading) {
-    navigate(role === "admin" ? "/admin" : "/chat", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate(role === "admin" ? "/admin" : "/chat", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, role, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
