@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import mammoth from "npm:mammoth@1.8.0";
+import JSZip from "npm:jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +20,106 @@ function chunkText(text: string): string[] {
     start += CHUNK_SIZE - CHUNK_OVERLAP;
   }
   return chunks;
+}
+
+function stripXmlTags(xml: string): string {
+  return xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+async function extractTextFromPptx(buffer: ArrayBuffer): Promise<string> {
+  const zip = await JSZip.loadAsync(buffer);
+  const texts: string[] = [];
+
+  const slideFiles = Object.keys(zip.files)
+    .filter(f => f.match(/^ppt\/slides\/slide\d+\.xml$/))
+    .sort();
+
+  for (const slideFile of slideFiles) {
+    const content = await zip.files[slideFile].async("string");
+    const text = stripXmlTags(content);
+    if (text) texts.push(text);
+  }
+  return texts.join("\n\n");
+}
+
+async function extractTextFromDocx(buffer: ArrayBuffer): Promise<string> {
+  const result = await mammoth.extractRawText({ buffer });
+  return result.value || "";
+}
+
+async function extractTextFromDoc(buffer: ArrayBuffer): Promise<string> {
+  // Basic DOC text extraction: read printable ASCII from binary
+  const bytes = new Uint8Array(buffer);
+  let text = "";
+  let current = "";
+  for (const byte of bytes) {
+    if (byte >= 32 && byte < 127) {
+      current += String.fromCharCode(byte);
+    } else if (byte === 10 || byte === 13) {
+      if (current.trim().length > 3) {
+        text += current.trim() + "\n";
+      }
+      current = "";
+    } else {
+      if (current.trim().length > 3) {
+        text += current.trim() + " ";
+      }
+      current = "";
+    }
+  }
+  if (current.trim().length > 3) text += current.trim();
+  return text;
+}
+
+async function extractTextFromPdf(buffer: ArrayBuffer): Promise<string> {
+  // Extract text streams from PDF binary
+  const bytes = new Uint8Array(buffer);
+  const raw = new TextDecoder("latin1").decode(bytes);
+  const texts: string[] = [];
+
+  // Extract text between BT and ET markers (text objects)
+  const btEtRegex = /BT\s([\s\S]*?)ET/g;
+  let match;
+  while ((match = btEtRegex.exec(raw)) !== null) {
+    const block = match[1];
+    // Extract text from Tj and TJ operators
+    const tjRegex = /\(([^)]*)\)\s*Tj/g;
+    let tjMatch;
+    while ((tjMatch = tjRegex.exec(block)) !== null) {
+      const t = tjMatch[1].replace(/\\([nrt\\()])/g, (_, c) => {
+        if (c === 'n') return '\n';
+        if (c === 'r') return '\r';
+        if (c === 't') return '\t';
+        return c;
+      });
+      if (t.trim()) texts.push(t.trim());
+    }
+
+    // TJ array operator
+    const tjArrayRegex = /\[(.*?)\]\s*TJ/g;
+    let tjArrMatch;
+    while ((tjArrMatch = tjArrayRegex.exec(block)) !== null) {
+      const inner = tjArrMatch[1];
+      const strRegex = /\(([^)]*)\)/g;
+      let strMatch;
+      let line = "";
+      while ((strMatch = strRegex.exec(inner)) !== null) {
+        line += strMatch[1];
+      }
+      if (line.trim()) texts.push(line.trim());
+    }
+  }
+
+  // Fallback: try to extract readable text if no BT/ET found
+  if (texts.length === 0) {
+    const printable = raw.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ");
+    const words = printable.split(" ").filter(w => w.length > 2);
+    if (words.length > 20) {
+      return words.join(" ").slice(0, 50000);
+    }
+  }
+
+  return texts.join(" ").slice(0, 100000);
 }
 
 serve(async (req) => {
@@ -45,15 +147,67 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check admin role
     const { data: isAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Admin access required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { materialId, content, title, unitCode } = await req.json();
-    if (!content || !materialId) {
-      return new Response(JSON.stringify({ error: "content and materialId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { materialId, title, unitCode, storagePath, fileType, content: directContent } = await req.json();
+    if (!materialId) {
+      return new Response(JSON.stringify({ error: "materialId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    let content = directContent || "";
+
+    // If storagePath provided, download file and extract text
+    if (storagePath && !content) {
+      console.log(`Downloading file from storage: ${storagePath}, type: ${fileType}`);
+      const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+        .from("materials")
+        .download(storagePath);
+
+      if (downloadError || !fileData) {
+        console.error("Download error:", downloadError);
+        return new Response(JSON.stringify({ error: `Failed to download file: ${downloadError?.message}` }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const buffer = await fileData.arrayBuffer();
+      const ext = (storagePath.split(".").pop() || "").toLowerCase();
+      const mimeType = (fileType || "").toLowerCase();
+
+      console.log(`Extracting text from file, ext: ${ext}, mime: ${mimeType}, size: ${buffer.byteLength}`);
+
+      try {
+        if (ext === "txt" || ext === "md" || ext === "csv" || mimeType.includes("text/")) {
+          content = new TextDecoder().decode(buffer);
+        } else if (ext === "docx" || mimeType.includes("wordprocessingml")) {
+          content = await extractTextFromDocx(buffer);
+        } else if (ext === "doc" && !mimeType.includes("wordprocessingml")) {
+          content = await extractTextFromDoc(buffer);
+        } else if (ext === "pptx" || mimeType.includes("presentationml")) {
+          content = await extractTextFromPptx(buffer);
+        } else if (ext === "pdf" || mimeType.includes("pdf")) {
+          content = await extractTextFromPdf(buffer);
+        } else {
+          // Fallback: try to read as text
+          content = new TextDecoder().decode(buffer);
+        }
+      } catch (extractErr) {
+        console.error("Text extraction error:", extractErr);
+        return new Response(JSON.stringify({ error: `Text extraction failed for ${ext}: ${extractErr}` }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`Extracted ${content.length} characters of text`);
+    }
+
+    if (!content || content.trim().length < 20) {
+      return new Response(JSON.stringify({ error: "No extractable text content found in document" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -62,7 +216,6 @@ serve(async (req) => {
     const chunks = chunkText(content);
     let processedCount = 0;
 
-    // Process chunks in batches of 20
     for (let i = 0; i < chunks.length; i += 20) {
       const batch = chunks.slice(i, i + 20);
 
@@ -106,7 +259,7 @@ serve(async (req) => {
       processedCount += batch.length;
     }
 
-    return new Response(JSON.stringify({ success: true, chunksProcessed: processedCount }), {
+    return new Response(JSON.stringify({ success: true, chunksProcessed: processedCount, textLength: content.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -206,15 +206,6 @@ const AdminPage = () => {
     fetchData();
   };
 
-  const extractTextFromFile = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string || "");
-      reader.onerror = () => resolve("");
-      reader.readAsText(file);
-    });
-  };
-
   const handleFileUpload = async (files: FileList) => {
     if (!uploadUnitId) { toast.error("Select a unit first"); return; }
     const unit = units.find(u => u.id === uploadUnitId);
@@ -237,35 +228,31 @@ const AdminPage = () => {
       if (insertError || !materialData) { toast.error(`Save failed: ${insertError?.message}`); continue; }
       toast.success(`Uploaded: ${file.name}`);
 
-      // Extract text and create embeddings
+      // Server-side text extraction and embedding
       try {
-        const textContent = await extractTextFromFile(file);
-        if (textContent && textContent.trim().length > 50) {
-          toast.info(`Processing embeddings for: ${file.name}...`);
-          const { data: sessionData } = await supabase.auth.getSession();
-          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${sessionData.session?.access_token}`,
-            },
-            body: JSON.stringify({
-              materialId: materialData.id,
-              content: textContent,
-              title,
-              unitCode: unit?.code || "N/A",
-            }),
-          });
-          if (resp.ok) {
-            const result = await resp.json();
-            toast.success(`Embedded ${result.chunksProcessed} chunks for: ${file.name}`);
-          } else {
-            const err = await resp.json().catch(() => ({}));
-            console.error("Embedding error:", err);
-            toast.warning(`Uploaded but embedding failed for: ${file.name}. Binary files (PDF) need text extraction.`);
-          }
+        toast.info(`Processing embeddings for: ${file.name}...`);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionData.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            materialId: materialData.id,
+            storagePath: path,
+            fileType: file.type,
+            title,
+            unitCode: unit?.code || "N/A",
+          }),
+        });
+        if (resp.ok) {
+          const result = await resp.json();
+          toast.success(`Embedded ${result.chunksProcessed} chunks (${Math.round(result.textLength / 1000)}k chars) for: ${file.name}`);
         } else {
-          toast.warning(`Uploaded but no text extracted from: ${file.name}. Binary files like PDFs need server-side text extraction.`);
+          const err = await resp.json().catch(() => ({}));
+          console.error("Embedding error:", err);
+          toast.warning(`Uploaded but embedding failed: ${err.error || "Unknown error"}`);
         }
       } catch (e) {
         console.error("Embedding process error:", e);
