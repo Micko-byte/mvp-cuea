@@ -206,24 +206,70 @@ const AdminPage = () => {
     fetchData();
   };
 
+  const extractTextFromFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string || "");
+      reader.onerror = () => resolve("");
+      reader.readAsText(file);
+    });
+  };
+
   const handleFileUpload = async (files: FileList) => {
     if (!uploadUnitId) { toast.error("Select a unit first"); return; }
+    const unit = units.find(u => u.id === uploadUnitId);
+    
     for (const file of Array.from(files)) {
       const path = `${uploadUnitId}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage.from("materials").upload(path, file);
       if (uploadError) { toast.error(`Upload failed: ${uploadError.message}`); continue; }
 
-      const { error: insertError } = await supabase.from("materials").insert({
-        title: file.name.replace(/\.[^/.]+$/, ""),
+      const title = file.name.replace(/\.[^/.]+$/, "");
+      const { data: materialData, error: insertError } = await supabase.from("materials").insert({
+        title,
         file_name: file.name,
         file_type: file.type || file.name.split(".").pop() || "unknown",
         file_size: file.size,
         storage_path: path,
         unit_id: uploadUnitId,
         uploaded_by: user!.id,
-      });
-      if (insertError) { toast.error(`Save failed: ${insertError.message}`); continue; }
+      }).select().single();
+      if (insertError || !materialData) { toast.error(`Save failed: ${insertError?.message}`); continue; }
       toast.success(`Uploaded: ${file.name}`);
+
+      // Extract text and create embeddings
+      try {
+        const textContent = await extractTextFromFile(file);
+        if (textContent && textContent.trim().length > 50) {
+          toast.info(`Processing embeddings for: ${file.name}...`);
+          const { data: sessionData } = await supabase.auth.getSession();
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-document`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${sessionData.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              materialId: materialData.id,
+              content: textContent,
+              title,
+              unitCode: unit?.code || "N/A",
+            }),
+          });
+          if (resp.ok) {
+            const result = await resp.json();
+            toast.success(`Embedded ${result.chunksProcessed} chunks for: ${file.name}`);
+          } else {
+            const err = await resp.json().catch(() => ({}));
+            console.error("Embedding error:", err);
+            toast.warning(`Uploaded but embedding failed for: ${file.name}. Binary files (PDF) need text extraction.`);
+          }
+        } else {
+          toast.warning(`Uploaded but no text extracted from: ${file.name}. Binary files like PDFs need server-side text extraction.`);
+        }
+      } catch (e) {
+        console.error("Embedding process error:", e);
+      }
     }
     fetchData();
   };
