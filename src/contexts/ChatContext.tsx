@@ -141,23 +141,34 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsStreaming(false);
     }, 60000);
 
+    let requestTimeout: ReturnType<typeof setTimeout> | null = null;
+
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        toast.error("Session expired. Please sign in again.");
+        return;
+      }
+
+      const controller = new AbortController();
+      requestTimeout = setTimeout(() => controller.abort(), 45000);
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken}`,
         },
+        signal: controller.signal,
         body: JSON.stringify({ messages: aiMessages, chatId }),
       });
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({ error: "Failed to connect to AI" }));
         toast.error(errData.error || "AI service error");
-        setIsStreaming(false);
         return;
       }
 
@@ -227,8 +238,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (e) {
       console.error("Stream error:", e);
-      toast.error("Failed to get AI response");
+      if (e instanceof Error && e.name === "AbortError") {
+        toast.error("AI response timed out. Please try a shorter question.");
+      } else if (e instanceof TypeError && e.message.includes("Failed to fetch")) {
+        toast.error("Connection failed while reaching AI. Please try again.");
+      } else {
+        toast.error("Failed to get AI response");
+      }
     } finally {
+      if (requestTimeout) clearTimeout(requestTimeout);
       clearTimeout(streamingTimeout);
       setIsStreaming(false);
     }

@@ -4,6 +4,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+};
+
+const withTimeout = async (url: string, init: RequestInit, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
 };
 
 const DAILY_USER_LIMIT = 5000;
@@ -109,12 +120,13 @@ serve(async (req) => {
 
     // RAG: Get relevant context from embeddings
     let ragContext = "";
-    const lastUserMessage = messages[messages.length - 1]?.content || "";
+    const lastUserMessage = messages[messages.length - 1]?.content?.trim() || "";
+    const shouldRunRag = lastUserMessage.length >= 12;
     
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (OPENAI_API_KEY && lastUserMessage) {
+    if (OPENAI_API_KEY && shouldRunRag) {
       try {
-        const embResponse = await fetch(
+        const embResponse = await withTimeout(
           "https://api.openai.com/v1/embeddings",
           {
             method: "POST",
@@ -127,7 +139,8 @@ serve(async (req) => {
               input: lastUserMessage,
               dimensions: 768,
             }),
-          }
+          },
+          8000
         );
         
         if (embResponse.ok) {
@@ -150,7 +163,11 @@ serve(async (req) => {
           }
         }
       } catch (e) {
-        console.error("RAG embedding error:", e);
+        if (e instanceof Error && e.name === "AbortError") {
+          console.warn("RAG embedding timed out, continuing without RAG");
+        } else {
+          console.error("RAG embedding error:", e);
+        }
       }
     }
 
@@ -186,7 +203,7 @@ ${ragContext}`;
     // Call OpenAI API directly
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await withTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
@@ -200,7 +217,7 @@ ${ragContext}`;
         ],
         stream: true,
       }),
-    });
+    }, 45000);
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -227,6 +244,11 @@ ${ragContext}`;
     });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const errorMessage = e instanceof Error && e.name === "AbortError"
+      ? "AI request timed out. Please try a shorter question."
+      : e instanceof Error
+        ? e.message
+        : "Unknown error";
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
