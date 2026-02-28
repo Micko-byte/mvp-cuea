@@ -72,7 +72,7 @@ const ChatPage = () => {
     const text = input.trim();
     setInput("");
     inputRef.current?.focus();
-    await sendMessage(text);
+    await sendMessage(text, chat.id);
   };
 
   const handleSuggestion = async (prompt: string) => {
@@ -81,7 +81,7 @@ const ChatPage = () => {
       chat = await createChat();
       if (!chat) return;
     }
-    await sendMessage(prompt);
+    await sendMessage(prompt, chat.id);
   };
 
   const getGreeting = () => {

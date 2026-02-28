@@ -23,7 +23,7 @@ interface ChatContextType {
   isStreaming: boolean;
   createChat: () => Promise<Chat | null>;
   setActiveChat: (id: string) => void;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, overrideChatId?: string) => Promise<void>;
   deleteChat: (id: string) => Promise<void>;
   loadChats: () => Promise<void>;
 }
@@ -90,13 +90,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveChatId(id);
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!user || !activeChatId) return;
+  const sendMessage = useCallback(async (text: string, overrideChatId?: string) => {
+    const chatId = overrideChatId || activeChatId;
+    if (!user || !chatId) return;
 
     // Add user message to DB
     const { data: userMsg } = await supabase
       .from("chat_messages")
-      .insert({ chat_id: activeChatId, user_id: user.id, role: "user", content: text })
+      .insert({ chat_id: chatId, user_id: user.id, role: "user", content: text })
       .select()
       .single();
 
@@ -110,10 +111,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Update title if first message
     setChats((prev) =>
       prev.map((c) => {
-        if (c.id === activeChatId) {
+        if (c.id === chatId) {
           const title = c.messages.length === 0 ? text.slice(0, 50) : c.title;
           if (c.messages.length === 0) {
-            supabase.from("chats").update({ title }).eq("id", activeChatId).then(() => {});
+            supabase.from("chats").update({ title }).eq("id", chatId).then(() => {});
           }
           return { ...c, title, messages: [...c.messages, userChatMsg] };
         }
@@ -122,7 +123,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Build messages for AI
-    const currentChat = chats.find((c) => c.id === activeChatId);
+    const currentChat = chats.find((c) => c.id === chatId);
     const aiMessages = [
       ...(currentChat?.messages || []).map((m) => ({
         role: m.sender === "user" ? "user" as const : "assistant" as const,
@@ -145,7 +146,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ messages: aiMessages, chatId: activeChatId }),
+        body: JSON.stringify({ messages: aiMessages, chatId }),
       });
 
       if (!resp.ok) {
@@ -165,7 +166,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const botMsgId = `bot-${Date.now()}`;
       setChats((prev) =>
         prev.map((c) =>
-          c.id === activeChatId
+          c.id === chatId
             ? { ...c, messages: [...c.messages, { id: botMsgId, text: "", sender: "bot" as const, timestamp: Date.now() }] }
             : c
         )
@@ -192,7 +193,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               assistantContent += content;
               setChats((prev) =>
                 prev.map((c) =>
-                  c.id === activeChatId
+                  c.id === chatId
                     ? {
                         ...c,
                         messages: c.messages.map((m) =>
@@ -213,7 +214,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Save assistant message to DB
       if (assistantContent) {
         await supabase.from("chat_messages").insert({
-          chat_id: activeChatId,
+          chat_id: chatId,
           user_id: user.id,
           role: "assistant",
           content: assistantContent,
