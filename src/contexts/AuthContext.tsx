@@ -59,12 +59,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, fetchProfile]);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
-        // Defer profile fetch to avoid deadlock
-        setTimeout(() => fetchProfile(session.user.id), 0);
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+          // Enroll in pending units from signup
+          enrollPendingUnits(session.user.id);
+        }, 0);
       } else {
         setUser(null);
         setProfile(null);
@@ -73,17 +75,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    // Then check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
+        enrollPendingUnits(session.user.id);
       }
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
+
+  const enrollPendingUnits = async (userId: string) => {
+    const pending = localStorage.getItem("pendingUnitEnrollments");
+    if (!pending) return;
+    try {
+      const unitIds: string[] = JSON.parse(pending);
+      if (unitIds.length === 0) return;
+      const rows = unitIds.map(unit_id => ({ user_id: userId, unit_id }));
+      await supabase.from("student_units").upsert(rows, { onConflict: "user_id,unit_id", ignoreDuplicates: true });
+      localStorage.removeItem("pendingUnitEnrollments");
+    } catch (e) {
+      console.error("Failed to enroll pending units:", e);
+    }
+  };
 
   const login = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });

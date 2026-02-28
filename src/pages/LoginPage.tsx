@@ -3,21 +3,32 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraduationCap, Lock, Mail, User, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { GraduationCap, Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
-const PROGRAMS = ["Certificate", "Diploma", "Bachelor's", "Master's", "Doctoral"];
-const COURSES: Record<string, string[]> = {
-  "Certificate": ["Information Technology", "Business Administration"],
-  "Diploma": ["Computer Science", "Education", "Theology"],
-  "Bachelor's": ["Computer Science", "Law", "Education", "Commerce", "Theology", "Arts"],
-  "Master's": ["Computer Science", "Business Administration", "Education", "Theology"],
-  "Doctoral": ["Philosophy", "Education", "Theology"],
-};
+interface DbCourse {
+  id: string;
+  name: string;
+  code: string;
+  faculty: string;
+  is_active: boolean;
+}
+
+interface DbUnit {
+  id: string;
+  name: string;
+  code: string;
+  course_id: string;
+  semester: number;
+  year: number;
+  lecturer: string | null;
+  is_active: boolean;
+}
 
 const LoginPage = () => {
   const { login, signup, isAuthenticated, role, isLoading: authLoading } = useAuth();
@@ -29,22 +40,51 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Signup state
   const [signupStep, setSignupStep] = useState(0);
   const [name, setName] = useState("");
   const [admissionNumber, setAdmissionNumber] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
-  const [program, setProgram] = useState("");
-  const [course, setCourse] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [year, setYear] = useState("");
   const [semester, setSemester] = useState("");
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
 
-  // Redirect if already authenticated
+  // DB data
+  const [dbCourses, setDbCourses] = useState<DbCourse[]>([]);
+  const [dbUnits, setDbUnits] = useState<DbUnit[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       navigate(role === "admin" ? "/admin" : "/chat", { replace: true });
     }
   }, [isAuthenticated, authLoading, role, navigate]);
+
+  // Fetch courses and units from DB when switching to signup
+  useEffect(() => {
+    if (!isLogin) {
+      setLoadingData(true);
+      Promise.all([
+        supabase.from("courses").select("*").eq("is_active", true).order("name"),
+        supabase.from("units").select("*").eq("is_active", true).order("name"),
+      ]).then(([coursesRes, unitsRes]) => {
+        if (coursesRes.data) setDbCourses(coursesRes.data);
+        if (unitsRes.data) setDbUnits(unitsRes.data);
+        setLoadingData(false);
+      });
+    }
+  }, [isLogin]);
+
+  // Filter units by selected course, year, semester
+  const filteredUnits = dbUnits.filter(u =>
+    u.course_id === selectedCourseId &&
+    (year ? u.year === parseInt(year) : true) &&
+    (semester ? u.semester === parseInt(semester) : true)
+  );
+
+  const selectedCourse = dbCourses.find(c => c.id === selectedCourseId);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,35 +92,61 @@ const LoginPage = () => {
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
-    if (result.error) {
-      setError(result.error);
-    }
+    if (result.error) setError(result.error);
   };
+
+  const canProceedStep0 = name && admissionNumber && signupEmail && signupPassword.length >= 6;
+  const canProceedStep1 = selectedCourseId && year && semester;
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (signupStep < 1) {
+    if (signupStep === 0) {
+      if (!canProceedStep0) { setError("Fill all fields (password min 6 chars)"); return; }
       setSignupStep(1);
+      setError("");
       return;
     }
+    if (signupStep === 1) {
+      if (!canProceedStep1) { setError("Select course, year, and semester"); return; }
+      setSignupStep(2);
+      setError("");
+      return;
+    }
+
+    // Step 2: Create account
     setLoading(true);
     setError("");
     const result = await signup(signupEmail, signupPassword, {
       name,
       admission_number: admissionNumber,
-      program,
-      course,
-      course_name: course,
+      program: selectedCourse?.faculty || "",
+      course: selectedCourse?.code || "",
+      course_name: selectedCourse?.name || "",
       year,
       semester,
     });
     setLoading(false);
     if (result.error) {
       setError(result.error);
-    } else {
-      toast.success("Account created! Please check your email to verify.");
-      setIsLogin(true);
+      return;
     }
+
+    // Enroll in selected units after signup
+    if (selectedUnitIds.length > 0) {
+      // We need to wait for the user to be created - units will be enrolled after email verification
+      // Store selected units in localStorage to enroll after first login
+      localStorage.setItem("pendingUnitEnrollments", JSON.stringify(selectedUnitIds));
+    }
+
+    toast.success("Account created! Please check your email to verify.");
+    setIsLogin(true);
+    setSignupStep(0);
+  };
+
+  const toggleUnit = (unitId: string) => {
+    setSelectedUnitIds(prev =>
+      prev.includes(unitId) ? prev.filter(id => id !== unitId) : [...prev, unitId]
+    );
   };
 
   return (
@@ -159,10 +225,11 @@ const LoginPage = () => {
               <motion.form key="signup" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleSignup} className="space-y-5">
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-display font-semibold text-foreground">Create Account</h2>
-                  <p className="text-muted-foreground text-sm mt-1">Step {signupStep + 1} of 2</p>
+                  <p className="text-muted-foreground text-sm mt-1">Step {signupStep + 1} of 3</p>
                   <div className="flex gap-2 mt-3">
-                    <div className={`h-1 flex-1 rounded-full ${signupStep >= 0 ? "bg-primary" : "bg-muted"}`} />
-                    <div className={`h-1 flex-1 rounded-full ${signupStep >= 1 ? "bg-primary" : "bg-muted"}`} />
+                    {[0, 1, 2].map(s => (
+                      <div key={s} className={`h-1 flex-1 rounded-full ${signupStep >= s ? "bg-primary" : "bg-muted"}`} />
+                    ))}
                   </div>
                 </div>
 
@@ -171,7 +238,7 @@ const LoginPage = () => {
                 )}
 
                 <AnimatePresence mode="wait">
-                  {signupStep === 0 ? (
+                  {signupStep === 0 && (
                     <motion.div key="s0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                       <div className="space-y-2">
                         <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Full Name</Label>
@@ -199,53 +266,120 @@ const LoginPage = () => {
                         </div>
                       </div>
                     </motion.div>
-                  ) : (
+                  )}
+
+                  {signupStep === 1 && (
                     <motion.div key="s1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Program</Label>
-                        <Select value={program} onValueChange={(v) => { setProgram(v); setCourse(""); }}>
-                          <SelectTrigger><SelectValue placeholder="Select program" /></SelectTrigger>
-                          <SelectContent>{PROGRAMS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      {program && (
-                        <div className="space-y-2">
-                          <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Course</Label>
-                          <Select value={course} onValueChange={setCourse}>
-                            <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
-                            <SelectContent>{COURSES[program]?.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Course</Label>
+                        {loadingData ? (
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                            <Loader2 className="w-4 h-4 animate-spin" /> Loading courses...
+                          </div>
+                        ) : dbCourses.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-2">No courses available yet. Contact admin.</p>
+                        ) : (
+                          <Select value={selectedCourseId} onValueChange={(v) => { setSelectedCourseId(v); setSelectedUnitIds([]); }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your course" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {dbCourses.map(c => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.code} — {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
                           </Select>
+                        )}
+                      </div>
+
+                      {selectedCourse && (
+                        <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+                          <span className="font-semibold text-foreground">{selectedCourse.name}</span>
+                          <br />Faculty: {selectedCourse.faculty}
                         </div>
                       )}
+
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Year</Label>
-                          <Select value={year} onValueChange={setYear}>
+                          <Select value={year} onValueChange={(v) => { setYear(v); setSelectedUnitIds([]); }}>
                             <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
-                            <SelectContent>{["1","2","3","4","5"].map((y) => <SelectItem key={y} value={y}>Year {y}</SelectItem>)}</SelectContent>
+                            <SelectContent>{["1","2","3","4","5"].map(y => <SelectItem key={y} value={y}>Year {y}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Semester</Label>
-                          <Select value={semester} onValueChange={setSemester}>
+                          <Select value={semester} onValueChange={(v) => { setSemester(v); setSelectedUnitIds([]); }}>
                             <SelectTrigger><SelectValue placeholder="Sem" /></SelectTrigger>
-                            <SelectContent>{["1","2","3"].map((s) => <SelectItem key={s} value={s}>Semester {s}</SelectItem>)}</SelectContent>
+                            <SelectContent>{["1","2","3"].map(s => <SelectItem key={s} value={s}>Semester {s}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
                       </div>
+                    </motion.div>
+                  )}
+
+                  {signupStep === 2 && (
+                    <motion.div key="s2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <BookOpen className="w-4 h-4" />
+                        <span>Select your units for <span className="font-semibold text-foreground">Year {year}, Semester {semester}</span></span>
+                      </div>
+
+                      {filteredUnits.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground text-sm">
+                          <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>No units available for this course, year & semester.</p>
+                          <p className="text-xs mt-1">You can enroll in units later or contact admin.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                          {filteredUnits.map(unit => (
+                            <label
+                              key={unit.id}
+                              className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                selectedUnitIds.includes(unit.id)
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:bg-muted/50"
+                              }`}
+                            >
+                              <Checkbox
+                                checked={selectedUnitIds.includes(unit.id)}
+                                onCheckedChange={() => toggleUnit(unit.id)}
+                                className="mt-0.5"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground">{unit.code}</p>
+                                <p className="text-xs text-muted-foreground truncate">{unit.name}</p>
+                                {unit.lecturer && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">Lecturer: {unit.lecturer}</p>
+                                )}
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {selectedUnitIds.length > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                          <CheckSquare className="w-3.5 h-3.5" />
+                          {selectedUnitIds.length} unit{selectedUnitIds.length !== 1 ? "s" : ""} selected
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <div className="flex gap-3">
                   {signupStep > 0 && (
-                    <Button type="button" variant="outline" onClick={() => setSignupStep(0)} className="flex-1">
+                    <Button type="button" variant="outline" onClick={() => setSignupStep(s => s - 1)} className="flex-1">
                       <ArrowLeft className="mr-2 w-4 h-4" /> Back
                     </Button>
                   )}
-                  <Button type="submit" className="flex-1 bg-gradient-maroon hover:opacity-90" disabled={loading}>
+                  <Button type="submit" className="flex-1 bg-gradient-maroon hover:opacity-90" disabled={loading || (signupStep === 1 && !canProceedStep1)}>
                     {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {signupStep === 0 ? "Next" : "Create Account"} <ArrowRight className="ml-2 w-4 h-4" />
+                    {signupStep < 2 ? "Next" : "Create Account"} <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </div>
 
