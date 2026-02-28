@@ -135,6 +135,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Stream from edge function
     setIsStreaming(true);
     let assistantContent = "";
+    
+    // Safety timeout to reset streaming after 60s
+    const streamingTimeout = setTimeout(() => {
+      setIsStreaming(false);
+    }, 60000);
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -224,6 +229,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Stream error:", e);
       toast.error("Failed to get AI response");
     } finally {
+      clearTimeout(streamingTimeout);
       setIsStreaming(false);
     }
   }, [user, activeChatId, chats]);
