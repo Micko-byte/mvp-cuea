@@ -598,7 +598,7 @@ const ChatPage = () => {
           </div>
 
           {/* Floating Chat Input */}
-          <div className="fixed bottom-4 left-0 right-0 z-20 px-4 pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          <div className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             <div className="max-w-3xl mx-auto pointer-events-auto">
               {attachedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
