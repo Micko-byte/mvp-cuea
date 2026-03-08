@@ -194,22 +194,35 @@ const ChatPage = () => {
   const sidebarContent = (
     <>
       {/* Header */}
-      <div className={`p-4 border-b border-sidebar-border ${!sidebarExpanded && !isMobile ? "px-2" : ""}`}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-5 h-5 text-sidebar-primary" />
-          </div>
-          {(sidebarExpanded || isMobile) && (
+      <div className={`p-4 border-b border-sidebar-border ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
+        {(sidebarExpanded || isMobile) ? (
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-5 h-5 text-sidebar-primary" />
+            </div>
             <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
-          )}
-          <button
-            onClick={toggleSidebar}
-            className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-            title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            {sidebarExpanded || isMobile ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
-          </button>
-        </div>
+            <button
+              onClick={toggleSidebar}
+              className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 mb-3">
+            <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-sidebar-primary" />
+            </div>
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen className="w-5 h-5" />
+            </button>
+          </div>
+        )}
         {(sidebarExpanded || isMobile) ? (
           <Button onClick={() => { createChat(); if (isMobile) setMobileSidebarOpen(false); }} className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 justify-start gap-2" size="sm">
             <MessageSquarePlus className="w-4 h-4" /> New Chat
