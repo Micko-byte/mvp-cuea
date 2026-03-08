@@ -34,6 +34,7 @@ import {
   ChevronUp,
   User,
   HelpCircle,
+  Mic,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -84,6 +85,8 @@ const ChatPage = () => {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Close profile menu on outside click
@@ -152,17 +155,56 @@ const ChatPage = () => {
     };
   }, [handleTouchStart, handleTouchEnd]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isStreaming) return;
+  const handleSend = async (overrideText?: string) => {
+    const text = (overrideText || input).trim();
+    if (!text || isStreaming) return;
     let chat = activeChat;
     if (!chat) {
       chat = await createChat();
       if (!chat) return;
     }
-    const text = input.trim();
     setInput("");
     inputRef.current?.focus();
     await sendMessage(text, chat.id);
+  };
+
+  // ─── Voice Input (Web Speech API) ───
+  const speechSupported = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const toggleVoice = () => {
+    if (!speechSupported) return;
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognitionRef.current = recognition;
+
+    let finalTranscript = "";
+    recognition.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+      setInput(finalTranscript + interim);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript.trim()) {
+        handleSend(finalTranscript.trim());
+      }
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.start();
+    setIsListening(true);
   };
 
   const handleSuggestion = async (prompt: string) => {
@@ -539,7 +581,7 @@ const ChatPage = () => {
                   <p className="text-muted-foreground mb-8">How can I help you with your studies today?</p>
                   <div className="grid grid-cols-2 gap-3">
                     {SUGGESTIONS.map((s, i) => (
-                      <motion.button key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }} onClick={() => handleSuggestion(s.prompt)} className="p-4 rounded-xl border border-border bg-card hover:shadow-card hover:-translate-y-0.5 transition-all text-left">
+                      <motion.button key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }} onClick={() => handleSuggestion(s.prompt)} className="p-4 rounded-xl glass-card hover:-translate-y-0.5 transition-all text-left">
                         <s.icon className="w-5 h-5 mb-2 text-primary" />
                         <p className="font-display font-semibold text-sm text-foreground">{s.label}</p>
                         <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
@@ -623,30 +665,37 @@ const ChatPage = () => {
             )}
           </div>
 
-          <div className="p-4 border-t border-border bg-card/50 backdrop-blur-sm">
+          <div className="px-4 pb-4 pt-2" style={{ background: 'transparent' }}>
             <div className="max-w-3xl mx-auto">
-              <div className="flex items-center gap-2">
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {attachedFiles.map((file, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 text-xs glass-card px-2 py-1 rounded-lg">
+                      {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
+                      <span className="max-w-[120px] truncate">{file.name}</span>
+                      <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2 glass-card rounded-[30px] px-2 py-1.5">
                 <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv" className="hidden" onChange={(e) => { if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]); e.target.value = ""; }} />
-                <button onClick={() => fileInputRef.current?.click()} className="p-2.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted">
+                <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors flex-shrink-0">
                   <Paperclip className="w-5 h-5" />
                 </button>
-                <div className="flex-1">
-                  {attachedFiles.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {attachedFiles.map((file, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-lg border border-border">
-                          {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
-                          <span className="max-w-[120px] truncate">{file.name}</span>
-                          <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder="Ask CUEA AI anything..." className="w-full px-4 py-3 rounded-xl bg-muted border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm transition-all" disabled={isStreaming} />
+                <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder="Ask CUEA AI anything..." className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2" disabled={isStreaming} />
+                <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
+                  <button
+                    onClick={toggleVoice}
+                    disabled={!speechSupported}
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-foreground hover:bg-foreground/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}
+                  >
+                    <Mic className="w-5 h-5" />
+                  </button>
                 </div>
-                <Button onClick={handleSend} disabled={!input.trim() || isStreaming} size="icon" className="bg-gradient-maroon hover:opacity-90 rounded-xl h-11 w-11 flex-shrink-0 disabled:opacity-40">
+                <button onClick={() => handleSend()} disabled={!input.trim() || isStreaming} className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
                   {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </Button>
+                </button>
               </div>
               <p className="text-[10px] text-muted-foreground/50 text-center mt-2">CUEA AI may produce inaccurate information. Always verify with your lecturers.</p>
             </div>
