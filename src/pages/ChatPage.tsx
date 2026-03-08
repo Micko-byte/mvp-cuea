@@ -85,6 +85,8 @@ const ChatPage = () => {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Close profile menu on outside click
