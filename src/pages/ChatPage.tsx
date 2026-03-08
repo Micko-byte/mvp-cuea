@@ -155,17 +155,56 @@ const ChatPage = () => {
     };
   }, [handleTouchStart, handleTouchEnd]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isStreaming) return;
+  const handleSend = async (overrideText?: string) => {
+    const text = (overrideText || input).trim();
+    if (!text || isStreaming) return;
     let chat = activeChat;
     if (!chat) {
       chat = await createChat();
       if (!chat) return;
     }
-    const text = input.trim();
     setInput("");
     inputRef.current?.focus();
     await sendMessage(text, chat.id);
+  };
+
+  // ─── Voice Input (Web Speech API) ───
+  const speechSupported = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const toggleVoice = () => {
+    if (!speechSupported) return;
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognitionRef.current = recognition;
+
+    let finalTranscript = "";
+    recognition.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript;
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+      setInput(finalTranscript + interim);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript.trim()) {
+        handleSend(finalTranscript.trim());
+      }
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.start();
+    setIsListening(true);
   };
 
   const handleSuggestion = async (prompt: string) => {
