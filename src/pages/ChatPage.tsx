@@ -211,6 +211,9 @@ const ChatPage = () => {
           <div className="flex-1">
             <h2 className="font-display font-semibold text-foreground text-sm">{activeChat ? activeChat.title : "CUEA AI Assistant"}</h2>
           </div>
+          <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-muted rounded-lg" title="Academic Calendar">
+            <CalendarDays className="w-5 h-5 text-muted-foreground" />
+          </button>
         </header>
 
         <div className="flex-1 overflow-y-auto">
