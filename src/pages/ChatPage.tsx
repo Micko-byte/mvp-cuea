@@ -7,7 +7,8 @@ import ReactMarkdown from "react-markdown";
 import {
   MessageSquarePlus, Send, BookOpen, Calendar, FileText, ClipboardList,
   Menu, X, LogOut, Trash2, GraduationCap, ChevronDown, Mic, Paperclip,
-  Settings, FolderOpen, Sparkles, HelpCircle, Loader2, Shield, Image as ImageIcon, File
+  Settings, FolderOpen, Sparkles, HelpCircle, Loader2, Shield, Image as ImageIcon, File,
+  CalendarDays
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { AcademicCalendar } from "@/components/AcademicCalendar";
+import { AnimatePresence as AP2 } from "framer-motion";
 
 const SUGGESTIONS = [
   { icon: ClipboardList, label: "Assignments", desc: "Check pending assignments", prompt: "What assignments do I have pending this week?" },
@@ -46,6 +49,7 @@ const ChatPage = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"chats" | "projects">("chats");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -207,6 +211,9 @@ const ChatPage = () => {
           <div className="flex-1">
             <h2 className="font-display font-semibold text-foreground text-sm">{activeChat ? activeChat.title : "CUEA AI Assistant"}</h2>
           </div>
+          <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-muted rounded-lg" title="Academic Calendar">
+            <CalendarDays className="w-5 h-5 text-muted-foreground" />
+          </button>
         </header>
 
         <div className="flex-1 overflow-y-auto">
@@ -322,6 +329,8 @@ const ChatPage = () => {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      <AcademicCalendar open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </div>
   );
 };
