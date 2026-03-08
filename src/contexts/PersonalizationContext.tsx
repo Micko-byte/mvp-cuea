@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
-export type FontOption = "dm-sans" | "inter" | "poppins" | "roboto" | "lora" | "jetbrains-mono";
+export type FontOption = "system-ui" | "dm-sans" | "inter" | "poppins" | "roboto" | "lora" | "jetbrains-mono";
 export type ThemeOption = "light" | "dark" | "maroon" | "ocean" | "forest" | "lavender" | "amber";
 
 export interface ChatBackground {
@@ -14,6 +14,7 @@ export interface ChatBackground {
 }
 
 export const FONT_OPTIONS: { value: FontOption; label: string; family: string }[] = [
+  { value: "system-ui", label: "System UI", family: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" },
   { value: "dm-sans", label: "DM Sans", family: "'DM Sans', sans-serif" },
   { value: "inter", label: "Inter", family: "'Inter', sans-serif" },
   { value: "poppins", label: "Poppins", family: "'Poppins', sans-serif" },
@@ -162,7 +163,7 @@ interface PersonalizationContextType extends PersonalizationState {
 const STORAGE_KEY = "cuea-personalization";
 
 const defaults: PersonalizationState = {
-  font: "dm-sans",
+  font: "system-ui",
   theme: "light",
   chatBackground: "none",
   nickname: "",
