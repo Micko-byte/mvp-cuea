@@ -565,52 +565,54 @@ const ChatPage = () => {
                             ? `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}`
                             : `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-gradient-maroon text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`;
                           return (
-                        <div className={bubbleClass} style={bubbleStyle}>
-                        {msg.sender === "bot" && (
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                            <span className="text-xs font-semibold text-primary">CUEA AI</span>
-                          </div>
-                        )}
-                        {msg.sender === "bot" ? (
-                          <div className="prose prose-sm max-w-none dark:prose-invert">
-                            <ReactMarkdown
-                              components={{
-                                code({ className, children, ...props }) {
-                                  const match = /language-(\w+)/.exec(className || "");
-                                  const lang = match ? match[1] : "";
-                                  const codeStr = String(children).replace(/\n$/, "");
-                                  const isBlock = codeStr.includes("\n") || lang;
-                                  if (isBlock) {
-                                    return (
-                                      <div className="relative group/code">
-                                        <pre className="bg-card border border-border rounded-lg p-3 overflow-x-auto">
-                                          <code className={className} {...props}>{children}</code>
-                                        </pre>
-                                        <button
-                                          onClick={() => handleCreateArtifact(codeStr, lang || "text")}
-                                          className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md"
-                                        >
-                                          <Code2 className="w-3 h-3" /> Open as Artifact
-                                        </button>
-                                      </div>
-                                    );
-                                  }
-                                  return <code className={className} {...props}>{children}</code>;
-                                },
-                              }}
-                            >
-                              {msg.text || "..."}
-                            </ReactMarkdown>
-                          </div>
-                        ) : (
-                          msg.text
-                        )}
+                            <div className={bubbleClass} style={bubbleStyle}>
+                              {msg.sender === "bot" && (
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                                  <span className="text-xs font-semibold text-primary">CUEA AI</span>
+                                </div>
+                              )}
+                              {msg.sender === "bot" ? (
+                                <div className="prose prose-sm max-w-none dark:prose-invert">
+                                  <ReactMarkdown
+                                    components={{
+                                      code({ className, children, ...props }) {
+                                        const match = /language-(\w+)/.exec(className || "");
+                                        const lang = match ? match[1] : "";
+                                        const codeStr = String(children).replace(/\n$/, "");
+                                        const isBlock = codeStr.includes("\n") || lang;
+                                        if (isBlock) {
+                                          return (
+                                            <div className="relative group/code">
+                                              <pre className="bg-card border border-border rounded-lg p-3 overflow-x-auto">
+                                                <code className={className} {...props}>{children}</code>
+                                              </pre>
+                                              <button
+                                                onClick={() => handleCreateArtifact(codeStr, lang || "text")}
+                                                className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md"
+                                              >
+                                                <Code2 className="w-3 h-3" /> Open as Artifact
+                                              </button>
+                                            </div>
+                                          );
+                                        }
+                                        return <code className={className} {...props}>{children}</code>;
+                                      },
+                                    }}
+                                  >
+                                    {msg.text || "..."}
+                                  </ReactMarkdown>
+                                </div>
+                              ) : (
+                                msg.text
+                              )}
+                            </div>
+                          );
+                        })()}
+                        <span className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
+                          {formatTime(msg.timestamp)}
+                        </span>
                       </div>
-                      <span className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
-                        {formatTime(msg.timestamp)}
-                      </span>
-                    </div>
                   </motion.div>
                 ))}
                 <AnimatePresence>
