@@ -7,7 +7,8 @@ import ReactMarkdown from "react-markdown";
 import {
   MessageSquarePlus, Send, BookOpen, Calendar, FileText, ClipboardList,
   Menu, X, LogOut, Trash2, GraduationCap, ChevronDown, Mic, Paperclip,
-  Settings, FolderOpen, Sparkles, HelpCircle, Loader2, Shield, Image as ImageIcon, File
+  Settings, FolderOpen, Sparkles, HelpCircle, Loader2, Shield, Image as ImageIcon, File,
+  CalendarDays
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
