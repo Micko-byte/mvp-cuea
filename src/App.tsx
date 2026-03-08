@@ -5,11 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { ArtifactProvider } from "@/contexts/ArtifactContext";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
+import ArtifactsPage from "./pages/ArtifactsPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 
@@ -19,21 +21,24 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <ChatProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-          <PWAInstallBanner />
-        </TooltipProvider>
+        <ArtifactProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/chat" element={<ChatPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/artifacts" element={<ArtifactsPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+            <PWAInstallBanner />
+          </TooltipProvider>
+        </ArtifactProvider>
       </ChatProvider>
     </AuthProvider>
   </QueryClientProvider>
