@@ -7,20 +7,19 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import {
-  MessageSquarePlus,
-  Send,
+  Plus,
+  ArrowUp,
   BookOpen,
   Calendar,
   FileText,
-  ClipboardList,
+  ListChecks,
   LogOut,
   Trash2,
-  GraduationCap,
+  Sparkles,
   ChevronDown,
   Paperclip,
   Settings,
   FolderOpen,
-  Sparkles,
   Loader2,
   Shield,
   Image as ImageIcon,
@@ -28,13 +27,17 @@ import {
   CalendarDays,
   PanelLeftClose,
   PanelLeftOpen,
-  LayoutTemplate,
+  LayoutGrid,
   X,
   Code2,
   ChevronUp,
   User,
-  HelpCircle,
+  CircleHelp,
   Mic,
+  Globe,
+  MessageSquare,
+  Search,
+  PenLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -47,14 +50,14 @@ import ArtifactViewer from "@/components/ArtifactViewer";
 import { getTimeBasedGreeting } from "@/utils/greetings";
 
 const SUGGESTIONS = [
-  { icon: ClipboardList, label: "Assignments", desc: "Check pending assignments", prompt: "What assignments do I have pending this week?" },
+  { icon: ListChecks, label: "Assignments", desc: "Check pending assignments", prompt: "What assignments do I have pending this week?" },
   { icon: Calendar, label: "Schedule", desc: "View class timetable", prompt: "Show me my class schedule for this week" },
-  { icon: FileText, label: "Notes", desc: "Access lecture notes", prompt: "Help me find lecture notes for my current units" },
-  { icon: BookOpen, label: "Exams", desc: "Exam preparation", prompt: "Help me prepare for my upcoming exams with study tips" },
+  { icon: Search, label: "Notes", desc: "Access lecture notes", prompt: "Help me find lecture notes for my current units" },
+  { icon: PenLine, label: "Exams", desc: "Exam preparation", prompt: "Help me prepare for my upcoming exams with study tips" },
 ];
 
 const SIDEBAR_NAV = [
-  { icon: LayoutTemplate, label: "Artifacts", path: "/artifacts" },
+  { icon: LayoutGrid, label: "Artifacts", path: "/artifacts" },
 ];
 
 const TypingIndicator = () => (
@@ -243,7 +246,7 @@ const ChatPage = () => {
         {(sidebarExpanded || isMobile) ? (
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center flex-shrink-0">
-              <GraduationCap className="w-5 h-5 text-sidebar-primary" />
+              <Sparkles className="w-5 h-5 text-sidebar-primary" />
             </div>
             <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
             <button onClick={toggleSidebar} className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors" title="Collapse sidebar">
@@ -253,7 +256,7 @@ const ChatPage = () => {
         ) : (
           <div className="flex flex-col items-center gap-2 mb-3">
             <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-sidebar-primary" />
+              <Sparkles className="w-5 h-5 text-sidebar-primary" />
             </div>
             <button onClick={toggleSidebar} className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors" title="Expand sidebar">
               <PanelLeftOpen className="w-5 h-5" />
@@ -264,11 +267,11 @@ const ChatPage = () => {
         {/* New Chat */}
         {(sidebarExpanded || isMobile) ? (
           <Button onClick={() => { createChat(); if (isMobile) setMobileSidebarOpen(false); }} className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 justify-start gap-2" size="sm">
-            <MessageSquarePlus className="w-4 h-4" /> New Chat
+            <Plus className="w-4 h-4" /> New Chat
           </Button>
         ) : (
           <Button onClick={() => createChat()} className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 p-0 flex items-center justify-center" size="icon">
-            <MessageSquarePlus className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
           </Button>
         )}
       </div>
@@ -329,7 +332,7 @@ const ChatPage = () => {
               <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-2">Recent</p>
               {chats.length === 0 ? (
                 <div className="text-center py-8">
-                  <MessageSquarePlus className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
+                  <MessageSquare className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
                   <p className="text-sm text-sidebar-foreground/30">No chats yet</p>
                 </div>
               ) : (
@@ -403,7 +406,7 @@ const ChatPage = () => {
                   <span>Settings</span>
                 </button>
                 <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
-                  <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                  <CircleHelp className="w-4 h-4 text-muted-foreground" />
                   <span>Help</span>
                   <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto" />
                 </button>
@@ -533,7 +536,7 @@ const ChatPage = () => {
                     </button>
                   </div>
                   <button onClick={() => handleSend()} disabled={!input.trim() || isStreaming} className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
-                    {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
                   </button>
                 </div>
                 <p className="text-[10px] text-muted-foreground/50 text-center mt-2">CUEA AI may produce inaccurate information. Always verify with your lecturers.</p>
@@ -557,7 +560,7 @@ const ChatPage = () => {
                         {/* Greeting */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
                           <div className="w-20 h-20 rounded-3xl bg-gradient-maroon flex items-center justify-center mx-auto mb-6 shadow-glow">
-                            <GraduationCap className="w-10 h-10 text-primary-foreground" />
+                            <Sparkles className="w-10 h-10 text-primary-foreground" />
                           </div>
                           <h2 className="text-2xl font-display font-bold text-foreground mb-2">
                             {greeting}, {displayName.split(" ")[0]}
@@ -624,7 +627,7 @@ const ChatPage = () => {
                                     <div className={bubbleClass} style={bubbleStyle}>
                                       {msg.sender === "bot" && (
                                         <div className="flex items-center gap-1.5 mb-1.5">
-                                          <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                                          <Sparkles className="w-3.5 h-3.5 text-primary" />
                                           <span className="text-xs font-semibold text-primary">CUEA AI</span>
                                         </div>
                                       )}
