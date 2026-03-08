@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
 import { useArtifacts } from "@/contexts/ArtifactContext";
+import { usePersonalization } from "@/contexts/PersonalizationContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -72,6 +73,7 @@ const ChatPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading: authLoading } = useAuth();
   const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, loadChats } = useChat();
   const { viewerOpen, addArtifact } = useArtifacts();
+  const { nickname, getChatBg } = usePersonalization();
   const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
