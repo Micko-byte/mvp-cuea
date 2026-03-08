@@ -329,6 +329,8 @@ const ChatPage = () => {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      <AcademicCalendar open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </div>
   );
 };
