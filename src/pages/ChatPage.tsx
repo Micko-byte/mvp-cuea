@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { AcademicCalendar } from "@/components/AcademicCalendar";
+import { AnimatePresence as AP2 } from "framer-motion";
 
 const SUGGESTIONS = [
   { icon: ClipboardList, label: "Assignments", desc: "Check pending assignments", prompt: "What assignments do I have pending this week?" },
@@ -47,6 +49,7 @@ const ChatPage = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"chats" | "projects">("chats");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
