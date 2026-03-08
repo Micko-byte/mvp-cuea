@@ -78,6 +78,7 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        "chat-input": "hsl(var(--chat-input-bg))",
       },
       borderRadius: {
         lg: "var(--radius)",
