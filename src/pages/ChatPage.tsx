@@ -549,9 +549,13 @@ const ChatPage = () => {
       {/* Main Content */}
       <div className="flex-1 flex min-w-0">
         {/* Chat Area */}
-        <div className={`flex-1 flex flex-col min-w-0 ${viewerOpen ? "hidden md:flex" : ""}`}>
-          <header className="h-14 flex items-center px-4 border-b border-border bg-card/50 backdrop-blur-sm flex-shrink-0">
-            <button onClick={toggleSidebar} className="p-2 hover:bg-muted rounded-lg mr-2 md:hidden">
+        <div className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`} style={(() => {
+            const bg = getChatBg();
+            if (bg && bg.url) return { backgroundImage: `url(${bg.url})`, backgroundSize: "cover", backgroundPosition: "center" };
+            return {};
+          })()}>
+          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10" style={{ background: 'transparent', backdropFilter: 'blur(12px) saturate(180%)', WebkitBackdropFilter: 'blur(12px) saturate(180%)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
               <PanelLeftOpen className="w-5 h-5" />
             </button>
             <div className="flex-1">
@@ -559,15 +563,12 @@ const ChatPage = () => {
                 {activeChat ? activeChat.title : "CUEA AI Assistant"}
               </h2>
             </div>
-            <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-muted rounded-lg" title="Academic Calendar">
+            <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-foreground/10 rounded-lg" title="Academic Calendar">
               <CalendarDays className="w-5 h-5 text-muted-foreground" />
             </button>
           </header>
 
-          <div className="flex-1 overflow-y-auto" style={(() => {
-            const bg = getChatBg();
-            if (bg && bg.url) return { backgroundImage: `url(${bg.url})`, backgroundSize: "cover", backgroundPosition: "center" };
-            return {};
+          <div className="flex-1 overflow-y-auto" style={{}}>
           })()}>
             {!activeChat || activeChat.messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full px-4">
