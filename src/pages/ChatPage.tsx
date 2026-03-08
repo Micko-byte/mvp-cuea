@@ -356,7 +356,7 @@ const ChatPage = () => {
       </div>
 
       {/* Footer - Profile Menu */}
-      <div className={`border-t border-sidebar-border relative ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : "p-3"}`}>
+      <div ref={profileMenuRef} className={`border-t border-sidebar-border relative ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : "p-3"}`}>
         {/* Profile Menu Popup */}
         <AnimatePresence>
           {profileMenuOpen && (sidebarExpanded || isMobile) && (
