@@ -50,14 +50,14 @@ import ArtifactViewer from "@/components/ArtifactViewer";
 import { getTimeBasedGreeting } from "@/utils/greetings";
 
 const SUGGESTIONS = [
-  { icon: ClipboardList, label: "Assignments", desc: "Check pending assignments", prompt: "What assignments do I have pending this week?" },
+  { icon: ListChecks, label: "Assignments", desc: "Check pending assignments", prompt: "What assignments do I have pending this week?" },
   { icon: Calendar, label: "Schedule", desc: "View class timetable", prompt: "Show me my class schedule for this week" },
-  { icon: FileText, label: "Notes", desc: "Access lecture notes", prompt: "Help me find lecture notes for my current units" },
-  { icon: BookOpen, label: "Exams", desc: "Exam preparation", prompt: "Help me prepare for my upcoming exams with study tips" },
+  { icon: Search, label: "Notes", desc: "Access lecture notes", prompt: "Help me find lecture notes for my current units" },
+  { icon: PenLine, label: "Exams", desc: "Exam preparation", prompt: "Help me prepare for my upcoming exams with study tips" },
 ];
 
 const SIDEBAR_NAV = [
-  { icon: LayoutTemplate, label: "Artifacts", path: "/artifacts" },
+  { icon: LayoutGrid, label: "Artifacts", path: "/artifacts" },
 ];
 
 const TypingIndicator = () => (
