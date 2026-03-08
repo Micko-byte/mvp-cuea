@@ -163,7 +163,7 @@ interface PersonalizationContextType extends PersonalizationState {
 const STORAGE_KEY = "cuea-personalization";
 
 const defaults: PersonalizationState = {
-  font: "dm-sans",
+  font: "system-ui",
   theme: "light",
   chatBackground: "none",
   nickname: "",
