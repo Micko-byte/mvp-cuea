@@ -461,7 +461,7 @@ const ChatPage = () => {
   return (
     <div className="h-screen flex bg-background overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex flex-col bg-sidebar border-r border-sidebar-border flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[280px]" : "w-[56px]"}`}>
+      <aside className={`hidden md:flex flex-col bg-sidebar flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[280px]" : "w-[56px]"}`}>
         {sidebarContent}
       </aside>
 
@@ -485,15 +485,7 @@ const ChatPage = () => {
           style={chatBgStyle}
         >
           {/* Header — transparent, blurred over the bg */}
-          <header
-            className="h-14 flex items-center px-4 flex-shrink-0 z-10"
-            style={{
-              background: hasChatBg ? 'rgba(0,0,0,0.15)' : 'transparent',
-              backdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
-              WebkitBackdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
-              borderBottom: hasChatBg ? '1px solid rgba(255,255,255,0.08)' : '1px solid hsl(var(--border))',
-            }}
-          >
+          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 border-b border-border bg-background">
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
               <PanelLeftOpen className="w-5 h-5" />
             </button>
@@ -531,7 +523,7 @@ const ChatPage = () => {
                 </motion.div>
               </div>
             ) : (
-              <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+              <div className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-4">
                 {activeChat.messages.map((msg) => (
                   <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
                       <div className="flex flex-col gap-1 max-w-[85%]">
@@ -605,20 +597,13 @@ const ChatPage = () => {
             )}
           </div>
 
-          {/* Footer — transparent, floating over bg */}
-          <div
-            className="px-4 pb-4 pt-2 z-10"
-            style={{
-              background: hasChatBg ? 'rgba(0,0,0,0.1)' : 'transparent',
-              backdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
-              WebkitBackdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
-            }}
-          >
-            <div className="max-w-3xl mx-auto">
+          {/* Floating Chat Input */}
+          <div className="fixed bottom-4 left-0 right-0 z-20 px-4 pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div className="max-w-3xl mx-auto pointer-events-auto">
               {attachedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {attachedFiles.map((file, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 text-xs glass-card px-2 py-1 rounded-lg">
+                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-card border border-border px-2 py-1 rounded-lg">
                       {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
                       <span className="max-w-[120px] truncate">{file.name}</span>
                       <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
@@ -626,9 +611,9 @@ const ChatPage = () => {
                   ))}
                 </div>
               )}
-              <div className="flex items-center gap-2 glass-card rounded-[30px] px-2 py-1.5">
+              <div className="flex items-center gap-2 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))]" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)' }}>
                 <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv" className="hidden" onChange={(e) => { if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]); e.target.value = ""; }} />
-                <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors flex-shrink-0">
+                <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
                   <Paperclip className="w-5 h-5" />
                 </button>
                 <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder="Ask CUEA AI anything..." className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2" disabled={isStreaming} />
@@ -636,7 +621,7 @@ const ChatPage = () => {
                   <button
                     onClick={toggleVoice}
                     disabled={!speechSupported}
-                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-foreground hover:bg-foreground/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}
                   >
                     <Mic className="w-5 h-5" />
                   </button>
