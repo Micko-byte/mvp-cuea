@@ -41,8 +41,8 @@
     --sidebar-foreground: 0 0% 10%;
     --sidebar-primary: 0 100% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 88%;
-    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-accent: 0 100% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 88%;
     --sidebar-ring: 0 100% 25%;
 
@@ -97,8 +97,8 @@
     --sidebar-foreground: 0 0% 80%;
     --sidebar-primary: 0 100% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 14%;
-    --sidebar-accent-foreground: 0 0% 90%;
+     --sidebar-accent: 0 100% 25%;
+     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 14%;
     --sidebar-ring: 0 100% 25%;
 
