@@ -191,7 +191,7 @@ const ChatPage = () => {
   };
 
   const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const displayName = profile?.name || user?.email?.split("@")[0] || "Student";
+  const displayName = nickname || profile?.name || user?.email?.split("@")[0] || "Student";
 
   if (authLoading) {
     return (
