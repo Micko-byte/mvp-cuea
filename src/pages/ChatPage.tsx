@@ -552,8 +552,20 @@ const ChatPage = () => {
               <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
                 {activeChat.messages.map((msg) => (
                   <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className="flex flex-col gap-1 max-w-[85%]">
-                      <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-gradient-maroon text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
+                      <div className="flex flex-col gap-1 max-w-[85%]">
+                        {(() => {
+                          const chatBg = getChatBg();
+                          const hasCustomBg = chatBg && chatBg.url;
+                          const bubbleStyle = hasCustomBg
+                            ? msg.sender === "user"
+                              ? { background: chatBg.userBubble, color: chatBg.userText }
+                              : { background: chatBg.botBubble, color: chatBg.botText }
+                            : undefined;
+                          const bubbleClass = hasCustomBg
+                            ? `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}`
+                            : `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-gradient-maroon text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`;
+                          return (
+                        <div className={bubbleClass} style={bubbleStyle}>
                         {msg.sender === "bot" && (
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <GraduationCap className="w-3.5 h-3.5 text-primary" />
