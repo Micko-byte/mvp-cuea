@@ -81,10 +81,22 @@ const Index = () => {
         </div>
       </section>
 
-      <footer className="py-8 px-6 border-t border-border">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2"><GraduationCap className="w-5 h-5 text-primary" /><span className="font-display font-semibold text-foreground">CUEA AI</span></div>
-          <p className="text-sm text-muted-foreground">© 2026 Catholic University of Eastern Africa</p>
+      <footer className="py-10 px-6 border-t border-border">
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-4 text-center">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-primary" />
+            <span className="font-display font-semibold text-foreground">CUEA AI</span>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground italic">Built by students, for students</p>
+          <p className="text-xs text-muted-foreground">
+            Powered by{" "}
+            <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+              Notify AI
+            </a>
+          </p>
+          <p className="text-xs text-muted-foreground max-w-md">
+            This application is an independent student project and is not officially affiliated with or endorsed by the Catholic University of Eastern Africa.
+          </p>
         </div>
       </footer>
     </div>
