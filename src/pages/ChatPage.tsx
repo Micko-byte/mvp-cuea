@@ -499,140 +499,202 @@ const ChatPage = () => {
             </button>
           </header>
 
-          {/* Messages area */}
-          <div className="flex-1 overflow-y-auto">
-            {!activeChat || activeChat.messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full px-4">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-maroon flex items-center justify-center mx-auto mb-6 shadow-glow">
-                    <GraduationCap className="w-10 h-10 text-primary-foreground" />
-                  </div>
-                  <h2 className="text-2xl font-display font-bold text-foreground mb-2">
-                    {greeting}, {displayName.split(" ")[0]}
-                  </h2>
-                  <p className="text-muted-foreground mb-8">How can I help you with your studies today?</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {SUGGESTIONS.map((s, i) => (
-                      <motion.button key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }} onClick={() => handleSuggestion(s.prompt)} className="p-4 rounded-xl glass-card hover:-translate-y-0.5 transition-all text-left">
-                        <s.icon className="w-5 h-5 mb-2 text-primary" />
-                        <p className="font-display font-semibold text-sm text-foreground">{s.label}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
-                      </motion.button>
+          {/* Chat content */}
+          {(() => {
+            const isNewChat = !activeChat || activeChat.messages.length === 0;
+
+            // Shared input component
+            const chatInput = (
+              <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {attachedFiles.map((file, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 text-xs bg-card border border-border px-2 py-1 rounded-lg">
+                        {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
+                        <span className="max-w-[120px] truncate">{file.name}</span>
+                        <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
+                      </span>
                     ))}
                   </div>
-                </motion.div>
-              </div>
-            ) : (
-              <div className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-4">
-                {activeChat.messages.map((msg) => (
-                  <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className="flex flex-col gap-1 max-w-[85%]">
-                        {(() => {
-                          const chatBg = getChatBg();
-                          const hasCustomBg = chatBg && chatBg.url;
-                          const bubbleStyle = hasCustomBg
-                            ? msg.sender === "user"
-                              ? { background: chatBg.userBubble, color: chatBg.userText }
-                              : { background: chatBg.botBubble, color: chatBg.botText }
-                            : undefined;
-                          const bubbleClass = hasCustomBg
-                            ? `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}`
-                            : `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-gradient-maroon text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`;
-                          return (
-                            <div className={bubbleClass} style={bubbleStyle}>
-                              {msg.sender === "bot" && (
-                                <div className="flex items-center gap-1.5 mb-1.5">
-                                  <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                                  <span className="text-xs font-semibold text-primary">CUEA AI</span>
-                                </div>
-                              )}
-                              {msg.sender === "bot" ? (
-                                <div className="prose prose-sm max-w-none dark:prose-invert">
-                                  <ReactMarkdown
-                                    components={{
-                                      code({ className, children, ...props }) {
-                                        const match = /language-(\w+)/.exec(className || "");
-                                        const lang = match ? match[1] : "";
-                                        const codeStr = String(children).replace(/\n$/, "");
-                                        const isBlock = codeStr.includes("\n") || lang;
-                                        if (isBlock) {
-                                          return (
-                                            <div className="relative group/code">
-                                              <pre className="bg-card border border-border rounded-lg p-3 overflow-x-auto">
-                                                <code className={className} {...props}>{children}</code>
-                                              </pre>
-                                              <button
-                                                onClick={() => handleCreateArtifact(codeStr, lang || "text")}
-                                                className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md"
-                                              >
-                                                <Code2 className="w-3 h-3" /> Open as Artifact
-                                              </button>
-                                            </div>
-                                          );
-                                        }
-                                        return <code className={className} {...props}>{children}</code>;
-                                      },
-                                    }}
-                                  >
-                                    {msg.text || "..."}
-                                  </ReactMarkdown>
-                                </div>
-                              ) : (
-                                msg.text
-                              )}
-                            </div>
-                          );
-                        })()}
-                        <span className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
-                          {formatTime(msg.timestamp)}
-                        </span>
-                      </div>
-                  </motion.div>
-                ))}
-                <AnimatePresence>
-                  {isStreaming && activeChat.messages[activeChat.messages.length - 1]?.sender !== "bot" && <TypingIndicator />}
-                </AnimatePresence>
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
-
-          {/* Floating Chat Input */}
-          <div className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-            <div className="max-w-3xl mx-auto pointer-events-auto">
-              {attachedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {attachedFiles.map((file, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-card border border-border px-2 py-1 rounded-lg">
-                      {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
-                      <span className="max-w-[120px] truncate">{file.name}</span>
-                      <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center gap-2 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))]" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)' }}>
-                <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv" className="hidden" onChange={(e) => { if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]); e.target.value = ""; }} />
-                <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder="Ask CUEA AI anything..." className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2" disabled={isStreaming} />
-                <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
-                  <button
-                    onClick={toggleVoice}
-                    disabled={!speechSupported}
-                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}
-                  >
-                    <Mic className="w-5 h-5" />
+                )}
+                <div className="flex items-center gap-2 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))]" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)' }}>
+                  <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv" className="hidden" onChange={(e) => { if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]); e.target.value = ""; }} />
+                  <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder="Ask CUEA AI anything..." className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2" disabled={isStreaming} />
+                  <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
+                    <button
+                      onClick={toggleVoice}
+                      disabled={!speechSupported}
+                      className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <button onClick={() => handleSend()} disabled={!input.trim() || isStreaming} className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
+                    {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
                 </div>
-                <button onClick={() => handleSend()} disabled={!input.trim() || isStreaming} className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
-                  {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </button>
+                <p className="text-[10px] text-muted-foreground/50 text-center mt-2">CUEA AI may produce inaccurate information. Always verify with your lecturers.</p>
               </div>
-              <p className="text-[10px] text-muted-foreground/50 text-center mt-2">CUEA AI may produce inaccurate information. Always verify with your lecturers.</p>
-            </div>
-          </div>
+            );
+
+            return (
+              <>
+                {/* Messages area */}
+                <div className="flex-1 overflow-y-auto">
+                  <AnimatePresence mode="wait">
+                    {isNewChat ? (
+                      <motion.div
+                        key="new-chat"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, y: 40 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex flex-col items-center justify-center h-full px-4"
+                      >
+                        {/* Greeting */}
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
+                          <div className="w-20 h-20 rounded-3xl bg-gradient-maroon flex items-center justify-center mx-auto mb-6 shadow-glow">
+                            <GraduationCap className="w-10 h-10 text-primary-foreground" />
+                          </div>
+                          <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+                            {greeting}, {displayName.split(" ")[0]}
+                          </h2>
+                          <p className="text-muted-foreground">How can I help you with your studies today?</p>
+                        </motion.div>
+
+                        {/* Centered input */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.1 }}
+                          className="w-full px-4 md:px-0"
+                        >
+                          {chatInput}
+                        </motion.div>
+
+                        {/* Quick action cards */}
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="grid grid-cols-2 gap-3 mt-6 max-w-[680px] w-full px-4 md:px-0"
+                        >
+                          {SUGGESTIONS.map((s, i) => (
+                            <motion.button
+                              key={s.label}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.25 + i * 0.08 }}
+                              onClick={() => handleSuggestion(s.prompt)}
+                              className="p-4 rounded-xl glass-card hover:-translate-y-0.5 transition-all text-left"
+                            >
+                              <s.icon className="w-5 h-5 mb-2 text-primary" />
+                              <p className="font-display font-semibold text-sm text-foreground">{s.label}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
+                            </motion.button>
+                          ))}
+                        </motion.div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="active-chat"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-4"
+                      >
+                        {activeChat!.messages.map((msg) => (
+                          <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                              <div className="flex flex-col gap-1 max-w-[85%]">
+                                {(() => {
+                                  const chatBg = getChatBg();
+                                  const hasCustomBg = chatBg && chatBg.url;
+                                  const bubbleStyle = hasCustomBg
+                                    ? msg.sender === "user"
+                                      ? { background: chatBg.userBubble, color: chatBg.userText }
+                                      : { background: chatBg.botBubble, color: chatBg.botText }
+                                    : undefined;
+                                  const bubbleClass = hasCustomBg
+                                    ? `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}`
+                                    : `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-gradient-maroon text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`;
+                                  return (
+                                    <div className={bubbleClass} style={bubbleStyle}>
+                                      {msg.sender === "bot" && (
+                                        <div className="flex items-center gap-1.5 mb-1.5">
+                                          <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                                          <span className="text-xs font-semibold text-primary">CUEA AI</span>
+                                        </div>
+                                      )}
+                                      {msg.sender === "bot" ? (
+                                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                                          <ReactMarkdown
+                                            components={{
+                                              code({ className, children, ...props }) {
+                                                const match = /language-(\w+)/.exec(className || "");
+                                                const lang = match ? match[1] : "";
+                                                const codeStr = String(children).replace(/\n$/, "");
+                                                const isBlock = codeStr.includes("\n") || lang;
+                                                if (isBlock) {
+                                                  return (
+                                                    <div className="relative group/code">
+                                                      <pre className="bg-card border border-border rounded-lg p-3 overflow-x-auto">
+                                                        <code className={className} {...props}>{children}</code>
+                                                      </pre>
+                                                      <button
+                                                        onClick={() => handleCreateArtifact(codeStr, lang || "text")}
+                                                        className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md"
+                                                      >
+                                                        <Code2 className="w-3 h-3" /> Open as Artifact
+                                                      </button>
+                                                    </div>
+                                                  );
+                                                }
+                                                return <code className={className} {...props}>{children}</code>;
+                                              },
+                                            }}
+                                          >
+                                            {msg.text || "..."}
+                                          </ReactMarkdown>
+                                        </div>
+                                      ) : (
+                                        msg.text
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                                <span className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
+                                  {formatTime(msg.timestamp)}
+                                </span>
+                              </div>
+                          </motion.div>
+                        ))}
+                        <AnimatePresence>
+                          {isStreaming && activeChat!.messages[activeChat!.messages.length - 1]?.sender !== "bot" && <TypingIndicator />}
+                        </AnimatePresence>
+                        <div ref={messagesEndRef} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Floating bottom input — only in active chat state */}
+                {!isNewChat && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none"
+                    style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+                  >
+                    {chatInput}
+                  </motion.div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Artifact Viewer Panel (desktop) */}
