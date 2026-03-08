@@ -394,7 +394,7 @@ const ChatPage = () => {
                   </button>
                 )}
                 <button
-                  onClick={() => { setProfileMenuOpen(false); navigate("/artifacts"); }}
+                  onClick={() => { setProfileMenuOpen(false); navigate("/personalization"); }}
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
                 >
                   <User className="w-4 h-4 text-muted-foreground" />
@@ -522,7 +522,11 @@ const ChatPage = () => {
             </button>
           </header>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" style={(() => {
+            const bg = getChatBg();
+            if (bg && bg.url) return { backgroundImage: `url(${bg.url})`, backgroundSize: "cover", backgroundPosition: "center" };
+            return {};
+          })()}>
             {!activeChat || activeChat.messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full px-4">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
