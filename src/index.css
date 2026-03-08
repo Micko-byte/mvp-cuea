@@ -6,49 +6,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 0 3% 12%;
+    /* Light mode: Chat bg #FFFFFF, Sidebar bg #EFEFEF, Input bg #FFFFFF, Highlight #800000 */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 3% 12%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 3% 12%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 345 100% 25%;
+    --primary: 0 100% 25%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 345 10% 94%;
-    --secondary-foreground: 345 100% 25%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 100% 25%;
 
-    --muted: 345 8% 93%;
-    --muted-foreground: 0 3% 42%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 345 20% 90%;
-    --accent-foreground: 345 100% 20%;
+    --accent: 0 10% 90%;
+    --accent-foreground: 0 100% 20%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 345 10% 88%;
-    --input: 345 10% 88%;
-    --ring: 345 100% 25%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 0 100% 25%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 345 100% 15%;
-    --sidebar-foreground: 345 10% 92%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 345 100% 25%;
-    --sidebar-accent: 345 60% 22%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 345 60% 22%;
-    --sidebar-ring: 345 80% 40%;
+    --sidebar-background: 0 0% 94%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 0 100% 25%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 88%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 0 100% 25%;
 
     /* Custom tokens */
-    --maroon: 345 100% 25%;
-    --maroon-dark: 345 100% 18%;
-    --maroon-light: 345 30% 92%;
+    --maroon: 0 100% 25%;
+    --maroon-dark: 0 100% 18%;
+    --maroon-light: 0 10% 92%;
     --success: 142 70% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 36 100% 50%;
@@ -56,47 +57,52 @@
     --info: 210 100% 50%;
     --info-foreground: 0 0% 100%;
 
-    --gradient-maroon: linear-gradient(135deg, hsl(345, 100%, 25%) 0%, hsl(345, 100%, 15%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(345, 100%, 20%) 0%, hsl(345, 80%, 12%) 50%, hsl(220, 30%, 10%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(345, 10%, 97%) 100%);
+    --chat-input-bg: 0 0% 100%;
 
-    --shadow-sm: 0 1px 3px hsl(345 10% 10% / 0.06);
-    --shadow-md: 0 4px 12px hsl(345 10% 10% / 0.08);
-    --shadow-lg: 0 8px 24px hsl(345 10% 10% / 0.12);
-    --shadow-glow: 0 0 20px hsl(345 100% 25% / 0.15);
+    --gradient-maroon: linear-gradient(135deg, hsl(0, 100%, 25%) 0%, hsl(0, 100%, 18%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(0, 100%, 20%) 0%, hsl(0, 80%, 12%) 50%, hsl(220, 30%, 10%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(0, 0%, 97%) 100%);
+
+    --shadow-sm: 0 1px 3px hsl(0 0% 10% / 0.06);
+    --shadow-md: 0 4px 12px hsl(0 0% 10% / 0.08);
+    --shadow-lg: 0 8px 24px hsl(0 0% 10% / 0.12);
+    --shadow-glow: 0 0 20px hsl(0 100% 25% / 0.15);
 
     --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'DM Sans', sans-serif;
   }
 
   .dark {
-    --background: 220 20% 6%;
-    --foreground: 0 0% 95%;
-    --card: 220 20% 9%;
-    --card-foreground: 0 0% 95%;
-    --popover: 220 20% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 345 80% 55%;
+    /* Dark mode: Chat bg #212121, Sidebar bg #181818, Input bg #303030, Highlight #800000 */
+    --background: 0 0% 13%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 100% 25%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 15%;
+    --secondary: 0 0% 18%;
     --secondary-foreground: 0 0% 90%;
-    --muted: 220 15% 15%;
+    --muted: 0 0% 18%;
     --muted-foreground: 0 0% 60%;
-    --accent: 345 30% 18%;
-    --accent-foreground: 345 80% 75%;
+    --accent: 0 20% 20%;
+    --accent-foreground: 0 50% 75%;
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 18%;
-    --input: 220 15% 18%;
-    --ring: 345 80% 55%;
-    --sidebar-background: 220 20% 6%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 100% 25%;
+    --sidebar-background: 0 0% 9%;
     --sidebar-foreground: 0 0% 80%;
-    --sidebar-primary: 345 80% 55%;
+    --sidebar-primary: 0 100% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent: 0 0% 14%;
     --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 220 15% 15%;
-    --sidebar-ring: 345 80% 55%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 0 100% 25%;
+
+    --chat-input-bg: 0 0% 19%;
   }
 }
 
