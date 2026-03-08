@@ -89,7 +89,6 @@ const ChatPage = () => {
   const recognitionRef = useRef<any>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close profile menu on outside click
   useEffect(() => {
     if (!profileMenuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -105,9 +104,7 @@ const ChatPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Greeting memoized per mount
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
-
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   useEffect(() => {
@@ -122,7 +119,6 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeChat?.messages, isStreaming]);
 
-  // Swipe gesture handlers for mobile
   const handleTouchStart = useCallback((e: TouchEvent) => {
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
@@ -135,10 +131,7 @@ const ChatPage = () => {
     const dy = Math.abs(touch.clientY - touchStartRef.current.y);
     const startX = touchStartRef.current.x;
     touchStartRef.current = null;
-
-    // Minimum 50px horizontal, less than 100px vertical
     if (Math.abs(dx) < 50 || dy > 100) return;
-
     if (dx > 0 && startX < 30 && !mobileSidebarOpen) {
       setMobileSidebarOpen(true);
     } else if (dx < 0 && mobileSidebarOpen) {
@@ -168,7 +161,6 @@ const ChatPage = () => {
     await sendMessage(text, chat.id);
   };
 
-  // ─── Voice Input (Web Speech API) ───
   const speechSupported = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
   const toggleVoice = () => {
@@ -216,20 +208,13 @@ const ChatPage = () => {
     await sendMessage(prompt, chat.id);
   };
 
-  // Detect code blocks in bot messages and offer artifact creation
   const handleCreateArtifact = (content: string, language: string) => {
     let type: "code" | "html" | "svg" | "markdown" | "table" = "code";
     if (language === "html" || language === "htm") type = "html";
     else if (language === "svg") type = "svg";
     else if (language === "markdown" || language === "md") type = "markdown";
     else if (language === "csv") type = "table";
-
-    addArtifact({
-      title: `${language.toUpperCase()} Snippet`,
-      content,
-      language,
-      type,
-    });
+    addArtifact({ title: `${language.toUpperCase()} Snippet`, content, language, type });
   };
 
   const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -251,10 +236,8 @@ const ChatPage = () => {
     }
   };
 
-  /* ─── Sidebar content (shared desktop/mobile) ─── */
   const sidebarContent = (
     <>
-      {/* Header */}
       <div className={`p-4 border-b border-sidebar-border ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
         {(sidebarExpanded || isMobile) ? (
           <div className="flex items-center gap-3 mb-4">
@@ -262,11 +245,7 @@ const ChatPage = () => {
               <GraduationCap className="w-5 h-5 text-sidebar-primary" />
             </div>
             <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
-            <button
-              onClick={toggleSidebar}
-              className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-              title="Collapse sidebar"
-            >
+            <button onClick={toggleSidebar} className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors" title="Collapse sidebar">
               <PanelLeftClose className="w-4 h-4" />
             </button>
           </div>
@@ -275,11 +254,7 @@ const ChatPage = () => {
             <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center">
               <GraduationCap className="w-5 h-5 text-sidebar-primary" />
             </div>
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-              title="Expand sidebar"
-            >
+            <button onClick={toggleSidebar} className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors" title="Expand sidebar">
               <PanelLeftOpen className="w-5 h-5" />
             </button>
           </div>
@@ -295,15 +270,10 @@ const ChatPage = () => {
         )}
       </div>
 
-      {/* Nav items */}
       {(sidebarExpanded || isMobile) && (
         <div className="px-3 pt-3">
           {SIDEBAR_NAV.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => { navigate(item.path); if (isMobile) setMobileSidebarOpen(false); }}
-              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors"
-            >
+            <button key={item.path} onClick={() => { navigate(item.path); if (isMobile) setMobileSidebarOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors">
               <item.icon className="w-4 h-4" />
               <span>{item.label}</span>
             </button>
@@ -313,19 +283,13 @@ const ChatPage = () => {
       {!sidebarExpanded && !isMobile && (
         <div className="px-1 pt-3 flex flex-col items-center gap-1">
           {SIDEBAR_NAV.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className="p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors"
-              title={item.label}
-            >
+            <button key={item.path} onClick={() => navigate(item.path)} className="p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors" title={item.label}>
               <item.icon className="w-4 h-4" />
             </button>
           ))}
         </div>
       )}
 
-      {/* Tabs */}
       {(sidebarExpanded || isMobile) && (
         <div className="px-4 pt-3 flex gap-1">
           {(["chats", "projects"] as const).map((tab) => (
@@ -336,7 +300,6 @@ const ChatPage = () => {
         </div>
       )}
 
-      {/* Course info */}
       {(sidebarExpanded || isMobile) && profile?.course_name && (
         <div className="px-4 py-3 border-b border-sidebar-border">
           <button onClick={() => setUnitsOpen(!unitsOpen)} className="flex items-center justify-between w-full text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/60">
@@ -354,7 +317,6 @@ const ChatPage = () => {
         </div>
       )}
 
-      {/* Chat list */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {(sidebarExpanded || isMobile) ? (
           activeTab === "chats" ? (
@@ -388,7 +350,6 @@ const ChatPage = () => {
             </div>
           )
         ) : (
-          /* Collapsed: show chat icons */
           <div className="flex flex-col items-center gap-1">
             {chats.slice(0, 8).map((chat) => (
               <button key={chat.id} onClick={() => setActiveChat(chat.id)} className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"}`} title={chat.title}>
@@ -399,9 +360,7 @@ const ChatPage = () => {
         )}
       </div>
 
-      {/* Footer - Profile Menu */}
       <div ref={profileMenuRef} className={`border-t border-sidebar-border relative ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : "p-3"}`}>
-        {/* Profile Menu Popup */}
         <AnimatePresence>
           {profileMenuOpen && (sidebarExpanded || isMobile) && (
             <motion.div
@@ -411,7 +370,6 @@ const ChatPage = () => {
               transition={{ duration: 0.15 }}
               className="absolute bottom-full left-3 right-3 mb-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
             >
-              {/* User info header */}
               <div className="px-4 py-3 border-b border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
@@ -423,50 +381,32 @@ const ChatPage = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Menu items */}
               <div className="py-1.5">
                 {role === "admin" && (
-                  <button
-                    onClick={() => { setProfileMenuOpen(false); navigate("/admin"); }}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
-                  >
+                  <button onClick={() => { setProfileMenuOpen(false); navigate("/admin"); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
                     <Shield className="w-4 h-4 text-muted-foreground" />
                     <span>Admin Dashboard</span>
                   </button>
                 )}
-                <button
-                  onClick={() => { setProfileMenuOpen(false); navigate("/personalization"); }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
-                >
+                <button onClick={() => { setProfileMenuOpen(false); navigate("/personalization"); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
                   <User className="w-4 h-4 text-muted-foreground" />
                   <span>Personalization</span>
                 </button>
-                <button
-                  onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
-                >
+                <button onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
                   <Settings className="w-4 h-4 text-muted-foreground" />
                   <span>Settings</span>
                 </button>
-                <button
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
-                >
+                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
                   <HelpCircle className="w-4 h-4 text-muted-foreground" />
                   <span>Help</span>
                   <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto" />
                 </button>
                 <div className="border-t border-border my-1.5" />
-                <button
-                  onClick={async () => { setProfileMenuOpen(false); await logout(); navigate("/"); }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
-                >
+                <button onClick={async () => { setProfileMenuOpen(false); await logout(); navigate("/"); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
                   <LogOut className="w-4 h-4 text-muted-foreground" />
                   <span>Log out</span>
                 </button>
               </div>
-
-              {/* Plan footer */}
               <div className="px-4 py-2.5 border-t border-border bg-muted/30">
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
@@ -482,12 +422,8 @@ const ChatPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Clickable profile trigger */}
         {(sidebarExpanded || isMobile) ? (
-          <button
-            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors"
-          >
+          <button onClick={() => setProfileMenuOpen(!profileMenuOpen)} className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors">
             <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground flex-shrink-0">
               {displayName.charAt(0).toUpperCase()}
             </div>
@@ -499,11 +435,7 @@ const ChatPage = () => {
           </button>
         ) : (
           <div className="flex flex-col items-center gap-2">
-            <button
-              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground"
-              title={displayName}
-            >
+            <button onClick={() => setProfileMenuOpen(!profileMenuOpen)} className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground" title={displayName}>
               {displayName.charAt(0).toUpperCase()}
             </button>
           </div>
@@ -512,12 +444,18 @@ const ChatPage = () => {
     </>
   );
 
+  // Compute background style once
+  const chatBgStyle = (() => {
+    const bg = getChatBg();
+    if (bg && bg.url) return { backgroundImage: `url(${bg.url})`, backgroundSize: "cover" as const, backgroundPosition: "center" as const };
+    return {};
+  })();
+  const hasChatBg = !!chatBgStyle.backgroundImage;
+
   return (
     <div className="h-screen flex bg-background overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside
-        className={`hidden md:flex flex-col bg-sidebar border-r border-sidebar-border flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[280px]" : "w-[56px]"}`}
-      >
+      <aside className={`hidden md:flex flex-col bg-sidebar border-r border-sidebar-border flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[280px]" : "w-[56px]"}`}>
         {sidebarContent}
       </aside>
 
@@ -525,21 +463,8 @@ const ChatPage = () => {
       <AnimatePresence>
         {mobileSidebarOpen && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
-              onClick={() => setMobileSidebarOpen(false)}
-            />
-            <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ type: "spring", damping: 25, stiffness: 250 }}
-              className="fixed inset-y-0 left-0 w-[280px] z-50 bg-sidebar flex flex-col md:hidden"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileSidebarOpen(false)} />
+            <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: "spring", damping: 25, stiffness: 250 }} className="fixed inset-y-0 left-0 w-[280px] z-50 bg-sidebar flex flex-col md:hidden">
               {sidebarContent}
             </motion.aside>
           </>
@@ -548,13 +473,21 @@ const ChatPage = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex min-w-0">
-        {/* Chat Area */}
-        <div className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`} style={(() => {
-            const bg = getChatBg();
-            if (bg && bg.url) return { backgroundImage: `url(${bg.url})`, backgroundSize: "cover", backgroundPosition: "center" };
-            return {};
-          })()}>
-          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10" style={{ background: 'transparent', backdropFilter: 'blur(12px) saturate(180%)', WebkitBackdropFilter: 'blur(12px) saturate(180%)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        {/* Chat Area — background image applied to entire column */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`}
+          style={chatBgStyle}
+        >
+          {/* Header — transparent, blurred over the bg */}
+          <header
+            className="h-14 flex items-center px-4 flex-shrink-0 z-10"
+            style={{
+              background: hasChatBg ? 'rgba(0,0,0,0.15)' : 'transparent',
+              backdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
+              WebkitBackdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
+              borderBottom: hasChatBg ? '1px solid rgba(255,255,255,0.08)' : '1px solid hsl(var(--border))',
+            }}
+          >
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
               <PanelLeftOpen className="w-5 h-5" />
             </button>
@@ -568,8 +501,8 @@ const ChatPage = () => {
             </button>
           </header>
 
-          <div className="flex-1 overflow-y-auto" style={{}}>
-          })()}>
+          {/* Messages area */}
+          <div className="flex-1 overflow-y-auto">
             {!activeChat || activeChat.messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full px-4">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
@@ -666,7 +599,15 @@ const ChatPage = () => {
             )}
           </div>
 
-          <div className="px-4 pb-4 pt-2" style={{ background: 'transparent' }}>
+          {/* Footer — transparent, floating over bg */}
+          <div
+            className="px-4 pb-4 pt-2 z-10"
+            style={{
+              background: hasChatBg ? 'rgba(0,0,0,0.1)' : 'transparent',
+              backdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
+              WebkitBackdropFilter: hasChatBg ? 'blur(16px) saturate(180%)' : undefined,
+            }}
+          >
             <div className="max-w-3xl mx-auto">
               {attachedFiles.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
