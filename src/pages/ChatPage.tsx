@@ -30,6 +30,9 @@ import {
   LayoutTemplate,
   X,
   Code2,
+  ChevronUp,
+  User,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -78,6 +81,20 @@ const ChatPage = () => {
   const [activeTab, setActiveTab] = useState<"chats" | "projects">("chats");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [profileMenuOpen]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -338,35 +355,115 @@ const ChatPage = () => {
         )}
       </div>
 
-      {/* Footer */}
-      <div className={`p-4 border-t border-sidebar-border ${!sidebarExpanded && !isMobile ? "px-2" : ""}`}>
-        <div className={`flex items-center ${sidebarExpanded || isMobile ? "gap-3" : "flex-col gap-2"}`}>
-          <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground flex-shrink-0">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-          {(sidebarExpanded || isMobile) && (
-            <div className="flex-1 min-w-0">
+      {/* Footer - Profile Menu */}
+      <div ref={profileMenuRef} className={`border-t border-sidebar-border relative ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : "p-3"}`}>
+        {/* Profile Menu Popup */}
+        <AnimatePresence>
+          {profileMenuOpen && (sidebarExpanded || isMobile) && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-full left-3 right-3 mb-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
+            >
+              {/* User info header */}
+              <div className="px-4 py-3 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-popover-foreground truncate">{displayName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{profile?.email || "student"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu items */}
+              <div className="py-1.5">
+                {role === "admin" && (
+                  <button
+                    onClick={() => { setProfileMenuOpen(false); navigate("/admin"); }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                  >
+                    <Shield className="w-4 h-4 text-muted-foreground" />
+                    <span>Admin Dashboard</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => { setProfileMenuOpen(false); navigate("/artifacts"); }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                >
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span>Personalization</span>
+                </button>
+                <button
+                  onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-muted-foreground" />
+                  <span>Settings</span>
+                </button>
+                <button
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                  <span>Help</span>
+                  <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto" />
+                </button>
+                <div className="border-t border-border my-1.5" />
+                <button
+                  onClick={async () => { setProfileMenuOpen(false); await logout(); navigate("/"); }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                >
+                  <LogOut className="w-4 h-4 text-muted-foreground" />
+                  <span>Log out</span>
+                </button>
+              </div>
+
+              {/* Plan footer */}
+              <div className="px-4 py-2.5 border-t border-border bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-popover-foreground truncate">{displayName}</p>
+                    <p className="text-[10px] text-muted-foreground">{profile?.program || "Student"}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Clickable profile trigger */}
+        {(sidebarExpanded || isMobile) ? (
+          <button
+            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground flex-shrink-0">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
               <p className="text-xs text-sidebar-foreground/50 truncate">{profile?.course_name || "Student"}</p>
             </div>
-          )}
-          {(sidebarExpanded || isMobile) && role === "admin" && (
-            <button onClick={() => navigate("/admin")} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1" title="Admin Dashboard">
-              <Shield className="w-4 h-4" />
+            <ChevronUp className={`w-4 h-4 text-sidebar-foreground/40 transition-transform ${profileMenuOpen ? "" : "rotate-180"}`} />
+          </button>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground"
+              title={displayName}
+            >
+              {displayName.charAt(0).toUpperCase()}
             </button>
-          )}
-          {(sidebarExpanded || isMobile) ? (
-            <>
-              <button onClick={() => setSettingsOpen(true)} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1"><Settings className="w-4 h-4" /></button>
-              <button onClick={async () => { await logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1"><LogOut className="w-4 h-4" /></button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => setSettingsOpen(true)} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1" title="Settings"><Settings className="w-4 h-4" /></button>
-              <button onClick={async () => { await logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground p-1" title="Logout"><LogOut className="w-4 h-4" /></button>
-            </>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </>
   );
