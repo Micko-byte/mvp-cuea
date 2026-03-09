@@ -185,6 +185,45 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          email: string | null
+          id: string
+          paid_at: string | null
+          paystack_access_code: string | null
+          paystack_reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          email?: string | null
+          id?: string
+          paid_at?: string | null
+          paystack_access_code?: string | null
+          paystack_reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          email?: string | null
+          id?: string
+          paid_at?: string | null
+          paystack_access_code?: string | null
+          paystack_reference?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           admission_number: string | null
