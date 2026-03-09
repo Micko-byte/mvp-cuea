@@ -5,11 +5,11 @@ import { GraduationCap, MessageSquare, BarChart3, BookOpen, ArrowRight, Sparkles
 import { Button } from "@/components/ui/button";
 
 const FEATURES = [
-  { icon: MessageSquare, title: "AI-Powered Chat", desc: "Get instant answers about your courses, assignments, and schedules" },
-  { icon: BookOpen, title: "Course Materials", desc: "Access lecture notes, past papers, and study resources" },
-  { icon: BarChart3, title: "Smart Analytics", desc: "Track your academic progress and study patterns" },
-  { icon: Sparkles, title: "Personalized", desc: "Tailored to your specific program, courses, and units" },
-];
+{ icon: MessageSquare, title: "AI-Powered Chat", desc: "Get instant answers about your courses, assignments, and schedules" },
+{ icon: BookOpen, title: "Course Materials", desc: "Access lecture notes, past papers, and study resources" },
+{ icon: BarChart3, title: "Smart Analytics", desc: "Track your academic progress and study patterns" },
+{ icon: Sparkles, title: "Personalized", desc: "Tailored to your specific program, courses, and units" }];
+
 
 const Index = () => {
   const { isAuthenticated, role } = useAuth();
@@ -42,9 +42,9 @@ const Index = () => {
       <section className="pt-32 pb-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Sparkles className="w-4 h-4" /> AI-Powered University Assistant
-            </div>
+            
+
+            
             <h1 className="text-5xl md:text-6xl font-display font-bold text-foreground leading-tight mb-6">
               Your Academic<br /><span className="text-gradient-maroon">Success Partner</span>
             </h1>
@@ -68,15 +68,15 @@ const Index = () => {
             <p className="text-muted-foreground max-w-lg mx-auto">Designed specifically for CUEA students to excel in their academic journey.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map((f, i) => (
-              <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }} className="glass-card rounded-2xl p-6 hover:-translate-y-1 transition-all">
+            {FEATURES.map((f, i) =>
+            <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }} className="glass-card rounded-2xl p-6 hover:-translate-y-1 transition-all">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                   <f.icon className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="font-display font-semibold text-foreground mb-2">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
               </motion.div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -99,8 +99,8 @@ const Index = () => {
           </p>
         </div>
       </footer>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Index;
