@@ -333,9 +333,9 @@ const ChatPage = () => {
         <div className="px-3 space-y-0.5">
           {SIDEBAR_NAV.map((item) => (
             <button
-              key={item.path}
+              key={item.key}
               onClick={() => {
-                navigate(item.path);
+                setShowArtifacts(true);
                 if (isMobile) setMobileSidebarOpen(false);
               }}
               className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors"
@@ -392,8 +392,8 @@ const ChatPage = () => {
         <div className="px-1 flex flex-col items-center gap-1">
           {SIDEBAR_NAV.map((item) => (
             <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
+              key={item.key}
+              onClick={() => setShowArtifacts(true)}
               className="p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors"
               title={item.label}
             >
