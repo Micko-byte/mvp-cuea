@@ -310,6 +310,7 @@ const ChatPage = () => {
           <Button
             onClick={() => {
               createChat();
+              setShowArtifacts(false);
               if (isMobile) setMobileSidebarOpen(false);
             }}
             className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 justify-start gap-2"
@@ -423,6 +424,7 @@ const ChatPage = () => {
                       key={chat.id}
                       onClick={() => {
                         setActiveChat(chat.id);
+                        setShowArtifacts(false);
                         if (isMobile) setMobileSidebarOpen(false);
                       }}
                       className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}
