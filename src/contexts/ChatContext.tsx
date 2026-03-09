@@ -168,7 +168,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({ error: "Failed to connect to AI" }));
-        toast.error(errData.error || "AI service error");
+        if (errData.limit_reached) {
+          toast.error(errData.error, { duration: 10000 });
+          if (!errData.is_paid) {
+            // Trigger payment flow
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("show-payment-prompt"));
+            }, 500);
+          }
+        } else {
+          toast.error(errData.error || "AI service error");
+        }
         return;
       }
 

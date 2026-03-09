@@ -17,7 +17,8 @@ const withTimeout = async (url: string, init: RequestInit, timeoutMs: number) =>
   }
 };
 
-const DAILY_USER_LIMIT = 50000;
+const FREE_DAILY_LIMIT = 50000;
+const PAID_DAILY_LIMIT = 200000;
 const DAILY_GLOBAL_LIMIT = 500000;
 
 const CUEA_KNOWLEDGE = `
@@ -94,11 +95,29 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Check if user has a successful payment (paid plan)
+    const { data: paymentData } = await supabaseAdmin
+      .from("payments")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("status", "success")
+      .limit(1);
+    
+    const isPaidUser = paymentData && paymentData.length > 0;
+    const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
+
     // Check daily per-user token limit
     const { data: userUsage } = await supabaseAdmin.rpc("get_daily_token_usage", { _user_id: userId });
     const dailyUserUsage = userUsage || 0;
-    if (dailyUserUsage >= DAILY_USER_LIMIT) {
-      return new Response(JSON.stringify({ error: "Daily token limit reached (5,000 tokens). Please try again tomorrow." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (dailyUserUsage >= userDailyLimit) {
+      const errorMsg = isPaidUser
+        ? "You've used all your tokens for today. Come back tomorrow to continue using CUEA AI! 🎓"
+        : "You've reached your free daily limit! 🎓 Pay KES 200 to unlock 200,000 tokens/day and support CUEA AI infrastructure.";
+      return new Response(JSON.stringify({ 
+        error: errorMsg,
+        limit_reached: true,
+        is_paid: isPaidUser,
+      }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Check global daily limit
@@ -108,7 +127,7 @@ serve(async (req) => {
       .gte("created_at", new Date().toISOString().split("T")[0]);
     const globalUsage = globalData?.reduce((sum: number, t: any) => sum + t.tokens_used, 0) || 0;
     if (globalUsage >= DAILY_GLOBAL_LIMIT) {
-      return new Response(JSON.stringify({ error: "Global daily token limit reached. Please try again tomorrow." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "System is at capacity today. Come back tomorrow to enjoy CUEA AI! 🎓" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Fetch user profile for context
@@ -177,53 +196,48 @@ serve(async (req) => {
       : "";
 
     // Build the NotifyAI system prompt
-    const systemPrompt = `You are NotifyAI, the official AI academic assistant for the Catholic University of Eastern Africa (CUEA). You ONLY help with CUEA-related topics.
+    const systemPrompt = `You are NotifyAI, an AI academic assistant for university students at the Catholic University of Eastern Africa (CUEA).
 
-## Scope — What You CAN Answer:
-• Academic questions related to CUEA courses, programs, and curricula
-• Coursework help: explaining concepts from CUEA course materials and syllabi
-• CUEA ODeL e-learning platform guidance (login, quizzes, assignments, virtual classes)
-• Student portal help (https://studentportal.cuea.edu/)
-• CUEA policies, contacts, procedures, faculties, and campus life
-• Study tips, exam preparation, and academic writing — in the context of CUEA coursework
-• General academic concepts IF they directly relate to a CUEA course the student is enrolled in
+Your job is to help students understand:
+- their courses, assignments, and lecture material
+- university systems (ODeL portal, student portal, e-learning)
+- academic concepts and questions
+- study tips, exam preparation, and academic writing
 
-## Scope — What You MUST REFUSE:
-• Questions unrelated to academics or CUEA (e.g., cooking recipes, celebrity gossip, sports scores, personal advice, politics, entertainment)
-• Requests to write full assignments, exams, or dissertations for the student
-• Questions about other universities (unless comparing with CUEA programs)
-• Any harmful, inappropriate, or unethical requests
-
-When a question is outside your scope, respond with:
-"I'm NotifyAI, and I'm here to help with CUEA academic matters only. I can't assist with that topic, but feel free to ask me anything about your courses, the e-learning platform, or university services! 😊"
+You should behave like a helpful, knowledgeable university tutor.
 
 ## How You Answer:
-• If course material is provided, prioritize that information.
-• If the answer is not in the provided material, give a general explanation and clearly state: "This isn't in the provided course material, but here is a general explanation based on the subject area."
-• Never invent references or lecture content.
-• Explain things step-by-step when possible.
-• Be conversational and supportive, like a helpful tutor.
-• Format responses using markdown for readability.
-• Personalize responses using the student's profile when available.
-• At the end of EVERY response, always suggest 2-3 specific follow-up topics related to the student's course unit. Format them as:
-  "📚 **Want to explore more?**
-  - [Specific related topic 1 from the same course unit]
-  - [Specific related topic 2 from the same course unit]
-  - [A deeper dive or practical application of the concept just discussed]"
-• Make the follow-up suggestions contextual — they should feel like a natural continuation of the conversation and be directly relevant to the student's enrolled course/unit.
+- Answer conversationally and naturally. Be friendly, encouraging, and supportive.
+- If the student asks something not directly about CUEA, still try to help if it's educational or general knowledge. Be helpful, not restrictive.
+- If course material is provided below, prioritize that information.
+- If the answer is not in the provided material, explain the concept clearly and say: "This isn't in your course documents, but here's what I know about it."
+- Never invent references or lecture content.
+- Explain things step-by-step when possible.
+- Format responses using markdown for readability.
+- Personalize responses using the student's profile when available.
+- Detect the user's language and reply in the same language. Support English, Swahili, French, and any other language.
 
-Your tone should be friendly, clear, and educational.
+## Tone:
+- Friendly, warm, and encouraging
+- Like a smart teaching assistant who genuinely cares
+- Never dismissive or robotic
+
+## Important Rules:
+- NEVER say "I cannot assist with that topic" or "I'm here to help with CUEA academic matters only"
+- Instead, always try to be helpful. If something is truly outside your knowledge, say something like: "That's an interesting question! While it's not directly related to your coursework, here's what I can share..."
+- Always try to continue the conversation naturally
+- At the end of responses, suggest 2-3 follow-up topics:
+  "📚 **Want to explore more?**
+  - [Topic 1]
+  - [Topic 2]
+  - [Topic 3]"
 
 ${CUEA_KNOWLEDGE}
 ${studentContext}
 
 ${ragContext ? `Course Material Context:\n${ragContext}` : "No specific course material available for this query."}
 
-Instructions:
-First, determine if the question is within your CUEA academic scope. If not, politely decline.
-If it is relevant, answer the student's question clearly.
-Use the course material context when possible.
-If the material does not contain the answer, explain using general academic knowledge and mention it.`;
+Answer the student's question helpfully and naturally.`;
 
     // Call OpenAI API
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
@@ -240,7 +254,7 @@ If the material does not contain the answer, explain using general academic know
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        temperature: 0.4,
+        temperature: 0.7,
         stream: true,
       }),
     }, 45000);
@@ -257,11 +271,11 @@ If the material does not contain the answer, explain using general academic know
       return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Track estimated token usage (only count user/assistant messages, not system prompt)
+    // Track estimated token usage
     const estimatedTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((m.content || "").length / 4), 0) + 200;
     await supabaseAdmin.from("token_usage").insert({
       user_id: userId,
-      tokens_used: Math.min(estimatedTokens, DAILY_USER_LIMIT - dailyUserUsage),
+      tokens_used: Math.min(estimatedTokens, userDailyLimit - dailyUserUsage),
       model: "gpt-4o-mini",
     });
 

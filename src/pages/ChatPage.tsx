@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
 import { useArtifacts } from "@/contexts/ArtifactContext";
@@ -118,6 +120,8 @@ const ChatPage = () => {
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +150,26 @@ const ChatPage = () => {
   useEffect(() => {
     if (isAuthenticated) loadChats();
   }, [isAuthenticated, loadChats]);
+
+  // Listen for payment prompt event
+  useEffect(() => {
+    const handler = () => setShowPaymentDialog(true);
+    window.addEventListener("show-payment-prompt", handler);
+    return () => window.removeEventListener("show-payment-prompt", handler);
+  }, []);
+
+  // Check for payment callback in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (payment === "success") {
+      toast.success("Payment successful! 🎉 You now have 200,000 tokens/day. Thank you for supporting CUEA AI!");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "failed") {
+      toast.error("Payment was not completed. Please try again.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -233,6 +257,36 @@ const ChatPage = () => {
     recognition.onerror = () => setIsListening(false);
     recognition.start();
     setIsListening(true);
+  };
+
+  const handlePayment = async () => {
+    setPaymentLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("Please sign in again.");
+        return;
+      }
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const data = await resp.json();
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        toast.error(data.error || "Failed to initialize payment");
+      }
+    } catch (e) {
+      toast.error("Payment initialization failed. Please try again.");
+    } finally {
+      setPaymentLoading(false);
+    }
   };
 
   const handleSuggestion = async (prompt: string) => {
@@ -1023,6 +1077,51 @@ const ChatPage = () => {
           navigate("/");
         }}
       />
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="backdrop-blur-xl bg-card/80 border-border/50 shadow-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">Upgrade to CUEA AI Premium 🎓</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground text-center">
+              You've reached your free daily limit. Upgrade to keep learning!
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="border border-border rounded-xl p-4 text-center">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Free Plan</p>
+                <p className="text-2xl font-bold mt-1">50K</p>
+                <p className="text-xs text-muted-foreground">tokens/day</p>
+              </div>
+              <div className="border-2 border-primary rounded-xl p-4 text-center bg-primary/5">
+                <p className="text-xs font-semibold text-primary uppercase">Premium</p>
+                <p className="text-2xl font-bold mt-1">200K</p>
+                <p className="text-xs text-muted-foreground">tokens/day</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold">KES 200</p>
+              <p className="text-xs text-muted-foreground">One-time payment • Supports CUEA AI infrastructure</p>
+            </div>
+            <Button
+              onClick={handlePayment}
+              disabled={paymentLoading}
+              className="w-full text-white font-semibold py-3"
+              style={{ backgroundColor: "#800000" }}
+            >
+              {paymentLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...</>
+              ) : (
+                "Pay KES 200 with Paystack"
+              )}
+            </Button>
+            <p className="text-[10px] text-muted-foreground text-center">
+              Your funds support us to build and improve CUEA AI services
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

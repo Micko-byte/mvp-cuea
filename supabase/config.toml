@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.process-document]
 verify_jwt = false
+
+[functions.paystack-initialize]
+verify_jwt = false
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.paystack-callback]
+verify_jwt = false
