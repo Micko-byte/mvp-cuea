@@ -106,6 +106,12 @@ const LoginPage = () => {
     e.preventDefault();
     if (signupStep === 0) {
       if (!canProceedStep0) { setError("Fill all fields (password min 6 chars)"); return; }
+      // Enforce @cuea.edu email format
+      const emailDomain = signupEmail.split("@")[1]?.toLowerCase();
+      if (!emailDomain || !emailDomain.endsWith("cuea.edu")) {
+        setError("Please use your CUEA email (e.g. you@students.cuea.edu or you@cuea.edu)");
+        return;
+      }
       setSignupStep(1);
       setError("");
       return;
@@ -200,6 +206,7 @@ const LoginPage = () => {
           </div>
           <h1 className="text-3xl font-display font-bold text-primary-foreground">CUEA AI</h1>
           <p className="text-primary-foreground/60 mt-1 font-body">Your University Assistant</p>
+          <p className="text-primary-foreground/40 text-xs mt-2">🚀 Launch: Computer Science Department</p>
         </div>
 
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">

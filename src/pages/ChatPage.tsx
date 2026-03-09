@@ -762,10 +762,10 @@ const ChatPage = () => {
                       e.target.value = "";
                     }}
                   />
-                  {/* Attach — desktop only */}
+                  {/* Attach */}
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                    className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
                   >
                     <Paperclip className="w-4 h-4" />
                   </button>
@@ -1025,10 +1025,16 @@ const ChatPage = () => {
                 <Input value={profile?.program || ""} readOnly />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                  Admission #
-                </Label>
-                <Input value={profile?.admission_number || ""} readOnly />
+                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Admission #</Label>
+                <Input value={profile?.admission_number || "Not set"} readOnly />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Course</Label>
+                <Input value={profile?.course_name || ""} readOnly />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Year / Semester</Label>
+                <Input value={`Year ${profile?.year || "-"} • Semester ${profile?.semester || "-"}`} readOnly />
               </div>
             </TabsContent>
             <TabsContent value="general" className="space-y-4 mt-4">
