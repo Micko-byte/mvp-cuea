@@ -135,16 +135,49 @@ const LoginPage = () => {
       return;
     }
 
-    // Enroll in selected units after signup
+    // Store selected units for enrollment after verification
     if (selectedUnitIds.length > 0) {
-      // We need to wait for the user to be created - units will be enrolled after email verification
-      // Store selected units in localStorage to enroll after first login
       localStorage.setItem("pendingUnitEnrollments", JSON.stringify(selectedUnitIds));
     }
 
-    toast.success("Account created! Please check your email to verify.");
-    setIsLogin(true);
-    setSignupStep(0);
+    // Show OTP verification screen
+    setOtpEmail(signupEmail);
+    setShowOtp(true);
+    setOtpCode("");
+    toast.success("Verification code sent to your email!");
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) { setError("Enter the 6-digit code"); return; }
+    setLoading(true);
+    setError("");
+    const { error: otpError } = await supabase.auth.verifyOtp({
+      email: otpEmail,
+      token: otpCode,
+      type: "signup",
+    });
+    setLoading(false);
+    if (otpError) {
+      setError(otpError.message);
+      return;
+    }
+    toast.success("Email verified! You're now signed in.");
+    setShowOtp(false);
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    setError("");
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: otpEmail,
+    });
+    setLoading(false);
+    if (resendError) {
+      setError(resendError.message);
+      return;
+    }
+    toast.success("New verification code sent!");
   };
 
   const toggleUnit = (unitId: string) => {
