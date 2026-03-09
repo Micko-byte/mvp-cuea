@@ -133,9 +133,48 @@ serve(async (req) => {
     // Fetch user profile for context
     const { data: profileData } = await supabaseAdmin
       .from("profiles")
-      .select("name, program, course_name, year, semester")
+      .select("name, program, course_name, year, semester, course")
       .eq("user_id", userId)
       .single();
+
+    // Check if user is admin
+    const { data: roleData } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+    const isAdmin = roleData?.role === "admin";
+
+    // Fetch student's enrolled units for context
+    let enrolledUnitsContext = "";
+    if (!isAdmin) {
+      const { data: studentUnits } = await supabaseAdmin
+        .from("student_units")
+        .select("unit_id, units(code, name, lecturer)")
+        .eq("user_id", userId);
+      if (studentUnits && studentUnits.length > 0) {
+        enrolledUnitsContext = "\n\nStudent's Enrolled Units:\n" + studentUnits.map((su: any) => {
+          const u = su.units;
+          return u ? `- ${u.code}: ${u.name}${u.lecturer ? ` (Lecturer: ${u.lecturer})` : ""}` : "";
+        }).filter(Boolean).join("\n");
+      }
+    }
+
+    // Fetch upcoming academic calendar events
+    const today = new Date().toISOString().split("T")[0];
+    const { data: calendarEvents } = await supabaseAdmin
+      .from("academic_calendar")
+      .select("event_name, start_date, end_date, category, trimester, description")
+      .gte("start_date", today)
+      .order("start_date")
+      .limit(15);
+    
+    let calendarContext = "";
+    if (calendarEvents && calendarEvents.length > 0) {
+      calendarContext = "\n\n## Upcoming Academic Calendar Events:\n" + calendarEvents.map((e: any) => {
+        return `- ${e.event_name}: ${e.start_date}${e.end_date && e.end_date !== e.start_date ? ` to ${e.end_date}` : ""} (${e.category}${e.trimester ? `, ${e.trimester}` : ""})${e.description ? ` - ${e.description}` : ""}`;
+      }).join("\n");
+    }
 
     // RAG: Get relevant context from embeddings
     let ragContext = "";
@@ -167,17 +206,36 @@ serve(async (req) => {
           const queryEmbedding = embData.data?.[0]?.embedding;
           
           if (queryEmbedding) {
+            // For students, filter RAG by their enrolled units
             const { data: docs } = await supabaseAdmin.rpc("match_documents", {
               query_embedding: JSON.stringify(queryEmbedding),
               match_threshold: 0.5,
-              match_count: 5,
+              match_count: isAdmin ? 10 : 5,
             });
             
             if (docs && docs.length > 0) {
-              ragContext = "\n\n## Relevant Course Materials (from uploaded documents):\n" + docs.map((d: any) => {
-                const meta = d.metadata || {};
-                return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'}]\n${d.content}`;
-              }).join("\n---\n");
+              // For non-admin, filter to only enrolled unit codes
+              let filteredDocs = docs;
+              if (!isAdmin) {
+                const { data: studentUnits } = await supabaseAdmin
+                  .from("student_units")
+                  .select("units(code)")
+                  .eq("user_id", userId);
+                const enrolledCodes = new Set(studentUnits?.map((su: any) => su.units?.code).filter(Boolean) || []);
+                if (enrolledCodes.size > 0) {
+                  filteredDocs = docs.filter((d: any) => {
+                    const unitCode = d.metadata?.unit_code;
+                    return !unitCode || enrolledCodes.has(unitCode);
+                  });
+                }
+              }
+              
+              if (filteredDocs.length > 0) {
+                ragContext = "\n\n## Relevant Course Materials (from uploaded documents):\n" + filteredDocs.map((d: any) => {
+                  const meta = d.metadata || {};
+                  return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'}]\n${d.content}`;
+                }).join("\n---\n");
+              }
             }
           }
         }
@@ -195,6 +253,8 @@ serve(async (req) => {
       ? `\nStudent Profile:\n- Name: ${profileData.name}\n- Program: ${profileData.program || 'N/A'}\n- Course: ${profileData.course_name || 'N/A'}\n- Year: ${profileData.year || 'N/A'}, Semester: ${profileData.semester || 'N/A'}`
       : "";
 
+    const adminExtra = isAdmin ? `\n\nYou are talking to an ADMIN user. They have full access to query about any unit, course, or system data. Provide comprehensive answers about the entire system.` : "";
+
     // Build the NotifyAI system prompt
     const systemPrompt = `You are NotifyAI, an AI academic assistant for university students at the Catholic University of Eastern Africa (CUEA).
 
@@ -203,6 +263,7 @@ Your job is to help students understand:
 - university systems (ODeL portal, student portal, e-learning)
 - academic concepts and questions
 - study tips, exam preparation, and academic writing
+- academic calendar dates, deadlines, and events
 
 You should behave like a helpful, knowledgeable university tutor.
 
@@ -216,6 +277,7 @@ You should behave like a helpful, knowledgeable university tutor.
 - Format responses using markdown for readability.
 - Personalize responses using the student's profile when available.
 - Detect the user's language and reply in the same language. Support English, Swahili, French, and any other language.
+- When asked about dates, deadlines, or calendar events, use the Academic Calendar data provided below.
 
 ## Tone:
 - Friendly, warm, and encouraging
@@ -234,6 +296,9 @@ You should behave like a helpful, knowledgeable university tutor.
 
 ${CUEA_KNOWLEDGE}
 ${studentContext}
+${enrolledUnitsContext}
+${calendarContext}
+${adminExtra}
 
 ${ragContext ? `Course Material Context:\n${ragContext}` : "No specific course material available for this query."}
 
@@ -271,7 +336,7 @@ Answer the student's question helpfully and naturally.`;
       return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Track estimated token usage
+    // Track estimated token usage (exclude system prompt from estimate)
     const estimatedTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((m.content || "").length / 4), 0) + 200;
     await supabaseAdmin.from("token_usage").insert({
       user_id: userId,
