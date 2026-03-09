@@ -436,7 +436,7 @@ const ChatPage = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteChat(chat.id);
+                          setDeleteChatId(chat.id);
                         }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-destructive"
                       >
@@ -531,10 +531,9 @@ const ChatPage = () => {
                 </button>
                 <div className="my-1.5" />
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     setProfileMenuOpen(false);
-                    await logout();
-                    navigate("/");
+                    setShowLogoutConfirm(true);
                   }}
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
                 >
