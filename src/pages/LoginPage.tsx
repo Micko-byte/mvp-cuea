@@ -204,7 +204,62 @@ const LoginPage = () => {
 
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
           <AnimatePresence mode="wait">
-            {isLogin ? (
+            {showOtp ? (
+              <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
+                    <ShieldCheck className="w-6 h-6 text-primary" />
+                  </div>
+                  <h2 className="text-xl font-display font-semibold text-foreground">Verify Your Email</h2>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Enter the 6-digit code sent to<br />
+                    <span className="font-semibold text-foreground">{otpEmail}</span>
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>
+                )}
+
+                <div className="flex justify-center">
+                  <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+
+                <Button
+                  onClick={handleVerifyOtp}
+                  className="w-full bg-gradient-maroon hover:opacity-90"
+                  disabled={loading || otpCode.length !== 6}
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Verify & Sign In <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+
+                <div className="text-center space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="text-sm text-primary hover:underline font-medium"
+                  >
+                    Resend code
+                  </button>
+                  <p className="text-sm text-muted-foreground">
+                    <button type="button" onClick={() => { setShowOtp(false); setIsLogin(true); setError(""); }} className="text-primary font-semibold hover:underline">
+                      Back to Sign In
+                    </button>
+                  </p>
+                </div>
+              </motion.div>
+            ) : isLogin ? (
               <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-display font-semibold text-foreground">Welcome Back</h2>
