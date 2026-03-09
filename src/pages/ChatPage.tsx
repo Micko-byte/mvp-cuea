@@ -118,6 +118,8 @@ const ChatPage = () => {
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +148,26 @@ const ChatPage = () => {
   useEffect(() => {
     if (isAuthenticated) loadChats();
   }, [isAuthenticated, loadChats]);
+
+  // Listen for payment prompt event
+  useEffect(() => {
+    const handler = () => setShowPaymentDialog(true);
+    window.addEventListener("show-payment-prompt", handler);
+    return () => window.removeEventListener("show-payment-prompt", handler);
+  }, []);
+
+  // Check for payment callback in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    if (payment === "success") {
+      toast.success("Payment successful! 🎉 You now have 200,000 tokens/day. Thank you for supporting CUEA AI!");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "failed") {
+      toast.error("Payment was not completed. Please try again.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
