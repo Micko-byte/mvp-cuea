@@ -998,6 +998,31 @@ const ChatPage = () => {
       </Dialog>
 
       <AcademicCalendar open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+
+      <ConfirmDialog
+        open={!!deleteChatId}
+        onOpenChange={(open) => { if (!open) setDeleteChatId(null); }}
+        title="Delete Chat?"
+        description="This will permanently delete this conversation. This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (deleteChatId) deleteChat(deleteChatId);
+          setDeleteChatId(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+        title="Log Out?"
+        description="Are you sure you want to log out of your account?"
+        confirmLabel="Log Out"
+        onConfirm={async () => {
+          setShowLogoutConfirm(false);
+          await logout();
+          navigate("/");
+        }}
+      />
     </div>
   );
 };
