@@ -53,25 +53,21 @@ const SUGGESTIONS = [
   {
     icon: ListChecks,
     label: "Assignments",
-    desc: "Check pending assignments",
     prompt: "What assignments do I have pending this week?",
   },
   {
     icon: Calendar,
     label: "Schedule",
-    desc: "View class timetable",
     prompt: "Show me my class schedule for this week",
   },
   {
     icon: Search,
     label: "Notes",
-    desc: "Access lecture notes",
     prompt: "Help me find lecture notes for my current units",
   },
   {
     icon: PenLine,
     label: "Exams",
-    desc: "Exam preparation",
     prompt: "Help me prepare for my upcoming exams with study tips",
   },
 ];
@@ -327,10 +323,9 @@ const ChatPage = () => {
         )}
       </div>
 
-      {/* Nav items: Artifacts, My Course, Chats/Projects tabs */}
+      {/* Nav items */}
       {sidebarExpanded || isMobile ? (
         <div className="px-3 space-y-0.5">
-          {/* Artifacts */}
           {SIDEBAR_NAV.map((item) => (
             <button
               key={item.path}
@@ -345,7 +340,6 @@ const ChatPage = () => {
             </button>
           ))}
 
-          {/* My Course */}
           {profile?.course_name && (
             <div className="px-3 py-2">
               <button
@@ -377,7 +371,6 @@ const ChatPage = () => {
             </div>
           )}
 
-          {/* Chats | Projects tabs */}
           <div className="px-0 pt-2 flex gap-1">
             {(["chats", "projects"] as const).map((tab) => (
               <button
@@ -590,7 +583,6 @@ const ChatPage = () => {
     </>
   );
 
-  // Compute background style once
   const chatBgStyle = (() => {
     const bg = getChatBg();
     if (bg && bg.url)
@@ -639,12 +631,11 @@ const ChatPage = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex min-w-0">
-        {/* Chat Area — background image applied to entire column */}
         <div
           className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`}
           style={chatBgStyle}
         >
-          {/* Header — transparent, blurred over the bg */}
+          {/* Header — no bottom border */}
           <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-background">
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
               <PanelLeftOpen className="w-5 h-5" />
@@ -663,11 +654,10 @@ const ChatPage = () => {
             </button>
           </header>
 
-          {/* Chat content */}
           {(() => {
             const isNewChat = !activeChat || activeChat.messages.length === 0;
 
-            // Shared input component
+            // Shared input — mic & attach hidden on mobile to keep send button fully visible
             const chatInput = (
               <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
                 {attachedFiles.length > 0 && (
@@ -694,7 +684,7 @@ const ChatPage = () => {
                   </div>
                 )}
                 <div
-                  className="flex items-center gap-2 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))]"
+                  className="flex items-center gap-1 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))]"
                   style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}
                 >
                   <input
@@ -708,11 +698,12 @@ const ChatPage = () => {
                       e.target.value = "";
                     }}
                   />
+                  {/* Attach — desktop only */}
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                    className="hidden sm:flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
                   >
-                    <Paperclip className="w-5 h-5" />
+                    <Paperclip className="w-4 h-4" />
                   </button>
                   <input
                     ref={inputRef}
@@ -721,11 +712,12 @@ const ChatPage = () => {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
                     placeholder="Ask CUEA AI anything..."
-                    className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2"
+                    className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2"
                     disabled={isStreaming}
                   />
+                  {/* Mic — desktop only */}
                   <div
-                    className="relative flex-shrink-0"
+                    className="hidden sm:block relative flex-shrink-0"
                     title={
                       !speechSupported
                         ? "Voice input isn't supported on this browser"
@@ -737,15 +729,16 @@ const ChatPage = () => {
                     <button
                       onClick={toggleVoice}
                       disabled={!speechSupported}
-                      className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}
+                      className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}
                     >
-                      <Mic className="w-5 h-5" />
+                      <Mic className="w-4 h-4" />
                     </button>
                   </div>
+                  {/* Send — always visible, sized to fit snugly */}
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isStreaming}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40"
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40"
                   >
                     {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
                   </button>
@@ -755,7 +748,6 @@ const ChatPage = () => {
 
             return (
               <>
-                {/* Messages area */}
                 <div className="flex-1 overflow-y-auto">
                   <AnimatePresence mode="wait">
                     {isNewChat ? (
@@ -767,7 +759,6 @@ const ChatPage = () => {
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="flex flex-col items-center justify-center h-full px-4"
                       >
-                        {/* Greeting */}
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -782,7 +773,6 @@ const ChatPage = () => {
                           <p className="text-muted-foreground">How can I help you with your studies today?</p>
                         </motion.div>
 
-                        {/* Centered input */}
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -792,12 +782,12 @@ const ChatPage = () => {
                           {chatInput}
                         </motion.div>
 
-                        {/* Quick action cards */}
+                        {/* Suggestion pills — icon left, label, no subtitle, 30px radius, auto-size */}
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.2 }}
-                          className="grid grid-cols-2 gap-3 mt-6 max-w-[680px] w-full px-4 md:px-0"
+                          className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0"
                         >
                           {SUGGESTIONS.map((s, i) => (
                             <motion.button
@@ -806,11 +796,13 @@ const ChatPage = () => {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.25 + i * 0.08 }}
                               onClick={() => handleSuggestion(s.prompt)}
-                              className="p-4 rounded-xl glass-card hover:-translate-y-0.5 transition-all text-left"
+                              className="inline-flex items-center gap-2 px-4 py-2.5 glass-card hover:-translate-y-0.5 transition-all"
+                              style={{ borderRadius: "30px" }}
                             >
-                              <s.icon className="w-5 h-5 mb-2 text-primary" />
-                              <p className="font-display font-semibold text-sm text-foreground">{s.label}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{s.desc}</p>
+                              <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
+                              <span className="font-display font-semibold text-sm text-foreground whitespace-nowrap">
+                                {s.label}
+                              </span>
                             </motion.button>
                           ))}
                         </motion.div>
@@ -912,7 +904,6 @@ const ChatPage = () => {
                   </AnimatePresence>
                 </div>
 
-                {/* Floating bottom input — only in active chat state */}
                 {!isNewChat && (
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -929,14 +920,12 @@ const ChatPage = () => {
           })()}
         </div>
 
-        {/* Artifact Viewer Panel (desktop) */}
         {viewerOpen && (
           <div className="hidden md:flex w-[45%] min-w-[300px] max-w-[600px]">
             <ArtifactViewer />
           </div>
         )}
 
-        {/* Artifact Viewer (mobile fullscreen) */}
         {viewerOpen && (
           <div className="flex md:hidden fixed inset-0 z-50 bg-background">
             <ArtifactViewer />
