@@ -106,6 +106,12 @@ const LoginPage = () => {
     e.preventDefault();
     if (signupStep === 0) {
       if (!canProceedStep0) { setError("Fill all fields (password min 6 chars)"); return; }
+      // Enforce @cuea.edu email format
+      const emailDomain = signupEmail.split("@")[1]?.toLowerCase();
+      if (!emailDomain || !emailDomain.endsWith("cuea.edu")) {
+        setError("Please use your CUEA email (e.g. you@students.cuea.edu or you@cuea.edu)");
+        return;
+      }
       setSignupStep(1);
       setError("");
       return;
