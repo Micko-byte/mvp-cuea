@@ -41,6 +41,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import ArtifactsPage from "@/pages/ArtifactsPage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,7 +74,7 @@ const SUGGESTIONS = [
   },
 ];
 
-const SIDEBAR_NAV = [{ icon: LayoutGrid, label: "Artifacts", path: "/artifacts" }];
+const SIDEBAR_NAV = [{ icon: LayoutGrid, label: "Artifacts", key: "artifacts" }];
 
 const TypingIndicator = () => (
   <motion.div
@@ -113,6 +115,9 @@ const ChatPage = () => {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [showArtifacts, setShowArtifacts] = useState(false);
+  const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const recognitionRef = useRef<any>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -305,6 +310,7 @@ const ChatPage = () => {
           <Button
             onClick={() => {
               createChat();
+              setShowArtifacts(false);
               if (isMobile) setMobileSidebarOpen(false);
             }}
             className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 justify-start gap-2"
@@ -328,9 +334,9 @@ const ChatPage = () => {
         <div className="px-3 space-y-0.5">
           {SIDEBAR_NAV.map((item) => (
             <button
-              key={item.path}
+              key={item.key}
               onClick={() => {
-                navigate(item.path);
+                setShowArtifacts(true);
                 if (isMobile) setMobileSidebarOpen(false);
               }}
               className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors"
@@ -387,8 +393,8 @@ const ChatPage = () => {
         <div className="px-1 flex flex-col items-center gap-1">
           {SIDEBAR_NAV.map((item) => (
             <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
+              key={item.key}
+              onClick={() => setShowArtifacts(true)}
               className="p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors"
               title={item.label}
             >
@@ -418,6 +424,7 @@ const ChatPage = () => {
                       key={chat.id}
                       onClick={() => {
                         setActiveChat(chat.id);
+                        setShowArtifacts(false);
                         if (isMobile) setMobileSidebarOpen(false);
                       }}
                       className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}
@@ -431,7 +438,7 @@ const ChatPage = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteChat(chat.id);
+                          setDeleteChatId(chat.id);
                         }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-destructive"
                       >
@@ -526,10 +533,9 @@ const ChatPage = () => {
                 </button>
                 <div className="my-1.5" />
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     setProfileMenuOpen(false);
-                    await logout();
-                    navigate("/");
+                    setShowLogoutConfirm(true);
                   }}
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
                 >
@@ -642,7 +648,7 @@ const ChatPage = () => {
             </button>
             <div className="flex-1">
               <h2 className="font-display font-semibold text-foreground text-sm">
-                {activeChat ? activeChat.title : "CUEA AI Assistant"}
+                {showArtifacts ? "Artifacts" : activeChat ? activeChat.title : "CUEA AI Assistant"}
               </h2>
             </div>
             <button
@@ -654,7 +660,11 @@ const ChatPage = () => {
             </button>
           </header>
 
-          {(() => {
+          {showArtifacts ? (
+            <div className="flex-1 overflow-y-auto">
+              <ArtifactsPage />
+            </div>
+          ) : (() => {
             const isNewChat = !activeChat || activeChat.messages.length === 0;
 
             // Shared input — mic & attach hidden on mobile to keep send button fully visible
@@ -988,6 +998,31 @@ const ChatPage = () => {
       </Dialog>
 
       <AcademicCalendar open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+
+      <ConfirmDialog
+        open={!!deleteChatId}
+        onOpenChange={(open) => { if (!open) setDeleteChatId(null); }}
+        title="Delete Chat?"
+        description="This will permanently delete this conversation. This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (deleteChatId) deleteChat(deleteChatId);
+          setDeleteChatId(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+        title="Log Out?"
+        description="Are you sure you want to log out of your account?"
+        confirmLabel="Log Out"
+        onConfirm={async () => {
+          setShowLogoutConfirm(false);
+          await logout();
+          navigate("/");
+        }}
+      />
     </div>
   );
 };

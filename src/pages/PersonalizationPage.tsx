@@ -1,9 +1,12 @@
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Type, Palette, Image as ImageIcon, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   usePersonalization,
   FONT_OPTIONS,
@@ -20,14 +23,47 @@ const PersonalizationPage = () => {
     setFont, setTheme, setChatBackground, setNickname,
   } = usePersonalization();
 
+  // Pending (draft) state
+  const [draft, setDraft] = useState({ font, theme, chatBackground, nickname });
+  const [showDiscardPrompt, setShowDiscardPrompt] = useState(false);
+  const [pendingNavPath, setPendingNavPath] = useState<string | null>(null);
+
+  const hasChanges = draft.font !== font || draft.theme !== theme || draft.chatBackground !== chatBackground || draft.nickname !== nickname;
+
+  const handleSave = () => {
+    setFont(draft.font);
+    setTheme(draft.theme);
+    setChatBackground(draft.chatBackground);
+    setNickname(draft.nickname);
+    toast.success("Changes saved");
+  };
+
+  const handleBack = useCallback(() => {
+    if (hasChanges) {
+      setPendingNavPath("/chat");
+      setShowDiscardPrompt(true);
+    } else {
+      navigate("/chat");
+    }
+  }, [hasChanges, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="h-14 flex items-center px-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/chat")} className="mr-2">
+      <header className="h-14 flex items-center px-4 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="font-display font-bold text-foreground text-lg">Personalization</h1>
+        <h1 className="font-display font-bold text-foreground text-lg flex-1">Personalization</h1>
+        <Button
+          onClick={handleSave}
+          disabled={!hasChanges}
+          className="text-sm font-semibold transition-colors"
+          style={hasChanges ? { backgroundColor: "#800000", color: "white" } : undefined}
+          variant={hasChanges ? "default" : "secondary"}
+        >
+          Save
+        </Button>
       </header>
 
       <div className="max-w-2xl mx-auto p-6 space-y-10">
@@ -39,14 +75,14 @@ const PersonalizationPage = () => {
           </div>
           <p className="text-sm text-muted-foreground mb-3">Choose a nickname the AI should call you</p>
           <Input
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
+            value={draft.nickname}
+            onChange={(e) => setDraft((d) => ({ ...d, nickname: e.target.value }))}
             placeholder="e.g. Boss, Chief, Captain..."
             className="max-w-sm"
           />
-          {nickname && (
+          {draft.nickname && (
             <p className="text-xs text-muted-foreground mt-2">
-              The AI will greet you as <span className="font-semibold text-primary">"{nickname}"</span>
+              The AI will greet you as <span className="font-semibold text-primary">"{draft.nickname}"</span>
             </p>
           )}
         </motion.section>
@@ -62,14 +98,14 @@ const PersonalizationPage = () => {
             {FONT_OPTIONS.map((f) => (
               <button
                 key={f.value}
-                onClick={() => setFont(f.value)}
+                onClick={() => setDraft((d) => ({ ...d, font: f.value }))}
                 className={`relative p-4 rounded-xl border-2 transition-all text-left ${
-                  font === f.value
+                  draft.font === f.value
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-border hover:border-primary/30 bg-card"
                 }`}
               >
-                {font === f.value && (
+                {draft.font === f.value && (
                   <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
@@ -96,9 +132,9 @@ const PersonalizationPage = () => {
             {THEME_OPTIONS.map((t) => (
               <button
                 key={t.value}
-                onClick={() => setTheme(t.value)}
+                onClick={() => setDraft((d) => ({ ...d, theme: t.value }))}
                 className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                  theme === t.value
+                  draft.theme === t.value
                     ? "border-primary shadow-sm"
                     : "border-border hover:border-primary/30"
                 }`}
@@ -107,7 +143,7 @@ const PersonalizationPage = () => {
                   className="w-10 h-10 rounded-full border border-border shadow-sm"
                   style={{ background: t.preview }}
                 />
-                {theme === t.value && (
+                {draft.theme === t.value && (
                   <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                     <Check className="w-2.5 h-2.5 text-primary-foreground" />
                   </div>
@@ -131,9 +167,9 @@ const PersonalizationPage = () => {
             {CHAT_BACKGROUNDS.map((bg) => (
               <button
                 key={bg.id}
-                onClick={() => setChatBackground(bg.id)}
+                onClick={() => setDraft((d) => ({ ...d, chatBackground: bg.id }))}
                 className={`relative aspect-[3/4] rounded-xl border-2 overflow-hidden transition-all ${
-                  chatBackground === bg.id
+                  draft.chatBackground === bg.id
                     ? "border-primary shadow-md ring-2 ring-primary/20"
                     : "border-border hover:border-primary/30"
                 }`}
@@ -145,7 +181,7 @@ const PersonalizationPage = () => {
                     <span className="text-xs text-muted-foreground">None</span>
                   </div>
                 )}
-                {chatBackground === bg.id && (
+                {draft.chatBackground === bg.id && (
                   <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow">
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
@@ -158,19 +194,19 @@ const PersonalizationPage = () => {
           </div>
 
           {/* Preview */}
-          {chatBackground !== "none" && (
+          {draft.chatBackground !== "none" && (
             <div className="mt-4">
               <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2 block">Preview</Label>
               <div
                 className="rounded-xl overflow-hidden border border-border p-4 h-48 flex flex-col justify-end gap-2"
                 style={{
-                  backgroundImage: `url(${CHAT_BACKGROUNDS.find((b) => b.id === chatBackground)?.url})`,
+                  backgroundImage: `url(${CHAT_BACKGROUNDS.find((b) => b.id === draft.chatBackground)?.url})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
               >
                 {(() => {
-                  const bg = CHAT_BACKGROUNDS.find((b) => b.id === chatBackground);
+                  const bg = CHAT_BACKGROUNDS.find((b) => b.id === draft.chatBackground);
                   if (!bg) return null;
                   return (
                     <>
@@ -192,6 +228,18 @@ const PersonalizationPage = () => {
           )}
         </motion.section>
       </div>
+
+      <ConfirmDialog
+        open={showDiscardPrompt}
+        onOpenChange={setShowDiscardPrompt}
+        title="Unsaved Changes"
+        description="You have unsaved changes. Leave without saving?"
+        confirmLabel="Discard Changes"
+        onConfirm={() => {
+          setShowDiscardPrompt(false);
+          if (pendingNavPath) navigate(pendingNavPath);
+        }}
+      />
     </div>
   );
 };
