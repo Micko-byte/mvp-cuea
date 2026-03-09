@@ -1,14 +1,14 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GraduationCap, MessageSquare, BarChart3, BookOpen, ArrowRight, Sparkles } from "lucide-react";
+import { GraduationCap, MessageSquare, BarChart3, BookOpen, ArrowRight, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const FEATURES = [
 { icon: MessageSquare, title: "AI-Powered Chat", desc: "Get instant answers about your courses, assignments, and schedules" },
 { icon: BookOpen, title: "Course Materials", desc: "Access lecture notes, past papers, and study resources" },
 { icon: BarChart3, title: "Smart Analytics", desc: "Track your academic progress and study patterns" },
-{ icon: Sparkles, title: "Personalized", desc: "Tailored to your specific program, courses, and units" }];
+{ icon: Cookie, title: "Personalized", desc: "Tailored to your specific program, courses, and units" }];
 
 
 const Index = () => {
