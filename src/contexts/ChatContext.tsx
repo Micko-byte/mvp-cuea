@@ -112,7 +112,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChats((prev) =>
       prev.map((c) => {
         if (c.id === chatId) {
-          const title = c.messages.length === 0 ? text.slice(0, 50) : c.title;
+          const title = c.messages.length === 0 ? (text.length > 30 ? text.slice(0, 30) + "…" : text) : c.title;
           if (c.messages.length === 0) {
             supabase.from("chats").update({ title }).eq("id", chatId).then(() => {});
           }
