@@ -17,8 +17,8 @@ const withTimeout = async (url: string, init: RequestInit, timeoutMs: number) =>
   }
 };
 
-const DAILY_USER_LIMIT = 5000;
-const DAILY_GLOBAL_LIMIT = 50000;
+const DAILY_USER_LIMIT = 50000;
+const DAILY_GLOBAL_LIMIT = 500000;
 
 const CUEA_KNOWLEDGE = `
 ## About CUEA
@@ -257,8 +257,8 @@ If the material does not contain the answer, explain using general academic know
       return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Track estimated token usage
-    const estimatedTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((m.content || "").length / 4), 0) + Math.ceil(systemPrompt.length / 4);
+    // Track estimated token usage (only count user/assistant messages, not system prompt)
+    const estimatedTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((m.content || "").length / 4), 0) + 200;
     await supabaseAdmin.from("token_usage").insert({
       user_id: userId,
       tokens_used: Math.min(estimatedTokens, DAILY_USER_LIMIT - dailyUserUsage),
