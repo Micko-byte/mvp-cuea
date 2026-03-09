@@ -259,6 +259,36 @@ const ChatPage = () => {
     setIsListening(true);
   };
 
+  const handlePayment = async () => {
+    setPaymentLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("Please sign in again.");
+        return;
+      }
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const data = await resp.json();
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        toast.error(data.error || "Failed to initialize payment");
+      }
+    } catch (e) {
+      toast.error("Payment initialization failed. Please try again.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
   const handleSuggestion = async (prompt: string) => {
     let chat = activeChat;
     if (!chat) {
