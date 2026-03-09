@@ -645,7 +645,7 @@ const ChatPage = () => {
           style={chatBgStyle}
         >
           {/* Header — transparent, blurred over the bg */}
-          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 border-b border-border bg-background">
+          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-background">
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
               <PanelLeftOpen className="w-5 h-5" />
             </button>
