@@ -552,7 +552,7 @@ export default function Index() {
                     fontWeight: 600,
                     fontSize: 15,
                     padding: "13px 28px",
-                    borderRadius: 12,
+                    borderRadius: 30,
                     transition: "opacity 0.2s, transform 0.2s",
                   }}
                   onMouseEnter={(e) => {
