@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_calendar: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          event_name: string
+          id: string
+          is_student_created: boolean | null
+          start_date: string
+          trimester: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_name: string
+          id?: string
+          is_student_created?: boolean | null
+          start_date: string
+          trimester?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_name?: string
+          id?: string
+          is_student_created?: boolean | null
+          start_date?: string
+          trimester?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           chat_id: string
