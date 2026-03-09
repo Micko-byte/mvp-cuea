@@ -17,8 +17,8 @@ const withTimeout = async (url: string, init: RequestInit, timeoutMs: number) =>
   }
 };
 
-const DAILY_USER_LIMIT = 5000;
-const DAILY_GLOBAL_LIMIT = 50000;
+const DAILY_USER_LIMIT = 50000;
+const DAILY_GLOBAL_LIMIT = 500000;
 
 const CUEA_KNOWLEDGE = `
 ## About CUEA
