@@ -660,7 +660,11 @@ const ChatPage = () => {
             </button>
           </header>
 
-          {(() => {
+          {showArtifacts ? (
+            <div className="flex-1 overflow-y-auto">
+              <ArtifactsPage />
+            </div>
+          ) : (() => {
             const isNewChat = !activeChat || activeChat.messages.length === 0;
 
             // Shared input — mic & attach hidden on mobile to keep send button fully visible
