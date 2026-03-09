@@ -322,27 +322,6 @@ export default function Index() {
 
           {/* CTA + Hamburger */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <a
-              href="/login"
-              className="grad-maroon"
-              style={{
-                textDecoration: "none",
-                color: "white",
-                fontSize: 14,
-                fontWeight: 600,
-                padding: "9px 22px",
-                borderRadius: 30,
-                fontFamily: "'DM Sans', sans-serif",
-                transition: "opacity 0.2s",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              Get Started <Icon d={ICONS.arrow} size={15} stroke="white" />
-            </a>
             <button
               className="mobile-menu-btn"
               onClick={() => setMenuOpen(!menuOpen)}
@@ -494,12 +473,6 @@ export default function Index() {
                     display: "inline-block",
                   }}
                 />
-                <span
-                  className="mono"
-                  style={{ fontSize: 12, fontWeight: 500, color: "var(--maroon)", letterSpacing: "0.05em" }}
-                >
-                  NOW IN BETA · CUEA, NAIROBI
-                </span>
               </motion.div>
 
               <motion.h1
