@@ -578,7 +578,7 @@ export default function Index() {
                     fontWeight: 600,
                     fontSize: 15,
                     padding: "13px 28px",
-                    borderRadius: 12,
+                    borderRadius: 30,
                     cursor: "pointer",
                     fontFamily: "'DM Sans', sans-serif",
                     transition: "border-color 0.2s, transform 0.2s",
