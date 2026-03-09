@@ -926,8 +926,8 @@ const ChatPage = () => {
                   </motion.div>
                 )}
               </>
-            );
           })()}
+          
         </div>
 
         {viewerOpen && (
