@@ -41,6 +41,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import ArtifactsPage from "@/pages/ArtifactsPage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,7 +74,7 @@ const SUGGESTIONS = [
   },
 ];
 
-const SIDEBAR_NAV = [{ icon: LayoutGrid, label: "Artifacts", path: "/artifacts" }];
+const SIDEBAR_NAV = [{ icon: LayoutGrid, label: "Artifacts", key: "artifacts" }];
 
 const TypingIndicator = () => (
   <motion.div
@@ -113,6 +115,9 @@ const ChatPage = () => {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [showArtifacts, setShowArtifacts] = useState(false);
+  const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const recognitionRef = useRef<any>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
