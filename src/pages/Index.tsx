@@ -6,7 +6,7 @@ const FontLoader = () => {
   useEffect(() => {
     const link = document.createElement("link");
     link.href =
-      "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap";
+    "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
   }, []);
@@ -14,20 +14,20 @@ const FontLoader = () => {
 };
 
 /* ── Icons (inline SVG components) ── */
-const Icon = ({ d, size = 20, stroke = "currentColor", strokeWidth = 1.8, fill = "none", viewBox = "0 0 24 24" }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox={viewBox}
-    fill={fill}
-    stroke={stroke}
-    strokeWidth={strokeWidth}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+const Icon = ({ d, size = 20, stroke = "currentColor", strokeWidth = 1.8, fill = "none", viewBox = "0 0 24 24" }) =>
+<svg
+  width={size}
+  height={size}
+  viewBox={viewBox}
+  fill={fill}
+  stroke={stroke}
+  strokeWidth={strokeWidth}
+  strokeLinecap="round"
+  strokeLinejoin="round">
+  
     {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
-  </svg>
-);
+  </svg>;
+
 
 const ICONS = {
   graduation: "M22 10v6M2 10l10-5 10 5-10 5z M6 12v5c3 3 9 3 12 0v-5",
@@ -37,26 +37,26 @@ const ICONS = {
   lightning: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
   shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   globe: [
-    "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z",
-    "M2 12h20",
-    "M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z",
-  ],
+  "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z",
+  "M2 12h20",
+  "M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"],
+
   arrow: "M5 12h14M12 5l7 7-7 7",
   menu: ["M3 12h18", "M3 6h18", "M3 18h18"],
   x: ["M18 6L6 18", "M6 6l12 12"],
   check: "M20 6L9 17l-5-5",
   star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
   users: [
-    "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2",
-    "M23 21v-2a4 4 0 0 0-3-3.87",
-    "M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
-    "M16 3.13a4 4 0 0 1 0 7.75",
-  ],
+  "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2",
+  "M23 21v-2a4 4 0 0 0-3-3.87",
+  "M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
+  "M16 3.13a4 4 0 0 1 0 7.75"],
+
   zap: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
   brain: [
-    "M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-4.66z",
-    "M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-4.66z",
-  ],
+  "M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.44-4.66z",
+  "M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.44-4.66z"]
+
 };
 
 /* ── Nav links ── */
@@ -64,116 +64,116 @@ const NAV_LINKS = ["Features", "How It Works", "For Universities", "About"];
 
 /* ── Features data ── */
 const FEATURES = [
-  {
-    icon: "chat",
-    title: "Instant AI Chat",
-    tag: "Core",
-    desc: "Ask anything about your courses, deadlines, assignments, or lecture content. Get human-quality answers in seconds, 24/7.",
-  },
-  {
-    icon: "book",
-    title: "Course Material Hub",
-    tag: "Content",
-    desc: "All your lecture notes, past papers, reading lists, and study resources in one searchable, intelligent library.",
-  },
-  {
-    icon: "chart",
-    title: "Progress Analytics",
-    tag: "Insights",
-    desc: "Visualise your academic trajectory. Identify weak areas, track improvement, and prepare smarter for assessments.",
-  },
-  {
-    icon: "brain",
-    title: "Curriculum-Trained AI",
-    tag: "Intelligence",
-    desc: "Unlike generic AI tools, CUEA AI is trained on your university's specific syllabi, units, and academic calendar.",
-  },
-  {
-    icon: "lightning",
-    title: "Exam Preparation",
-    tag: "Academic",
-    desc: "Generate practice questions, get topic summaries, and receive step-by-step explanations tailored to your exact exam format.",
-  },
-  {
-    icon: "shield",
-    title: "Private & Secure",
-    tag: "Trust",
-    desc: "Your academic data stays yours. We never share or sell your information. GDPR-aligned and built with student privacy first.",
-  },
-];
+{
+  icon: "chat",
+  title: "Instant AI Chat",
+  tag: "Core",
+  desc: "Ask anything about your courses, deadlines, assignments, or lecture content. Get human-quality answers in seconds, 24/7."
+},
+{
+  icon: "book",
+  title: "Course Material Hub",
+  tag: "Content",
+  desc: "All your lecture notes, past papers, reading lists, and study resources in one searchable, intelligent library."
+},
+{
+  icon: "chart",
+  title: "Progress Analytics",
+  tag: "Insights",
+  desc: "Visualise your academic trajectory. Identify weak areas, track improvement, and prepare smarter for assessments."
+},
+{
+  icon: "brain",
+  title: "Curriculum-Trained AI",
+  tag: "Intelligence",
+  desc: "Unlike generic AI tools, CUEA AI is trained on your university's specific syllabi, units, and academic calendar."
+},
+{
+  icon: "lightning",
+  title: "Exam Preparation",
+  tag: "Academic",
+  desc: "Generate practice questions, get topic summaries, and receive step-by-step explanations tailored to your exact exam format."
+},
+{
+  icon: "shield",
+  title: "Private & Secure",
+  tag: "Trust",
+  desc: "Your academic data stays yours. We never share or sell your information. GDPR-aligned and built with student privacy first."
+}];
+
 
 /* ── Steps ── */
 const STEPS = [
-  {
-    num: "01",
-    title: "Sign up with your university email",
-    desc: "Instant access, no waiting. Your institution is recognised automatically.",
-  },
-  {
-    num: "02",
-    title: "Select your programme & units",
-    desc: "The AI calibrates to your exact courses, year of study, and upcoming deadlines.",
-  },
-  {
-    num: "03",
-    title: "Ask, learn & excel",
-    desc: "Chat naturally, get cited answers, generate notes, and track your growth.",
-  },
-];
+{
+  num: "01",
+  title: "Sign up with your university email",
+  desc: "Instant access, no waiting. Your institution is recognised automatically."
+},
+{
+  num: "02",
+  title: "Select your programme & units",
+  desc: "The AI calibrates to your exact courses, year of study, and upcoming deadlines."
+},
+{
+  num: "03",
+  title: "Ask, learn & excel",
+  desc: "Chat naturally, get cited answers, generate notes, and track your growth."
+}];
+
 
 /* ── Stats ── */
 const STATS = [
-  { value: "10K+", label: "Active Students" },
-  { value: "98%", label: "Satisfaction Rate" },
-  { value: "50+", label: "Programmes Supported" },
-  { value: "< 2s", label: "Average Response Time" },
-];
+{ value: "10K+", label: "Active Students" },
+{ value: "98%", label: "Satisfaction Rate" },
+{ value: "50+", label: "Programmes Supported" },
+{ value: "< 2s", label: "Average Response Time" }];
+
 
 /* ── University features ── */
 const UNI_FEATURES = [
-  {
-    icon: "globe",
-    title: "Multi-Campus Deployment",
-    desc: "Roll out across departments or the entire institution with centralised admin controls and per-faculty customisation.",
-  },
-  {
-    icon: "users",
-    title: "Staff & Student Portals",
-    desc: "Separate interfaces for lecturers to upload materials and students to consume them — all within one seamless ecosystem.",
-  },
-  {
-    icon: "chart",
-    title: "Institutional Analytics",
-    desc: "Understand engagement trends, at-risk students, and course performance data to drive evidence-based academic decisions.",
-  },
-  {
-    icon: "shield",
-    title: "LMS Integration",
-    desc: "Plug into Moodle, Blackboard, or custom portals via our open API. No disruptive migration required.",
-  },
-];
+{
+  icon: "globe",
+  title: "Multi-Campus Deployment",
+  desc: "Roll out across departments or the entire institution with centralised admin controls and per-faculty customisation."
+},
+{
+  icon: "users",
+  title: "Staff & Student Portals",
+  desc: "Separate interfaces for lecturers to upload materials and students to consume them — all within one seamless ecosystem."
+},
+{
+  icon: "chart",
+  title: "Institutional Analytics",
+  desc: "Understand engagement trends, at-risk students, and course performance data to drive evidence-based academic decisions."
+},
+{
+  icon: "shield",
+  title: "LMS Integration",
+  desc: "Plug into Moodle, Blackboard, or custom portals via our open API. No disruptive migration required."
+}];
+
 
 /* ── Testimonials ── */
 const TESTIMONIALS = [
-  {
-    quote:
-      "I used to spend hours searching for past papers and notes. CUEA AI finds everything in seconds and even explains concepts I missed in class.",
-    name: "Aisha M.",
-    prog: "BSc Computer Science, Year 3",
-  },
-  {
-    quote:
-      "The exam prep feature is genuinely impressive. It generates questions that mirror the actual exam style for my specific units.",
-    name: "Kevin O.",
-    prog: "Bachelor of Commerce, Year 2",
-  },
-  {
-    quote:
-      "As someone who works part-time, having a 24/7 academic assistant has been life-changing for keeping up with coursework.",
-    name: "Grace W.",
-    prog: "BA Communications, Year 4",
-  },
-];
+{
+  quote:
+  "I used to spend hours searching for past papers and notes. CUEA AI finds everything in seconds and even explains concepts I missed in class.",
+  name: "Aisha M.",
+  prog: "BSc Computer Science, Year 3"
+},
+{
+  quote:
+  "The exam prep feature is genuinely impressive. It generates questions that mirror the actual exam style for my specific units.",
+  name: "Kevin O.",
+  prog: "Bachelor of Commerce, Year 2"
+},
+{
+  quote:
+  "As someone who works part-time, having a 24/7 academic assistant has been life-changing for keeping up with coursework.",
+  name: "Grace W.",
+  prog: "BA Communications, Year 4"
+}];
+
 
 /* ════════════════════════════════════════
    MAIN COMPONENT
@@ -254,9 +254,9 @@ export default function Index() {
           background: scrolled ? "rgba(250,248,244,0.92)" : "transparent",
           backdropFilter: scrolled ? "blur(16px)" : "none",
           transition: "background 0.4s, backdrop-filter 0.4s",
-          padding: "0 1.5rem",
-        }}
-      >
+          padding: "0 1.5rem"
+        }}>
+        
         <div
           style={{
             maxWidth: 1180,
@@ -264,14 +264,14 @@ export default function Index() {
             height: 68,
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+            justifyContent: "space-between"
+          }}>
+          
           {/* Logo */}
           <div
             style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
-            onClick={() => scrollTo("hero")}
-          >
+            onClick={() => scrollTo("hero")}>
+            
             <div
               className="grad-maroon"
               style={{
@@ -280,15 +280,15 @@ export default function Index() {
                 borderRadius: 10,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+                justifyContent: "center"
+              }}>
+              
               <Icon d={ICONS.graduation} size={18} stroke="white" strokeWidth={1.6} />
             </div>
             <span
               className="display"
-              style={{ fontWeight: 700, fontSize: 22, color: "var(--ink)", letterSpacing: "-0.01em" }}
-            >
+              style={{ fontWeight: 700, fontSize: 22, color: "var(--ink)", letterSpacing: "-0.01em" }}>
+              
               CUEA <span style={{ color: "var(--maroon)" }}>AI</span>
             </span>
           </div>
@@ -296,28 +296,28 @@ export default function Index() {
           {/* Desktop nav */}
           <div style={{ display: "flex", alignItems: "center", gap: 36 }} className="desktop-nav">
             <style>{`@media(max-width:768px){.desktop-nav{display:none!important}}`}</style>
-            {NAV_LINKS.map((link) => (
-              <button
-                key={link}
-                onClick={() => scrollTo(link.toLowerCase().replace(/\s+/g, "-"))}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "var(--ink-lt)",
-                  fontFamily: "'DM Sans', sans-serif",
-                  transition: "color 0.2s",
-                  padding: "4px 0",
-                  position: "relative",
-                }}
-                onMouseEnter={(e) => (e.target.style.color = "var(--maroon)")}
-                onMouseLeave={(e) => (e.target.style.color = "var(--ink-lt)")}
-              >
+            {NAV_LINKS.map((link) =>
+            <button
+              key={link}
+              onClick={() => scrollTo(link.toLowerCase().replace(/\s+/g, "-"))}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: 500,
+                color: "var(--ink-lt)",
+                fontFamily: "'DM Sans', sans-serif",
+                transition: "color 0.2s",
+                padding: "4px 0",
+                position: "relative"
+              }}
+              onMouseEnter={(e) => e.target.style.color = "var(--maroon)"}
+              onMouseLeave={(e) => e.target.style.color = "var(--ink-lt)"}>
+              
                 {link}
               </button>
-            ))}
+            )}
           </div>
 
           {/* CTA + Hamburger */}
@@ -325,8 +325,8 @@ export default function Index() {
             <button
               className="mobile-menu-btn"
               onClick={() => setMenuOpen(!menuOpen)}
-              style={{ background: "none", border: "none", cursor: "pointer", display: "none", color: "var(--ink)" }}
-            >
+              style={{ background: "none", border: "none", cursor: "pointer", display: "none", color: "var(--ink)" }}>
+              
               <Icon d={menuOpen ? ICONS.x : ICONS.menu} size={22} />
             </button>
           </div>
@@ -335,49 +335,49 @@ export default function Index() {
 
         {/* Mobile menu */}
         <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
+          {menuOpen &&
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{
+              background: "rgba(250,248,244,0.98)",
+              backdropFilter: "blur(16px)",
+              borderTop: "1px solid var(--border)",
+              padding: "12px 1.5rem 20px",
+              overflow: "hidden"
+            }}>
+            
+              {NAV_LINKS.map((link) =>
+            <button
+              key={link}
+              onClick={() => scrollTo(link.toLowerCase().replace(/\s+/g, "-"))}
               style={{
-                background: "rgba(250,248,244,0.98)",
-                backdropFilter: "blur(16px)",
-                borderTop: "1px solid var(--border)",
-                padding: "12px 1.5rem 20px",
-                overflow: "hidden",
-              }}
-            >
-              {NAV_LINKS.map((link) => (
-                <button
-                  key={link}
-                  onClick={() => scrollTo(link.toLowerCase().replace(/\s+/g, "-"))}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "14px 0",
-                    fontSize: 17,
-                    fontWeight: 500,
-                    color: "var(--ink-lt)",
-                    borderBottom: "1px solid var(--border)",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "14px 0",
+                fontSize: 17,
+                fontWeight: 500,
+                color: "var(--ink-lt)",
+                borderBottom: "1px solid var(--border)",
+                fontFamily: "'DM Sans', sans-serif"
+              }}>
+              
                   {link}
                 </button>
-              ))}
+            )}
             </motion.div>
-          )}
+          }
         </AnimatePresence>
       </motion.nav>
 
       {/* ══════════════════════════════
-          HERO
-      ══════════════════════════════ */}
+           HERO
+        ══════════════════════════════ */}
       <section
         id="hero"
         ref={heroRef}
@@ -387,18 +387,18 @@ export default function Index() {
           display: "flex",
           alignItems: "center",
           overflow: "hidden",
-          padding: "6rem 1.5rem 4rem",
-        }}
-      >
+          padding: "6rem 1.5rem 4rem"
+        }}>
+        
         {/* Background decorations */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background: "radial-gradient(ellipse 60% 70% at 70% 40%, rgba(123,25,41,0.07) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
+            pointerEvents: "none"
+          }} />
+        
         <div
           style={{
             position: "absolute",
@@ -408,9 +408,9 @@ export default function Index() {
             height: 520,
             borderRadius: "50%",
             background: "radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
+            pointerEvents: "none"
+          }} />
+        
         <div
           style={{
             position: "absolute",
@@ -420,9 +420,9 @@ export default function Index() {
             height: 400,
             borderRadius: "50%",
             background: "radial-gradient(circle, rgba(123,25,41,0.05) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
+            pointerEvents: "none"
+          }} />
+        
 
         <div
           style={{
@@ -432,9 +432,9 @@ export default function Index() {
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
             gap: "4rem",
-            alignItems: "center",
-          }}
-        >
+            alignItems: "center"
+          }}>
+          
           <style>{`@media(max-width:900px){#hero-grid{grid-template-columns:1fr!important;text-align:center}#hero-btns{justify-content:center!important}#hero-visual{display:none!important}}`}</style>
           <div
             id="hero-grid"
@@ -444,36 +444,36 @@ export default function Index() {
               gridTemplateColumns: "1fr 1fr",
               gap: "4rem",
               alignItems: "center",
-              width: "100%",
-            }}
-          >
+              width: "100%"
+            }}>
+            
             {/* Left — text */}
             <motion.div style={{ y: heroY, opacity: heroOpacity }}>
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: "rgba(123,25,41,0.07)",
-                  border: "1px solid rgba(123,25,41,0.15)",
-                  borderRadius: 100,
-                  padding: "6px 14px",
-                  marginBottom: "1.5rem",
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: "var(--maroon)",
-                    display: "inline-block",
-                  }}
-                />
-              </motion.div>
+              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              
 
               <motion.h1
                 className="display"
@@ -486,9 +486,9 @@ export default function Index() {
                   lineHeight: 1.05,
                   color: "var(--ink)",
                   marginBottom: "1.5rem",
-                  letterSpacing: "-0.02em",
-                }}
-              >
+                  letterSpacing: "-0.02em"
+                }}>
+                
                 The AI built
                 <br />
                 for your
@@ -500,8 +500,8 @@ export default function Index() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.32 }}
-                style={{ fontSize: 17, lineHeight: 1.75, color: "var(--muted)", maxWidth: 460, marginBottom: "2.5rem" }}
-              >
+                style={{ fontSize: 17, lineHeight: 1.75, color: "var(--muted)", maxWidth: 460, marginBottom: "2.5rem" }}>
+                
                 CUEA AI is a curriculum-aware assistant trained on your university's exact programmes, units, and
                 academic calendar — not a generic chatbot.
               </motion.p>
@@ -511,8 +511,8 @@ export default function Index() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.44 }}
-                style={{ display: "flex", gap: 14, flexWrap: "wrap" }}
-              >
+                style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+                
                 <a
                   href="/login"
                   className="grad-maroon glow-maroon"
@@ -526,7 +526,7 @@ export default function Index() {
                     fontSize: 15,
                     padding: "13px 28px",
                     borderRadius: 30,
-                    transition: "opacity 0.2s, transform 0.2s",
+                    transition: "opacity 0.2s, transform 0.2s"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.opacity = "0.9";
@@ -535,8 +535,8 @@ export default function Index() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.opacity = "1";
                     e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
+                  }}>
+                  
                   Start for Free <Icon d={ICONS.arrow} size={16} stroke="white" />
                 </a>
                 <button
@@ -554,7 +554,7 @@ export default function Index() {
                     borderRadius: 30,
                     cursor: "pointer",
                     fontFamily: "'DM Sans', sans-serif",
-                    transition: "border-color 0.2s, transform 0.2s",
+                    transition: "border-color 0.2s, transform 0.2s"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = "var(--maroon)";
@@ -563,8 +563,8 @@ export default function Index() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = "var(--border)";
                     e.currentTarget.style.transform = "translateY(0)";
-                  }}
-                >
+                  }}>
+                  
                   See How It Works
                 </button>
               </motion.div>
@@ -573,22 +573,22 @@ export default function Index() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                style={{ display: "flex", alignItems: "center", gap: 12, marginTop: "2.5rem" }}
-              >
+                style={{ display: "flex", alignItems: "center", gap: 12, marginTop: "2.5rem" }}>
+                
                 <div style={{ display: "flex" }}>
-                  {["#E57373", "#F06292", "#BA68C8"].map((c, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: c,
-                        border: "2px solid white",
-                        marginLeft: i > 0 ? -8 : 0,
-                      }}
-                    />
-                  ))}
+                  {["#E57373", "#F06292", "#BA68C8"].map((c, i) =>
+                  <div
+                    key={i}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: c,
+                      border: "2px solid white",
+                      marginLeft: i > 0 ? -8 : 0
+                    }} />
+
+                  )}
                 </div>
                 <span style={{ fontSize: 13, color: "var(--muted)" }}>
                   <strong style={{ color: "var(--ink)" }}>10,000+</strong> students already using CUEA AI
@@ -602,17 +602,17 @@ export default function Index() {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
-              style={{ position: "relative" }}
-            >
+              style={{ position: "relative" }}>
+              
               <div
                 style={{
                   background: "white",
                   borderRadius: 24,
                   padding: 28,
                   boxShadow: "0 24px 80px rgba(26,18,16,0.12), 0 4px 20px rgba(123,25,41,0.08)",
-                  border: "1px solid rgba(123,25,41,0.06)",
-                }}
-              >
+                  border: "1px solid rgba(123,25,41,0.06)"
+                }}>
+                
                 {/* Chat header */}
                 <div
                   style={{
@@ -621,9 +621,9 @@ export default function Index() {
                     gap: 10,
                     marginBottom: 24,
                     paddingBottom: 18,
-                    borderBottom: "1px solid var(--border)",
-                  }}
-                >
+                    borderBottom: "1px solid var(--border)"
+                  }}>
+                  
                   <div
                     className="grad-maroon"
                     style={{
@@ -633,9 +633,9 @@ export default function Index() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
+                      flexShrink: 0
+                    }}>
+                    
                     <Icon d={ICONS.graduation} size={16} stroke="white" strokeWidth={1.6} />
                   </div>
                   <div>
@@ -647,9 +647,9 @@ export default function Index() {
                           height: 6,
                           borderRadius: "50%",
                           background: "#22C55E",
-                          display: "inline-block",
-                        }}
-                      />
+                          display: "inline-block"
+                        }} />
+                      
                       <span style={{ fontSize: 11, color: "var(--muted)" }}>Online · Responds instantly</span>
                     </div>
                   </div>
@@ -657,37 +657,37 @@ export default function Index() {
 
                 {/* Chat messages */}
                 {[
-                  { role: "user", text: "Can you summarise Chapter 4 of my Business Law notes for the upcoming CAT?" },
-                  {
-                    role: "ai",
-                    text: "Of course! Chapter 4 covers Contract Law essentials. Here's a concise breakdown for your CAT…",
-                    typing: false,
-                  },
-                ].map((msg, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      marginBottom: 14,
-                      display: "flex",
-                      justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-                    }}
-                  >
+                { role: "user", text: "Can you summarise Chapter 4 of my Business Law notes for the upcoming CAT?" },
+                {
+                  role: "ai",
+                  text: "Of course! Chapter 4 covers Contract Law essentials. Here's a concise breakdown for your CAT…",
+                  typing: false
+                }].
+                map((msg, i) =>
+                <div
+                  key={i}
+                  style={{
+                    marginBottom: 14,
+                    display: "flex",
+                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start"
+                  }}>
+                  
                     <div
-                      style={{
-                        maxWidth: "82%",
-                        padding: "10px 14px",
-                        borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                        background: msg.role === "user" ? "var(--maroon)" : "var(--cream)",
-                        color: msg.role === "user" ? "white" : "var(--ink)",
-                        fontSize: 13,
-                        lineHeight: 1.55,
-                        fontWeight: 400,
-                      }}
-                    >
+                    style={{
+                      maxWidth: "82%",
+                      padding: "10px 14px",
+                      borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                      background: msg.role === "user" ? "var(--maroon)" : "var(--cream)",
+                      color: msg.role === "user" ? "white" : "var(--ink)",
+                      fontSize: 13,
+                      lineHeight: 1.55,
+                      fontWeight: 400
+                    }}>
+                    
                       {msg.text}
                     </div>
                   </div>
-                ))}
+                )}
 
                 {/* Typing indicator */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 20 }}>
@@ -697,45 +697,45 @@ export default function Index() {
                       borderRadius: "16px 16px 16px 4px",
                       padding: "10px 16px",
                       display: "inline-flex",
-                      gap: 4,
-                    }}
-                  >
-                    {[0, 0.2, 0.4].map((d, i) => (
-                      <motion.span
-                        key={i}
-                        animate={{ y: [0, -4, 0] }}
-                        transition={{ repeat: Infinity, duration: 0.8, delay: d }}
-                        style={{
-                          width: 5,
-                          height: 5,
-                          borderRadius: "50%",
-                          background: "var(--maroon)",
-                          display: "inline-block",
-                          opacity: 0.6,
-                        }}
-                      />
-                    ))}
+                      gap: 4
+                    }}>
+                    
+                    {[0, 0.2, 0.4].map((d, i) =>
+                    <motion.span
+                      key={i}
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.8, delay: d }}
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: "50%",
+                        background: "var(--maroon)",
+                        display: "inline-block",
+                        opacity: 0.6
+                      }} />
+
+                    )}
                   </div>
                 </div>
 
                 {/* Suggested prompts */}
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {["Past exam papers", "Upcoming deadlines", "Study schedule"].map((p) => (
-                    <span
-                      key={p}
-                      style={{
-                        fontSize: 11,
-                        padding: "5px 10px",
-                        borderRadius: 100,
-                        border: "1px solid var(--border)",
-                        color: "var(--maroon)",
-                        background: "rgba(123,25,41,0.04)",
-                        cursor: "pointer",
-                      }}
-                    >
+                  {["Past exam papers", "Upcoming deadlines", "Study schedule"].map((p) =>
+                  <span
+                    key={p}
+                    style={{
+                      fontSize: 11,
+                      padding: "5px 10px",
+                      borderRadius: 100,
+                      border: "1px solid var(--border)",
+                      color: "var(--maroon)",
+                      background: "rgba(123,25,41,0.04)",
+                      cursor: "pointer"
+                    }}>
+                    
                       {p}
                     </span>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -754,9 +754,9 @@ export default function Index() {
                   border: "1px solid var(--border)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                }}
-              >
+                  gap: 8
+                }}>
+                
                 <Icon d={ICONS.lightning} size={15} stroke="var(--gold)" strokeWidth={2} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>AI-Powered</span>
               </motion.div>
@@ -774,9 +774,9 @@ export default function Index() {
                   border: "1px solid var(--border)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                }}
-              >
+                  gap: 8
+                }}>
+                
                 <Icon d={ICONS.shield} size={15} stroke="var(--maroon)" strokeWidth={2} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Curriculum-Aware</span>
               </motion.div>
@@ -789,8 +789,8 @@ export default function Index() {
       <StatsSection />
 
       {/* ══════════════════════════════
-          FEATURES
-      ══════════════════════════════ */}
+           FEATURES
+        ══════════════════════════════ */}
       <section id="features" style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Platform Features" />
@@ -800,9 +800,9 @@ export default function Index() {
               gridTemplateColumns: "1fr 2fr",
               gap: "4rem",
               alignItems: "start",
-              marginBottom: "4rem",
-            }}
-          >
+              marginBottom: "4rem"
+            }}>
+            
             <style>{`@media(max-width:800px){#feat-head{grid-template-columns:1fr!important}}`}</style>
             <div
               id="feat-head"
@@ -811,9 +811,9 @@ export default function Index() {
                 gridTemplateColumns: "1fr 2fr",
                 gap: "4rem",
                 width: "100%",
-                gridColumn: "1 / -1",
-              }}
-            >
+                gridColumn: "1 / -1"
+              }}>
+              
               <motion.h2
                 className="display"
                 {...fadeUp(0.1)}
@@ -822,17 +822,17 @@ export default function Index() {
                   fontWeight: 700,
                   lineHeight: 1.1,
                   color: "var(--ink)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
+                  letterSpacing: "-0.02em"
+                }}>
+                
                 Everything a student needs,
                 <br />
                 <span style={{ color: "var(--maroon)", fontStyle: "italic" }}>finally in one place.</span>
               </motion.h2>
               <motion.p
                 {...fadeUp(0.2)}
-                style={{ fontSize: 16, lineHeight: 1.8, color: "var(--muted)", paddingTop: "0.5rem" }}
-              >
+                style={{ fontSize: 16, lineHeight: 1.8, color: "var(--muted)", paddingTop: "0.5rem" }}>
+                
                 CUEA AI isn't a generic tool repurposed for academia. It's purpose-built from the ground up for
                 university students in Kenya — trained on real curricula, designed for real academic workflows.
               </motion.p>
@@ -847,20 +847,20 @@ export default function Index() {
                 gridTemplateColumns: "repeat(3, 1fr)",
                 gap: 24,
                 width: "100%",
-                gridColumn: "1 / -1",
-              }}
-            >
-              {FEATURES.map((f, i) => (
-                <FeatureCard key={f.title} feature={f} delay={i * 0.08} />
-              ))}
+                gridColumn: "1 / -1"
+              }}>
+              
+              {FEATURES.map((f, i) =>
+              <FeatureCard key={f.title} feature={f} delay={i * 0.08} />
+              )}
             </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════
-          HOW IT WORKS
-      ══════════════════════════════ */}
+           HOW IT WORKS
+        ══════════════════════════════ */}
       <section id="how-it-works" style={{ padding: "7rem 1.5rem", background: "var(--ink)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="How It Works" light />
@@ -872,17 +872,17 @@ export default function Index() {
               fontWeight: 700,
               color: "white",
               letterSpacing: "-0.02em",
-              marginBottom: "1rem",
-            }}
-          >
+              marginBottom: "1rem"
+            }}>
+            
             Up and running in under
             <br />
             <span style={{ color: "var(--gold)", fontStyle: "italic" }}>three minutes.</span>
           </motion.h2>
           <motion.p
             {...fadeUp(0.15)}
-            style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", marginBottom: "4rem", maxWidth: 480 }}
-          >
+            style={{ fontSize: 16, color: "rgba(255,255,255,0.55)", marginBottom: "4rem", maxWidth: 480 }}>
+            
             No complex setup, no IT department required. Just your university email and you're in.
           </motion.p>
 
@@ -890,40 +890,40 @@ export default function Index() {
             <style>{`@media(max-width:760px){#steps-grid{grid-template-columns:1fr!important}}`}</style>
             <div
               id="steps-grid"
-              style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", gridColumn: "1 / -1" }}
-            >
-              {STEPS.map((s, i) => (
-                <motion.div
-                  key={s.num}
-                  {...fadeUp(0.15 + i * 0.1)}
-                  style={{
-                    padding: "2.5rem 2rem",
-                    borderRadius: 20,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
+              style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem", gridColumn: "1 / -1" }}>
+              
+              {STEPS.map((s, i) =>
+              <motion.div
+                key={s.num}
+                {...fadeUp(0.15 + i * 0.1)}
+                style={{
+                  padding: "2.5rem 2rem",
+                  borderRadius: 20,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  position: "relative",
+                  overflow: "hidden"
+                }}>
+                
                   <div
-                    className="display"
-                    style={{
-                      fontSize: "5rem",
-                      fontWeight: 700,
-                      color: "rgba(201,168,76,0.12)",
-                      lineHeight: 1,
-                      position: "absolute",
-                      top: 12,
-                      right: 20,
-                      pointerEvents: "none",
-                    }}
-                  >
+                  className="display"
+                  style={{
+                    fontSize: "5rem",
+                    fontWeight: 700,
+                    color: "rgba(201,168,76,0.12)",
+                    lineHeight: 1,
+                    position: "absolute",
+                    top: 12,
+                    right: 20,
+                    pointerEvents: "none"
+                  }}>
+                  
                     {s.num}
                   </div>
                   <div
-                    className="mono"
-                    style={{ fontSize: 12, color: "var(--gold)", letterSpacing: "0.1em", marginBottom: 16 }}
-                  >
+                  className="mono"
+                  style={{ fontSize: 12, color: "var(--gold)", letterSpacing: "0.1em", marginBottom: 16 }}>
+                  
                     STEP {s.num}
                   </div>
                   <h3 style={{ fontSize: 19, fontWeight: 600, color: "white", marginBottom: 12, lineHeight: 1.35 }}>
@@ -931,15 +931,15 @@ export default function Index() {
                   </h3>
                   <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>{s.desc}</p>
                 </motion.div>
-              ))}
+              )}
             </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════
-          TESTIMONIALS
-      ══════════════════════════════ */}
+           TESTIMONIALS
+        ══════════════════════════════ */}
       <section style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Student Stories" />
@@ -951,9 +951,9 @@ export default function Index() {
               fontWeight: 700,
               color: "var(--ink)",
               letterSpacing: "-0.02em",
-              marginBottom: "3rem",
-            }}
-          >
+              marginBottom: "3rem"
+            }}>
+            
             Heard from the students
             <br />
             <span style={{ color: "var(--maroon)", fontStyle: "italic" }}>who use it every day.</span>
@@ -962,34 +962,34 @@ export default function Index() {
             <style>{`@media(max-width:860px){#testimonials{grid-template-columns:1fr!important}}`}</style>
             <div
               id="testimonials"
-              style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem", gridColumn: "1 / -1" }}
-            >
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={i}
-                  {...fadeUp(0.1 + i * 0.1)}
-                  style={{
-                    background: "white",
-                    borderRadius: 20,
-                    padding: "2rem",
-                    border: "1px solid var(--border)",
-                    boxShadow: "0 4px 24px rgba(26,18,16,0.05)",
-                  }}
-                >
+              style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem", gridColumn: "1 / -1" }}>
+              
+              {TESTIMONIALS.map((t, i) =>
+              <motion.div
+                key={i}
+                {...fadeUp(0.1 + i * 0.1)}
+                style={{
+                  background: "white",
+                  borderRadius: 20,
+                  padding: "2rem",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 4px 24px rgba(26,18,16,0.05)"
+                }}>
+                
                   <div style={{ display: "flex", gap: 3, marginBottom: 20 }}>
-                    {[...Array(5)].map((_, si) => (
-                      <Icon key={si} d={ICONS.star} size={14} stroke="var(--gold)" fill="var(--gold)" strokeWidth={0} />
-                    ))}
+                    {[...Array(5)].map((_, si) =>
+                  <Icon key={si} d={ICONS.star} size={14} stroke="var(--gold)" fill="var(--gold)" strokeWidth={0} />
+                  )}
                   </div>
                   <p
-                    style={{
-                      fontSize: 15,
-                      lineHeight: 1.75,
-                      color: "var(--ink-lt)",
-                      marginBottom: 24,
-                      fontStyle: "italic",
-                    }}
-                  >
+                  style={{
+                    fontSize: 15,
+                    lineHeight: 1.75,
+                    color: "var(--ink-lt)",
+                    marginBottom: 24,
+                    fontStyle: "italic"
+                  }}>
+                  
                     "{t.quote}"
                   </p>
                   <div style={{ borderTop: "1px solid var(--border)", paddingTop: 18 }}>
@@ -997,15 +997,15 @@ export default function Index() {
                     <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{t.prog}</div>
                   </div>
                 </motion.div>
-              ))}
+              )}
             </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════
-          FOR UNIVERSITIES
-      ══════════════════════════════ */}
+           FOR UNIVERSITIES
+        ══════════════════════════════ */}
       <section id="for-universities" style={{ padding: "7rem 1.5rem", background: "#F5F1EC" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="For Institutions" />
@@ -1015,9 +1015,9 @@ export default function Index() {
               gridTemplateColumns: "1fr 1fr",
               gap: "5rem",
               alignItems: "center",
-              marginBottom: "4rem",
-            }}
-          >
+              marginBottom: "4rem"
+            }}>
+            
             <style>{`@media(max-width:860px){#uni-intro{grid-template-columns:1fr!important}}`}</style>
             <div
               id="uni-intro"
@@ -1026,9 +1026,9 @@ export default function Index() {
                 gridTemplateColumns: "1fr 1fr",
                 gap: "5rem",
                 alignItems: "center",
-                gridColumn: "1 / -1",
-              }}
-            >
+                gridColumn: "1 / -1"
+              }}>
+              
               <div>
                 <motion.h2
                   className="display"
@@ -1039,17 +1039,17 @@ export default function Index() {
                     lineHeight: 1.1,
                     color: "var(--ink)",
                     letterSpacing: "-0.02em",
-                    marginBottom: "1.5rem",
-                  }}
-                >
+                    marginBottom: "1.5rem"
+                  }}>
+                  
                   Built to scale across
                   <br />
                   <span style={{ color: "var(--maroon)", fontStyle: "italic" }}>every campus in Kenya.</span>
                 </motion.h2>
                 <motion.p
                   {...fadeUp(0.12)}
-                  style={{ fontSize: 16, lineHeight: 1.8, color: "var(--muted)", marginBottom: "2rem" }}
-                >
+                  style={{ fontSize: 16, lineHeight: 1.8, color: "var(--muted)", marginBottom: "2rem" }}>
+                  
                   We started at CUEA with a clear mission: give every Kenyan university student access to AI-powered
                   academic support. We're now onboarding partner institutions and offering early access to university
                   administrators.
@@ -1068,44 +1068,44 @@ export default function Index() {
                     fontSize: 14,
                     padding: "12px 24px",
                     borderRadius: 12,
-                    transition: "opacity 0.2s",
+                    transition: "opacity 0.2s"
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-                >
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = "0.88"}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}>
+                  
                   Partner With Us <Icon d={ICONS.arrow} size={15} stroke="white" />
                 </motion.a>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                {UNI_FEATURES.map((f, i) => (
-                  <motion.div
-                    key={f.title}
-                    {...fadeUp(0.08 + i * 0.08)}
-                    style={{
-                      background: "white",
-                      borderRadius: 16,
-                      padding: "1.5rem",
-                      border: "1px solid var(--border)",
-                    }}
-                  >
+                {UNI_FEATURES.map((f, i) =>
+                <motion.div
+                  key={f.title}
+                  {...fadeUp(0.08 + i * 0.08)}
+                  style={{
+                    background: "white",
+                    borderRadius: 16,
+                    padding: "1.5rem",
+                    border: "1px solid var(--border)"
+                  }}>
+                  
                     <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        background: "rgba(123,25,41,0.07)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginBottom: 12,
-                      }}
-                    >
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "rgba(123,25,41,0.07)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 12
+                    }}>
+                    
                       <Icon d={ICONS[f.icon]} size={17} stroke="var(--maroon)" />
                     </div>
                     <h4 style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>{f.title}</h4>
                     <p style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.65 }}>{f.desc}</p>
                   </motion.div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -1113,12 +1113,12 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-          ABOUT / CTA
-      ══════════════════════════════ */}
+           ABOUT / CTA
+        ══════════════════════════════ */}
       <section
         id="about"
-        style={{ padding: "7rem 1.5rem", background: "var(--ink)", position: "relative", overflow: "hidden" }}
-      >
+        style={{ padding: "7rem 1.5rem", background: "var(--ink)", position: "relative", overflow: "hidden" }}>
+        
         <div
           style={{
             position: "absolute",
@@ -1129,9 +1129,9 @@ export default function Index() {
             height: 700,
             borderRadius: "50%",
             background: "radial-gradient(circle, rgba(123,25,41,0.18) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
+            pointerEvents: "none"
+          }} />
+        
         <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center", position: "relative" }}>
           <motion.div
             {...fadeUp(0.05)}
@@ -1143,9 +1143,9 @@ export default function Index() {
               border: "1px solid rgba(201,168,76,0.2)",
               borderRadius: 100,
               padding: "6px 14px",
-              marginBottom: "2rem",
-            }}
-          >
+              marginBottom: "2rem"
+            }}>
+            
             <span className="mono" style={{ fontSize: 11, color: "var(--gold)", letterSpacing: "0.08em" }}>
               BUILT BY STUDENTS · FOR STUDENTS
             </span>
@@ -1159,9 +1159,9 @@ export default function Index() {
               color: "white",
               letterSpacing: "-0.02em",
               lineHeight: 1.1,
-              marginBottom: "1.5rem",
-            }}
-          >
+              marginBottom: "1.5rem"
+            }}>
+            
             Start your smarter
             <br />
             <span style={{ color: "var(--gold)", fontStyle: "italic" }}>academic journey today.</span>
@@ -1174,16 +1174,16 @@ export default function Index() {
               lineHeight: 1.8,
               marginBottom: "2.5rem",
               maxWidth: 520,
-              margin: "0 auto 2.5rem",
-            }}
-          >
+              margin: "0 auto 2.5rem"
+            }}>
+            
             CUEA AI is a student-built platform powered by{" "}
             <a
               href="https://notifyai.org/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--gold)", textDecoration: "none" }}
-            >
+              style={{ color: "var(--gold)", textDecoration: "none" }}>
+              
               Notify AI
             </a>
             . It's independent, not officially affiliated with CUEA, and built with the sole mission of helping students
@@ -1191,8 +1191,8 @@ export default function Index() {
           </motion.p>
           <motion.div
             {...fadeUp(0.24)}
-            style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}
-          >
+            style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+            
             <a
               href="/login"
               className="grad-gold"
@@ -1206,7 +1206,7 @@ export default function Index() {
                 fontSize: 15,
                 padding: "14px 32px",
                 borderRadius: 12,
-                transition: "opacity 0.2s, transform 0.2s",
+                transition: "opacity 0.2s, transform 0.2s"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.opacity = "0.9";
@@ -1215,8 +1215,8 @@ export default function Index() {
               onMouseLeave={(e) => {
                 e.currentTarget.style.opacity = "1";
                 e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
+              }}>
+              
               Get Free Access <Icon d={ICONS.arrow} size={16} stroke="var(--ink)" />
             </a>
           </motion.div>
@@ -1233,9 +1233,9 @@ export default function Index() {
             flexDirection: "column",
             alignItems: "center",
             gap: "1.5rem",
-            textAlign: "center",
-          }}
-        >
+            textAlign: "center"
+          }}>
+          
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div
               className="grad-maroon"
@@ -1245,42 +1245,42 @@ export default function Index() {
                 borderRadius: 8,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+                justifyContent: "center"
+              }}>
+              
               <Icon d={ICONS.graduation} size={14} stroke="white" strokeWidth={1.6} />
             </div>
             <span
               className="display"
-              style={{ fontWeight: 700, fontSize: 18, color: "white", letterSpacing: "-0.01em" }}
-            >
+              style={{ fontWeight: 700, fontSize: 18, color: "white", letterSpacing: "-0.01em" }}>
+              
               CUEA <span style={{ color: "var(--maroon)" }}>AI</span>
             </span>
           </div>
           <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
-            {["Features", "How It Works", "For Universities", "About", "Contact"].map((l) => (
-              <button
-                key={l}
-                onClick={() =>
-                  l === "Contact"
-                    ? (window.location.href = "mailto:hello@cueaai.space")
-                    : scrollTo(l.toLowerCase().replace(/\s+/g, "-"))
-                }
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.4)",
-                  fontFamily: "'DM Sans', sans-serif",
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => (e.target.style.color = "white")}
-                onMouseLeave={(e) => (e.target.style.color = "rgba(255,255,255,0.4)")}
-              >
+            {["Features", "How It Works", "For Universities", "About", "Contact"].map((l) =>
+            <button
+              key={l}
+              onClick={() =>
+              l === "Contact" ?
+              window.location.href = "mailto:hello@cueaai.space" :
+              scrollTo(l.toLowerCase().replace(/\s+/g, "-"))
+              }
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 13,
+                color: "rgba(255,255,255,0.4)",
+                fontFamily: "'DM Sans', sans-serif",
+                transition: "color 0.2s"
+              }}
+              onMouseEnter={(e) => e.target.style.color = "white"}
+              onMouseLeave={(e) => e.target.style.color = "rgba(255,255,255,0.4)"}>
+              
                 {l}
               </button>
-            ))}
+            )}
           </div>
           <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.05)" }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1290,8 +1290,8 @@ export default function Index() {
                 href="https://notifyai.org/"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 600 }}
-              >
+                style={{ color: "var(--gold)", textDecoration: "none", fontWeight: 600 }}>
+                
                 Notify AI
               </a>
             </p>
@@ -1305,8 +1305,8 @@ export default function Index() {
           </div>
         </div>
       </footer>
-    </>
-  );
+    </>);
+
 }
 
 /* ════════════════ SUB-COMPONENTS ════════════════ */
@@ -1319,9 +1319,9 @@ function SectionLabel({ text, light }) {
           width: 24,
           height: 1.5,
           background: light ? "rgba(201,168,76,0.6)" : "var(--maroon)",
-          borderRadius: 2,
-        }}
-      />
+          borderRadius: 2
+        }} />
+      
       <span
         className="mono"
         style={{
@@ -1329,13 +1329,13 @@ function SectionLabel({ text, light }) {
           fontWeight: 500,
           letterSpacing: "0.1em",
           color: light ? "rgba(255,255,255,0.4)" : "var(--maroon)",
-          textTransform: "uppercase",
-        }}
-      >
+          textTransform: "uppercase"
+        }}>
+        
         {text}
       </span>
-    </motion.div>
-  );
+    </motion.div>);
+
 }
 
 function StatsSection() {
@@ -1348,51 +1348,51 @@ function StatsSection() {
         background: "white",
         borderTop: "1px solid var(--border)",
         borderBottom: "1px solid var(--border)",
-        padding: "2.5rem 1.5rem",
-      }}
-    >
+        padding: "2.5rem 1.5rem"
+      }}>
+      
       <div
         style={{
           maxWidth: 1180,
           margin: "0 auto",
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "2rem",
-        }}
-      >
+          gap: "2rem"
+        }}>
+        
         <style>{`@media(max-width:640px){#stats-grid{grid-template-columns:repeat(2,1fr)!important}}`}</style>
         <div
           id="stats-grid"
-          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2rem", gridColumn: "1 / -1" }}
-        >
-          {STATS.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 16 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
-              style={{ textAlign: "center" }}
-            >
+          style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2rem", gridColumn: "1 / -1" }}>
+          
+          {STATS.map((s, i) =>
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: i * 0.1, duration: 0.5 }}
+            style={{ textAlign: "center" }}>
+            
               <div
-                className="display"
-                style={{
-                  fontSize: "2.8rem",
-                  fontWeight: 700,
-                  color: "var(--maroon)",
-                  lineHeight: 1,
-                  letterSpacing: "-0.03em",
-                  marginBottom: 6,
-                }}
-              >
+              className="display"
+              style={{
+                fontSize: "2.8rem",
+                fontWeight: 700,
+                color: "var(--maroon)",
+                lineHeight: 1,
+                letterSpacing: "-0.03em",
+                marginBottom: 6
+              }}>
+              
                 {s.value}
               </div>
               <div style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>{s.label}</div>
             </motion.div>
-          ))}
+          )}
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 function FeatureCard({ feature: f, delay }) {
@@ -1410,9 +1410,9 @@ function FeatureCard({ feature: f, delay }) {
         transition: "all 0.3s",
         transform: hov ? "translateY(-4px)" : "none",
         boxShadow: hov ? "0 16px 48px rgba(123,25,41,0.08)" : "none",
-        cursor: "default",
-      }}
-    >
+        cursor: "default"
+      }}>
+      
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div
           style={{
@@ -1423,9 +1423,9 @@ function FeatureCard({ feature: f, delay }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "background 0.3s",
-          }}
-        >
+            transition: "background 0.3s"
+          }}>
+          
           <Icon d={ICONS[f.icon]} size={20} stroke="var(--maroon)" />
         </div>
         <span
@@ -1437,9 +1437,9 @@ function FeatureCard({ feature: f, delay }) {
             background: "var(--cream)",
             padding: "4px 10px",
             borderRadius: 100,
-            border: "1px solid var(--border)",
-          }}
-        >
+            border: "1px solid var(--border)"
+          }}>
+          
           {f.tag}
         </span>
       </div>
@@ -1447,8 +1447,8 @@ function FeatureCard({ feature: f, delay }) {
         {f.title}
       </h3>
       <p style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.7 }}>{f.desc}</p>
-    </motion.div>
-  );
+    </motion.div>);
+
 }
 
 /* ── Helper: reusable fade-up animation ── */
@@ -1457,6 +1457,6 @@ function fadeUp(delay = 0) {
     initial: { opacity: 0, y: 22 },
     whileInView: { opacity: 1, y: 0 },
     viewport: { once: true, margin: "-60px" },
-    transition: { duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }
   };
 }
