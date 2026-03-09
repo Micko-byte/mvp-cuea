@@ -200,6 +200,7 @@ const LoginPage = () => {
           </div>
           <h1 className="text-3xl font-display font-bold text-primary-foreground">CUEA AI</h1>
           <p className="text-primary-foreground/60 mt-1 font-body">Your University Assistant</p>
+          <p className="text-primary-foreground/40 text-xs mt-2">🚀 Launch: Computer Science Department</p>
         </div>
 
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
