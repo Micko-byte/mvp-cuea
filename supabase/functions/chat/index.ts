@@ -73,16 +73,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
@@ -90,19 +82,13 @@ serve(async (req) => {
     }
     const userId = user.id;
 
-    const { messages, chatId } = await req.json();
+    const { messages, chatId, unitId } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check if user has a successful payment (paid plan)
-    const { data: paymentData } = await supabaseAdmin
-      .from("payments")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "success")
-      .limit(1);
-    
+    // Check paid status
+    const { data: paymentData } = await supabaseAdmin.from("payments").select("id").eq("user_id", userId).eq("status", "success").limit(1);
     const isPaidUser = paymentData && paymentData.length > 0;
     const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
 
@@ -111,64 +97,49 @@ serve(async (req) => {
     const dailyUserUsage = userUsage || 0;
     if (dailyUserUsage >= userDailyLimit) {
       const errorMsg = isPaidUser
-        ? "You've used all your tokens for today. Come back tomorrow to continue using CUEA AI! 🎓"
-        : "You've reached your free daily limit! 🎓 Pay KES 200 to unlock 200,000 tokens/day and support CUEA AI infrastructure.";
-      return new Response(JSON.stringify({ 
-        error: errorMsg,
-        limit_reached: true,
-        is_paid: isPaidUser,
-      }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        ? "You've used all your tokens for today. Come back tomorrow! 🎓"
+        : "You've reached your free daily limit! 🎓 Pay KES 200 to unlock 200,000 tokens/day.";
+      return new Response(JSON.stringify({ error: errorMsg, limit_reached: true, is_paid: isPaidUser }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Check global daily limit
-    const { data: globalData } = await supabaseAdmin
-      .from("token_usage")
-      .select("tokens_used")
-      .gte("created_at", new Date().toISOString().split("T")[0]);
+    const { data: globalData } = await supabaseAdmin.from("token_usage").select("tokens_used").gte("created_at", new Date().toISOString().split("T")[0]);
     const globalUsage = globalData?.reduce((sum: number, t: any) => sum + t.tokens_used, 0) || 0;
     if (globalUsage >= DAILY_GLOBAL_LIMIT) {
-      return new Response(JSON.stringify({ error: "System is at capacity today. Come back tomorrow to enjoy CUEA AI! 🎓" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "System is at capacity today. Come back tomorrow! 🎓" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch user profile for context
-    const { data: profileData } = await supabaseAdmin
-      .from("profiles")
-      .select("name, program, course_name, year, semester, course")
-      .eq("user_id", userId)
-      .single();
+    // Fetch user profile
+    const { data: profileData } = await supabaseAdmin.from("profiles").select("name, program, course_name, year, semester, course").eq("user_id", userId).single();
 
-    // Check if user is admin
-    const { data: roleData } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
+    // Check if admin
+    const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).single();
     const isAdmin = roleData?.role === "admin";
 
-    // Fetch student's enrolled units for context
+    // Fetch enrolled units
     let enrolledUnitsContext = "";
-    if (!isAdmin) {
-      const { data: studentUnits } = await supabaseAdmin
-        .from("student_units")
-        .select("unit_id, units(code, name, lecturer)")
-        .eq("user_id", userId);
-      if (studentUnits && studentUnits.length > 0) {
-        enrolledUnitsContext = "\n\nStudent's Enrolled Units:\n" + studentUnits.map((su: any) => {
-          const u = su.units;
-          return u ? `- ${u.code}: ${u.name}${u.lecturer ? ` (Lecturer: ${u.lecturer})` : ""}` : "";
-        }).filter(Boolean).join("\n");
+    const { data: studentUnits } = await supabaseAdmin.from("student_units").select("unit_id, units(code, name, lecturer)").eq("user_id", userId);
+    if (studentUnits && studentUnits.length > 0) {
+      enrolledUnitsContext = "\n\nStudent's Enrolled Units:\n" + studentUnits.map((su: any) => {
+        const u = su.units;
+        return u ? `- ${u.code}: ${u.name}${u.lecturer ? ` (Lecturer: ${u.lecturer})` : ""}` : "";
+      }).filter(Boolean).join("\n");
+    }
+
+    // Get unit info if unit-specific chat
+    let unitContext = "";
+    let unitCode = "";
+    if (unitId) {
+      const { data: unitData } = await supabaseAdmin.from("units").select("code, name, lecturer, description").eq("id", unitId).single();
+      if (unitData) {
+        unitCode = unitData.code;
+        unitContext = `\n\n## Current Unit Context\nYou are helping the student specifically with:\n- Unit: ${unitData.code} — ${unitData.name}\n- Lecturer: ${unitData.lecturer || 'N/A'}\n- Description: ${unitData.description || 'N/A'}\n\nFocus your answers on this unit's content. Use the course materials provided below when available.`;
       }
     }
 
     // Fetch upcoming academic calendar events
     const today = new Date().toISOString().split("T")[0];
-    const { data: calendarEvents } = await supabaseAdmin
-      .from("academic_calendar")
-      .select("event_name, start_date, end_date, category, trimester, description")
-      .gte("start_date", today)
-      .order("start_date")
-      .limit(15);
-    
+    const { data: calendarEvents } = await supabaseAdmin.from("academic_calendar").select("event_name, start_date, end_date, category, trimester, description").gte("start_date", today).order("start_date").limit(15);
     let calendarContext = "";
     if (calendarEvents && calendarEvents.length > 0) {
       calendarContext = "\n\n## Upcoming Academic Calendar Events:\n" + calendarEvents.map((e: any) => {
@@ -184,48 +155,39 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY && shouldRunRag) {
       try {
-        const embResponse = await withTimeout(
-          "https://api.openai.com/v1/embeddings",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${OPENAI_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: "text-embedding-3-small",
-              input: lastUserMessage,
-              dimensions: 768,
-            }),
-          },
-          8000
-        );
+        const embResponse = await withTimeout("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
+          body: JSON.stringify({ model: "text-embedding-3-small", input: lastUserMessage, dimensions: 768 }),
+        }, 8000);
         
         if (embResponse.ok) {
           const embData = await embResponse.json();
           const queryEmbedding = embData.data?.[0]?.embedding;
           
           if (queryEmbedding) {
-            // For students, filter RAG by their enrolled units
             const { data: docs } = await supabaseAdmin.rpc("match_documents", {
               query_embedding: JSON.stringify(queryEmbedding),
               match_threshold: 0.5,
-              match_count: isAdmin ? 10 : 5,
+              match_count: isAdmin ? 10 : 8,
             });
             
             if (docs && docs.length > 0) {
-              // For non-admin, filter to only enrolled unit codes
               let filteredDocs = docs;
-              if (!isAdmin) {
-                const { data: studentUnits } = await supabaseAdmin
-                  .from("student_units")
-                  .select("units(code)")
-                  .eq("user_id", userId);
+              
+              if (unitId && unitCode) {
+                // Unit-specific chat: only show docs from this unit
+                filteredDocs = docs.filter((d: any) => {
+                  const docUnitCode = d.metadata?.unit_code;
+                  return !docUnitCode || docUnitCode === unitCode;
+                });
+              } else if (!isAdmin) {
+                // General chat for students: filter by enrolled units
                 const enrolledCodes = new Set(studentUnits?.map((su: any) => su.units?.code).filter(Boolean) || []);
                 if (enrolledCodes.size > 0) {
                   filteredDocs = docs.filter((d: any) => {
-                    const unitCode = d.metadata?.unit_code;
-                    return !unitCode || enrolledCodes.has(unitCode);
+                    const docUnitCode = d.metadata?.unit_code;
+                    return !docUnitCode || enrolledCodes.has(docUnitCode);
                   });
                 }
               }
@@ -233,7 +195,7 @@ serve(async (req) => {
               if (filteredDocs.length > 0) {
                 ragContext = "\n\n## Relevant Course Materials (from uploaded documents):\n" + filteredDocs.map((d: any) => {
                   const meta = d.metadata || {};
-                  return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'}]\n${d.content}`;
+                  return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'} | Similarity: ${(d.similarity * 100).toFixed(1)}%]\n${d.content}`;
                 }).join("\n---\n");
               }
             }
@@ -255,25 +217,35 @@ serve(async (req) => {
 
     const adminExtra = isAdmin ? `\n\nYou are talking to an ADMIN user. They have full access to query about any unit, course, or system data. Provide comprehensive answers about the entire system.` : "";
 
-    // Build the NotifyAI system prompt
-    const systemPrompt = `You are NotifyAI, an AI academic assistant for university students at the Catholic University of Eastern Africa (CUEA).
+    const isGeneralChat = !unitId;
+    const generalChatNote = isGeneralChat ? `\n\nThis is a GENERAL chat. The student can ask about ANYTHING — academic topics, general knowledge, world events, coding, life advice, etc. You are NOT restricted to CUEA content only. Be helpful, knowledgeable, and conversational like ChatGPT. If course materials are relevant, use them, but also freely answer general questions.` : "";
 
-Your job is to help students understand:
+    // Build the system prompt
+    const systemPrompt = `You are Soma na Sekani, an AI academic assistant for university students at the Catholic University of Eastern Africa (CUEA).
+
+Your job is to help students with:
 - their courses, assignments, and lecture material
 - university systems (ODeL portal, student portal, e-learning)
 - academic concepts and questions
 - study tips, exam preparation, and academic writing
 - academic calendar dates, deadlines, and events
+- general knowledge and any other questions they may have
 
 You should behave like a helpful, knowledgeable university tutor.
 
+## CRITICAL RESPONSE RULES:
+- ALWAYS provide comprehensive, detailed answers. NEVER truncate or shorten your responses.
+- Use all the context provided to give complete explanations with examples.
+- Provide step-by-step explanations when appropriate.
+- Include practical examples, code snippets, or diagrams when they help understanding.
+- If a topic is complex, break it down into clear sections with headers.
+
 ## How You Answer:
 - Answer conversationally and naturally. Be friendly, encouraging, and supportive.
-- If the student asks something not directly about CUEA, still try to help if it's educational or general knowledge. Be helpful, not restrictive.
-- If course material is provided below, prioritize that information.
-- If the answer is not in the provided material, explain the concept clearly and say: "This isn't in your course documents, but here's what I know about it."
+- If the student asks something not directly about CUEA, still try to help. Be helpful, not restrictive.
+- If course material is provided below, prioritize that information and cite the source.
+- If the answer is not in the provided material, explain clearly and say: "This isn't in your course documents, but here's what I know about it."
 - Never invent references or lecture content.
-- Explain things step-by-step when possible.
 - Format responses using markdown for readability.
 - Personalize responses using the student's profile when available.
 - Detect the user's language and reply in the same language. Support English, Swahili, French, and any other language.
@@ -286,8 +258,7 @@ You should behave like a helpful, knowledgeable university tutor.
 
 ## Important Rules:
 - NEVER say "I cannot assist with that topic" or "I'm here to help with CUEA academic matters only"
-- Instead, always try to be helpful. If something is truly outside your knowledge, say something like: "That's an interesting question! While it's not directly related to your coursework, here's what I can share..."
-- Always try to continue the conversation naturally
+- Always try to be helpful with ANY question
 - At the end of responses, suggest 2-3 follow-up topics:
   "📚 **Want to explore more?**
   - [Topic 1]
@@ -297,36 +268,33 @@ You should behave like a helpful, knowledgeable university tutor.
 ${CUEA_KNOWLEDGE}
 ${studentContext}
 ${enrolledUnitsContext}
+${unitContext}
 ${calendarContext}
 ${adminExtra}
+${generalChatNote}
 
 ${ragContext ? `Course Material Context:\n${ragContext}` : "No specific course material available for this query."}
 
-Answer the student's question helpfully and naturally.`;
+Answer the student's question helpfully, comprehensively, and naturally.`;
 
     // Call OpenAI API
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
     const response = await withTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
         temperature: 0.7,
+        max_tokens: 4096,
         stream: true,
       }),
-    }, 45000);
+    }, 55000);
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please try again later." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -336,8 +304,8 @@ Answer the student's question helpfully and naturally.`;
       return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Track estimated token usage (exclude system prompt from estimate)
-    const estimatedTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((m.content || "").length / 4), 0) + 200;
+    // Track estimated token usage
+    const estimatedTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((m.content || "").length / 4), 0) + 500;
     await supabaseAdmin.from("token_usage").insert({
       user_id: userId,
       tokens_used: Math.min(estimatedTokens, userDailyLimit - dailyUserUsage),
@@ -351,9 +319,7 @@ Answer the student's question helpfully and naturally.`;
     console.error("chat error:", e);
     const errorMessage = e instanceof Error && e.name === "AbortError"
       ? "AI request timed out. Please try a shorter question."
-      : e instanceof Error
-        ? e.message
-        : "Unknown error";
+      : e instanceof Error ? e.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
