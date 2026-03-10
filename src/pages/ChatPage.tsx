@@ -335,7 +335,7 @@ const ChatPage = () => {
             <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-5 h-5 text-sidebar-primary" />
             </div>
-            <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
+            <span className="font-display font-bold text-sidebar-foreground text-lg">Soma na Sekani</span>
             <button
               onClick={toggleSidebar}
               className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
@@ -702,7 +702,7 @@ const ChatPage = () => {
             </button>
             <div className="flex-1">
               <h2 className="font-display font-semibold text-foreground text-sm">
-                {showArtifacts ? "Artifacts" : activeChat ? activeChat.title : "CUEA AI Assistant"}
+                {showArtifacts ? "Artifacts" : activeChat ? activeChat.title : "Soma na Sekani"}
               </h2>
             </div>
             <button
@@ -779,9 +779,9 @@ const ChatPage = () => {
                     className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2"
                     disabled={isStreaming}
                   />
-                  {/* Mic — desktop only */}
+                  {/* Mic */}
                   <div
-                    className="hidden sm:block relative flex-shrink-0"
+                    className="relative flex-shrink-0"
                     title={
                       !speechSupported
                         ? "Voice input isn't supported on this browser"
@@ -907,7 +907,7 @@ const ChatPage = () => {
                                       </div>
                                     )}
                                     {msg.sender === "bot" ? (
-                                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                                      <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-wrap-anywhere [word-break:break-word]">
                                         <ReactMarkdown
                                           components={{
                                             code({ className, children, ...props }) {
@@ -944,7 +944,7 @@ const ChatPage = () => {
                                         </ReactMarkdown>
                                       </div>
                                     ) : (
-                                      msg.text
+                                      <span className="break-words [word-break:break-word] [overflow-wrap:anywhere]">{msg.text}</span>
                                     )}
                                   </div>
                                 );
