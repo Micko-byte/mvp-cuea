@@ -475,15 +475,41 @@ export default function Index() {
 
               
 
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                style={{ marginBottom: "1rem" }}>
+                <span
+                  className="display"
+                  style={{
+                    fontSize: "clamp(2.5rem, 4.5vw, 4rem)",
+                    fontWeight: 700,
+                    lineHeight: 1.1,
+                    color: "var(--ink)",
+                    letterSpacing: "-0.02em"
+                  }}>
+                  Soma na Sekani
+                </span>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                style={{ fontSize: 14, color: "var(--muted)", marginBottom: "1.5rem", letterSpacing: "0.05em", textTransform: "uppercase" as const, fontWeight: 600 }}>
+                Introducing CUEA AI
+              </motion.p>
+
               <motion.h1
                 className="display"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
                 style={{
-                  fontSize: "clamp(3rem, 5.5vw, 5rem)",
+                  fontSize: "clamp(2rem, 4vw, 3.5rem)",
                   fontWeight: 700,
-                  lineHeight: 1.05,
+                  lineHeight: 1.1,
                   color: "var(--ink)",
                   marginBottom: "1.5rem",
                   letterSpacing: "-0.02em"
