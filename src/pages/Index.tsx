@@ -289,7 +289,7 @@ export default function Index() {
               className="display"
               style={{ fontWeight: 700, fontSize: 22, color: "var(--ink)", letterSpacing: "-0.01em" }}>
               
-              CUEA <span style={{ color: "var(--maroon)" }}>AI</span>
+              Soma na <span style={{ color: "var(--maroon)" }}>Sekani</span>
             </span>
           </div>
 
