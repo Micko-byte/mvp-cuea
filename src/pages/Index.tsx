@@ -563,7 +563,7 @@ export default function Index() {
                     e.currentTarget.style.transform = "translateY(0)";
                   }}>
                   
-                  Start for Free <Icon d={ICONS.arrow} size={16} stroke="white" />
+                  Start for Free with CUEA <Icon d={ICONS.arrow} size={16} stroke="white" />
                 </a>
                 <button
                   onClick={() => scrollTo("how-it-works")}
