@@ -90,27 +90,41 @@ export type Database = {
       }
       chats: {
         Row: {
+          chat_type: string
           created_at: string
           id: string
           title: string
+          unit_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          chat_type?: string
           created_at?: string
           id?: string
           title?: string
+          unit_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          chat_type?: string
           created_at?: string
           id?: string
           title?: string
+          unit_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chats_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       courses: {
         Row: {
