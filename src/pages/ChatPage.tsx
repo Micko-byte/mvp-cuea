@@ -702,7 +702,7 @@ const ChatPage = () => {
             </button>
             <div className="flex-1">
               <h2 className="font-display font-semibold text-foreground text-sm">
-                {showArtifacts ? "Artifacts" : activeChat ? activeChat.title : "CUEA AI Assistant"}
+                {showArtifacts ? "Artifacts" : activeChat ? activeChat.title : "Soma na Sekani"}
               </h2>
             </div>
             <button
