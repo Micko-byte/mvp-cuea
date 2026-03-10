@@ -61,10 +61,10 @@ const LoginPage = () => {
   const [loadingData, setLoadingData] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
+    if (isAuthenticated && !authLoading && !showOtp && isLogin) {
       navigate(role === "admin" ? "/admin" : "/chat", { replace: true });
     }
-  }, [isAuthenticated, authLoading, role, navigate]);
+  }, [isAuthenticated, authLoading, role, navigate, showOtp, isLogin]);
 
   // Fetch courses and units from DB when switching to signup
   useEffect(() => {
