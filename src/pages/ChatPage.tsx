@@ -779,9 +779,9 @@ const ChatPage = () => {
                     className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2"
                     disabled={isStreaming}
                   />
-                  {/* Mic — desktop only */}
+                  {/* Mic */}
                   <div
-                    className="hidden sm:block relative flex-shrink-0"
+                    className="relative flex-shrink-0"
                     title={
                       !speechSupported
                         ? "Voice input isn't supported on this browser"
