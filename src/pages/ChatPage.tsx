@@ -944,7 +944,7 @@ const ChatPage = () => {
                                         </ReactMarkdown>
                                       </div>
                                     ) : (
-                                      msg.text
+                                      <span className="break-words [word-break:break-word] [overflow-wrap:anywhere]">{msg.text}</span>
                                     )}
                                   </div>
                                 );
