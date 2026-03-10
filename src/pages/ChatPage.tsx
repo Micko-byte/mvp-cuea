@@ -907,7 +907,7 @@ const ChatPage = () => {
                                       </div>
                                     )}
                                     {msg.sender === "bot" ? (
-                                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                                      <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-wrap-anywhere [word-break:break-word]">
                                         <ReactMarkdown
                                           components={{
                                             code({ className, children, ...props }) {
