@@ -15,16 +15,19 @@ export interface Chat {
   title: string;
   messages: ChatMessage[];
   timestamp: number;
+  chat_type: "general" | "unit";
+  unit_id?: string;
 }
 
 interface ChatContextType {
   chats: Chat[];
   activeChat: Chat | null;
   isStreaming: boolean;
-  createChat: () => Promise<Chat | null>;
+  createChat: (chatType?: "general" | "unit", unitId?: string) => Promise<Chat | null>;
   setActiveChat: (id: string) => void;
   sendMessage: (text: string, overrideChatId?: string) => Promise<void>;
   deleteChat: (id: string) => Promise<void>;
+  renameChat: (id: string, newTitle: string) => Promise<void>;
   loadChats: () => Promise<void>;
 }
 
@@ -60,6 +63,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: row.id,
         title: row.title,
         timestamp: new Date(row.created_at).getTime(),
+        chat_type: ((row as any).chat_type as "general" | "unit") || "general",
+        unit_id: (row as any).unit_id || undefined,
         messages: (msgRows || []).map((m) => ({
           id: m.id,
           text: m.content,
@@ -71,16 +76,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChats(loaded);
   }, [user]);
 
-  const createChat = useCallback(async () => {
+  const createChat = useCallback(async (chatType: "general" | "unit" = "general", unitId?: string) => {
     if (!user) return null;
+    const insertData: any = { user_id: user.id, title: "New Chat", chat_type: chatType };
+    if (unitId) insertData.unit_id = unitId;
+    
     const { data, error } = await supabase
       .from("chats")
-      .insert({ user_id: user.id, title: "New Chat" })
+      .insert(insertData)
       .select()
       .single();
     if (error || !data) return null;
 
-    const newChat: Chat = { id: data.id, title: data.title, messages: [], timestamp: Date.now() };
+    const newChat: Chat = {
+      id: data.id,
+      title: data.title,
+      messages: [],
+      timestamp: Date.now(),
+      chat_type: chatType,
+      unit_id: unitId,
+    };
     setChats((prev) => [newChat, ...prev]);
     setActiveChatId(data.id);
     return newChat;
@@ -90,11 +105,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveChatId(id);
   }, []);
 
+  const renameChat = useCallback(async (id: string, newTitle: string) => {
+    const trimmed = newTitle.trim();
+    if (!trimmed) return;
+    await supabase.from("chats").update({ title: trimmed }).eq("id", id);
+    setChats((prev) => prev.map((c) => c.id === id ? { ...c, title: trimmed } : c));
+  }, []);
+
   const sendMessage = useCallback(async (text: string, overrideChatId?: string) => {
     const chatId = overrideChatId || activeChatId;
     if (!user || !chatId) return;
 
-    // Add user message to DB
     const { data: userMsg } = await supabase
       .from("chat_messages")
       .insert({ chat_id: chatId, user_id: user.id, role: "user", content: text })
@@ -103,12 +124,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!userMsg) return;
 
-    // Update local state with user message
     const userChatMsg: ChatMessage = {
       id: userMsg.id, text, sender: "user", timestamp: Date.now(),
     };
 
-    // Update title if first message
     setChats((prev) =>
       prev.map((c) => {
         if (c.id === chatId) {
@@ -122,7 +141,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
 
-    // Build messages for AI
     const currentChat = chats.find((c) => c.id === chatId);
     const aiMessages = [
       ...(currentChat?.messages || []).map((m) => ({
@@ -132,15 +150,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       { role: "user" as const, content: text },
     ];
 
-    // Stream from edge function
     setIsStreaming(true);
     let assistantContent = "";
-    
-    // Safety timeout to reset streaming after 60s
-    const streamingTimeout = setTimeout(() => {
-      setIsStreaming(false);
-    }, 60000);
-
+    const streamingTimeout = setTimeout(() => setIsStreaming(false), 60000);
     let requestTimeout: ReturnType<typeof setTimeout> | null = null;
 
     try {
@@ -155,6 +167,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const controller = new AbortController();
       requestTimeout = setTimeout(() => controller.abort(), 45000);
 
+      // Include unit_id for unit-specific chats
+      const bodyPayload: any = { messages: aiMessages, chatId };
+      if (currentChat?.unit_id) bodyPayload.unitId = currentChat.unit_id;
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
@@ -163,7 +179,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           Authorization: `Bearer ${accessToken}`,
         },
         signal: controller.signal,
-        body: JSON.stringify({ messages: aiMessages, chatId }),
+        body: JSON.stringify(bodyPayload),
       });
 
       if (!resp.ok) {
@@ -171,10 +187,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (errData.limit_reached) {
           toast.error(errData.error, { duration: 10000 });
           if (!errData.is_paid) {
-            // Trigger payment flow
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent("show-payment-prompt"));
-            }, 500);
+            setTimeout(() => window.dispatchEvent(new CustomEvent("show-payment-prompt")), 500);
           }
         } else {
           toast.error(errData.error || "AI service error");
@@ -188,7 +201,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const decoder = new TextDecoder();
       let textBuffer = "";
 
-      // Create placeholder bot message
       const botMsgId = `bot-${Date.now()}`;
       setChats((prev) =>
         prev.map((c) =>
@@ -237,7 +249,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Save assistant message to DB
       if (assistantContent) {
         await supabase.from("chat_messages").insert({
           chat_id: chatId,
@@ -269,7 +280,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [activeChatId]);
 
   return (
-    <ChatContext.Provider value={{ chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, loadChats }}>
+    <ChatContext.Provider value={{ chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, renameChat, loadChats }}>
       {children}
     </ChatContext.Provider>
   );
