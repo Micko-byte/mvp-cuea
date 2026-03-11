@@ -305,7 +305,7 @@ const ChatPage = () => {
       <div
         key={chat.id}
         onClick={() => {if (!isRenaming) {setActiveChat(chat.id);setShowArtifacts(false);if (isMobile) setMobileSidebarOpen(false);}}}
-        className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}>
+        className={`group flex items-center justify-between px-3 py-2.5 rounded-[30px] cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent/60 text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}>
         
         <div className="flex-1 min-w-0">
           {isRenaming ?
