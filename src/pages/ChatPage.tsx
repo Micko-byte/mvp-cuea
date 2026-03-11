@@ -356,10 +356,10 @@ const ChatPage = () => {
       <div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
         {sidebarExpanded || isMobile ?
       <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-sidebar-primary" />
-            </div>
-            <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI </span>
+            
+
+        
+            <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI   </span>
             <button onClick={toggleSidebar} className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors" title="Collapse sidebar">
               <PanelRight className="w-4 h-4" />
             </button>
