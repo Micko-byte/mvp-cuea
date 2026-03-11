@@ -11,7 +11,7 @@ import ReactMarkdown from "react-markdown";
 import {
   Plus, ArrowUp, BookOpen, Calendar, FileText, ListChecks, LogOut, Trash2, Sparkles,
   ChevronDown, Paperclip, Settings, FolderOpen, Loader2, Shield, Image as ImageIcon,
-  File, CalendarDays, PanelLeftOpen, LayoutGrid, X, Code2, ChevronUp,
+  File, PanelLeftOpen, LayoutGrid, X, Code2, ChevronUp,
   User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight, PanelLeft } from
 "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,7 @@ const TypingIndicator = () =>
         {[0, 1, 2].map((i) =>
       <motion.div key={i} className="w-2 h-2 rounded-full bg-muted-foreground/50" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} />
       )}
-        <span className="text-xs text-muted-foreground ml-2">Sekani is thinking...</span>
+        <span className="text-xs text-muted-foreground ml-2">Soma na Sekani is thinking...</span>
       </div>
     </div>
   </motion.div>;
@@ -305,7 +305,7 @@ const ChatPage = () => {
       <div
         key={chat.id}
         onClick={() => {if (!isRenaming) {setActiveChat(chat.id);setShowArtifacts(false);if (isMobile) setMobileSidebarOpen(false);}}}
-        className={`group flex items-center justify-between px-3 py-2.5 rounded-[30px] cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent/60 text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}>
+        className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}>
         
         <div className="flex-1 min-w-0">
           {isRenaming ?
@@ -355,12 +355,16 @@ const ChatPage = () => {
       {/* Logo + Toggle */}
       <div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
         {sidebarExpanded || isMobile ?
-      <div className="flex items-center gap-3 mb-2">
-            <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
+      <div className="flex items-center gap-3 mb-4">
+            
+
+        
+            <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI   </span>
             <button onClick={toggleSidebar} className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors" title="Collapse sidebar">
               <PanelRight className="w-4 h-4" />
             </button>
           </div> :
+
       <div className="flex flex-col items-center gap-2 mb-3">
             <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-sidebar-primary" />
@@ -370,82 +374,85 @@ const ChatPage = () => {
             </button>
           </div>
       }
-      </div>
 
-      {/* General / My Units Toggle */}
-      {(sidebarExpanded || isMobile) &&
-    <div className="px-3 space-y-2">
-          <div className="flex gap-1 bg-sidebar-accent/30 rounded-lg p-0.5">
-            <button
-          onClick={() => {setMainTab("general");setSelectedUnitId(null);setShowArtifacts(false);}}
-          className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-md transition-colors ${mainTab === "general" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:text-sidebar-foreground/70"}`}>
-              <Globe className="w-3.5 h-3.5" /> General
-            </button>
-            <button
-          onClick={() => {setMainTab("units");setShowArtifacts(false);}}
-          className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-md transition-colors ${mainTab === "units" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:text-sidebar-foreground/70"}`}>
-              <BookOpen className="w-3.5 h-3.5" /> My Units
-            </button>
-          </div>
-        </div>
-    }
-
-      {/* New Chat */}
-      <div className={`px-3 mt-2 ${!sidebarExpanded && !isMobile ? "px-1.5" : ""}`}>
+        {/* New Chat */}
         {sidebarExpanded || isMobile ?
-      <button
+      <Button
         onClick={() => {
           if (mainTab === "units" && selectedUnitId) createChat("unit", selectedUnitId);else
           createChat("general");
           setShowArtifacts(false);
           if (isMobile) setMobileSidebarOpen(false);
         }}
-        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-[30px] text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors">
+        className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 justify-start gap-2"
+        size="sm">
+        
             <Plus className="w-4 h-4" /> New Chat
-          </button> :
-      <Button onClick={() => createChat("general")} className="w-full bg-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent/40 p-0 flex items-center justify-center rounded-[30px]" size="icon">
+          </Button> :
+
+      <Button onClick={() => createChat("general")} className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 p-0 flex items-center justify-center" size="icon">
             <Plus className="w-4 h-4" />
           </Button>
       }
       </div>
 
-      {/* Artifacts */}
-      <div className={`px-3 mt-1 ${!sidebarExpanded && !isMobile ? "px-1.5" : ""}`}>
-        {sidebarExpanded || isMobile ?
-      <button
-        onClick={() => {setShowArtifacts(true);if (isMobile) setMobileSidebarOpen(false);}}
-        className="flex items-center gap-2 w-full px-3 py-2.5 rounded-[30px] text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors">
-            <LayoutGrid className="w-4 h-4" /> <span>Artifacts</span>
-          </button> :
-      <Button onClick={() => {setShowArtifacts(true);}} className="w-full bg-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent/40 p-0 flex items-center justify-center rounded-[30px]" size="icon" title="Artifacts">
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
-      }
-      </div>
+      {/* Main Tabs: General / Units */}
+      {(sidebarExpanded || isMobile) &&
+    <div className="px-3 space-y-2">
+          <div className="flex gap-1 bg-sidebar-accent/30 rounded-lg p-0.5">
+            <button
+          onClick={() => {setMainTab("general");setSelectedUnitId(null);setShowArtifacts(false);}}
+          className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-md transition-colors ${mainTab === "general" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:text-sidebar-foreground/70"}`}>
+          
+              <Globe className="w-3.5 h-3.5" /> General
+            </button>
+            <button
+          onClick={() => {setMainTab("units");setShowArtifacts(false);}}
+          className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-md transition-colors ${mainTab === "units" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:text-sidebar-foreground/70"}`}>
+          
+              <BookOpen className="w-3.5 h-3.5" /> My Units
+            </button>
+          </div>
 
-      {/* Chat List */}
+          {/* Artifacts link */}
+          <button
+        onClick={() => {setShowArtifacts(true);if (isMobile) setMobileSidebarOpen(false);}}
+        className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors">
+        
+            <LayoutGrid className="w-4 h-4" /> <span>Artifacts</span>
+          </button>
+        </div>
+    }
+
+      {/* Unit Cards or Chat List */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {sidebarExpanded || isMobile ?
       mainTab === "units" && !selectedUnitId ?
+      // Show unit cards
       enrolledUnits.length === 0 ?
       <div className="text-center py-8">
                 <BookOpen className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
                 <p className="text-sm text-sidebar-foreground/30">No units enrolled</p>
                 <p className="text-xs text-sidebar-foreground/20 mt-1">Units from your course will appear here</p>
               </div> :
+
       <div className="space-y-2">
                 <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-2">Select a Unit</p>
                 {enrolledUnits.map((unit) =>
         <button
           key={unit.unit_id}
           onClick={() => setSelectedUnitId(unit.unit_id)}
-          className="w-full text-left p-3 rounded-[30px] border border-sidebar-accent/50 hover:bg-sidebar-accent/40 transition-colors">
+          className="w-full text-left p-3 rounded-xl border border-sidebar-accent/50 hover:bg-sidebar-accent/40 transition-colors">
+          
                     <p className="text-xs font-bold text-primary">{unit.unit_code}</p>
                     <p className="text-sm font-medium text-sidebar-foreground truncate">{unit.unit_name}</p>
                     {unit.lecturer && <p className="text-xs text-sidebar-foreground/40 mt-0.5">{unit.lecturer}</p>}
                   </button>
         )}
               </div> :
+
+
+      // Show chat list grouped by date
       <>
               {mainTab === "units" && selectedUnitId &&
         <button onClick={() => setSelectedUnitId(null)} className="flex items-center gap-1 text-xs text-primary mb-3 hover:underline">
@@ -453,7 +460,7 @@ const ChatPage = () => {
                 </button>
         }
               {selectedUnit &&
-        <div className="mb-3 p-2 rounded-[30px] bg-sidebar-accent/30">
+        <div className="mb-3 p-2 rounded-lg bg-sidebar-accent/30">
                   <p className="text-xs font-bold text-primary">{selectedUnit.unit_code}</p>
                   <p className="text-sm font-medium text-sidebar-foreground truncate">{selectedUnit.unit_name}</p>
                 </div>
@@ -463,6 +470,7 @@ const ChatPage = () => {
                   <MessageSquare className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
                   <p className="text-sm text-sidebar-foreground/30">No chats yet</p>
                 </div> :
+
         <div className="space-y-3">
                   {DATE_GROUP_ORDER.map((group) => {
             const groupChats = groupedChats[group];
@@ -472,12 +480,20 @@ const ChatPage = () => {
                         <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-1.5">{group}</p>
                         <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
                       </div>);
+
           })}
                 </div>
         }
             </> :
-      /* Collapsed: hide recent chats */
-      null
+
+
+      <div className="flex flex-col items-center gap-1">
+            {chats.slice(0, 8).map((chat) =>
+        <button key={chat.id} onClick={() => setActiveChat(chat.id)} className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"}`} title={chat.title}>
+                {chat.title.charAt(0).toUpperCase()}
+              </button>
+        )}
+          </div>
       }
       </div>
 
@@ -564,13 +580,13 @@ const ChatPage = () => {
         <button onClick={() => fileInputRef.current?.click()} className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
           <Paperclip className="w-4 h-4" />
         </button>
-        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
+        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Soma na Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
         <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
           <button onClick={toggleVoice} disabled={!speechSupported} className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
             <Mic className="w-4 h-4" />
           </button>
         </div>
-        <button onClick={() => handleSend()} disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming} className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
+        <button onClick={() => handleSend()} disabled={!input.trim() || isStreaming} className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
           {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
         </button>
       </div>
@@ -606,11 +622,11 @@ const ChatPage = () => {
             </button>
             <div className="flex-1 min-w-0">
               <h2 className="font-display font-semibold text-foreground text-sm truncate">
-                {showArtifacts ? "Artifacts" : selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : activeChat ? activeChat.title : "Sekani"}
+                {showArtifacts ? "Artifacts" : selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : activeChat ? activeChat.title : "Soma na Sekani"}
               </h2>
             </div>
             <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-foreground/10 rounded-lg" title="Academic Calendar">
-              <CalendarDays className="w-5 h-5 text-muted-foreground" />
+              
             </button>
           </header>
 
@@ -667,7 +683,7 @@ const ChatPage = () => {
                                     {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                         <Sparkles className="w-3.5 h-3.5 text-primary" />
-                                        <span className="text-xs font-semibold text-primary">Sekani</span>
+                                        <span className="text-xs font-semibold text-primary">Soma na Sekani</span>
                                       </div>
                                 }
                                     {msg.sender === "bot" ?
