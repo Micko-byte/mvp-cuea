@@ -377,8 +377,8 @@ export default function Index() {
       </motion.nav>
 
       {/* ══════════════════════════════
-              HERO
-           ══════════════════════════════ */}
+               HERO
+            ══════════════════════════════ */}
       <section
         id="hero"
         ref={heroRef}
@@ -529,8 +529,8 @@ export default function Index() {
                 transition={{ delay: 0.32 }}
                 style={{ fontSize: 17, lineHeight: 1.75, color: "var(--muted)", maxWidth: 460, marginBottom: "2.5rem" }}>
                 
-                CUEA AI is a curriculum-aware assistant trained on your university's exact programmes, units, and
-                academic calendar — not a generic chatbot.
+                CUEA AI is a curriculum-aware assistant trained on your university’s exact programmes, units, and academic calendar — not a generic chatbot.  
+It’s part of the national Soma na Sekani program, building smart, personalized AI companions for students across Kenya.
               </motion.p>
 
               <motion.div
@@ -816,8 +816,8 @@ export default function Index() {
       <StatsSection />
 
       {/* ══════════════════════════════
-              FEATURES
-           ══════════════════════════════ */}
+               FEATURES
+            ══════════════════════════════ */}
       <section id="features" style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Platform Features" />
@@ -886,8 +886,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-              HOW IT WORKS
-           ══════════════════════════════ */}
+               HOW IT WORKS
+            ══════════════════════════════ */}
       <section id="how-it-works" style={{ padding: "7rem 1.5rem", background: "var(--ink)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="How It Works" light />
@@ -965,8 +965,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-              TESTIMONIALS
-           ══════════════════════════════ */}
+               TESTIMONIALS
+            ══════════════════════════════ */}
       <section style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Student Stories" />
@@ -1031,8 +1031,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-              FOR UNIVERSITIES
-           ══════════════════════════════ */}
+               FOR UNIVERSITIES
+            ══════════════════════════════ */}
       <section id="for-universities" style={{ padding: "7rem 1.5rem", background: "#F5F1EC" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="For Institutions" />
@@ -1140,8 +1140,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-              ABOUT / CTA
-           ══════════════════════════════ */}
+               ABOUT / CTA
+            ══════════════════════════════ */}
       <section
         id="about"
         style={{ padding: "7rem 1.5rem", background: "var(--ink)", position: "relative", overflow: "hidden" }}>
