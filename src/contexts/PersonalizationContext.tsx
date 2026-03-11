@@ -140,6 +140,12 @@ const THEME_VARS: Record<ThemeOption, Record<string, string>> = {
     "--border": "270 15% 20%",
     "--input": "270 15% 20%",
     "--ring": "270 60% 60%",
+    "--sidebar-background": "270 20% 6%",
+    "--sidebar-foreground": "0 0% 85%",
+    "--sidebar-accent": "270 20% 14%",
+    "--sidebar-accent-foreground": "0 0% 95%",
+    "--sidebar-border": "270 15% 12%",
+    "--chat-input-bg": "270 15% 12%",
   },
   amber: {
     "--background": "36 20% 8%",
