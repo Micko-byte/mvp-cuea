@@ -377,8 +377,8 @@ export default function Index() {
       </motion.nav>
 
       {/* ══════════════════════════════
-                HERO
-             ══════════════════════════════ */}
+                  HERO
+               ══════════════════════════════ */}
       <section
         id="hero"
         ref={heroRef}
@@ -816,8 +816,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       <StatsSection />
 
       {/* ══════════════════════════════
-                FEATURES
-             ══════════════════════════════ */}
+                  FEATURES
+               ══════════════════════════════ */}
       <section id="features" style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Platform Features" />
@@ -860,8 +860,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
                 {...fadeUp(0.2)}
                 style={{ fontSize: 16, lineHeight: 1.8, color: "var(--muted)", paddingTop: "0.5rem" }}>
                 
-                CUEA AI isn't a generic tool repurposed for academia. It's purpose-built from the ground up for
-                university students in Kenya — trained on real curricula, designed for real academic workflows.
+                CUEA AI isn't a generic tool repurposed for academia. It's purpose-built from the ground up for university students in CUEA— trained on real curricula, designed for real academic workflows.
+              
               </motion.p>
             </div>
           </div>
@@ -886,8 +886,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       </section>
 
       {/* ══════════════════════════════
-                HOW IT WORKS
-             ══════════════════════════════ */}
+                  HOW IT WORKS
+               ══════════════════════════════ */}
       <section id="how-it-works" style={{ padding: "7rem 1.5rem", background: "var(--ink)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="How It Works" light />
@@ -965,8 +965,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       </section>
 
       {/* ══════════════════════════════
-                TESTIMONIALS
-             ══════════════════════════════ */}
+                  TESTIMONIALS
+               ══════════════════════════════ */}
       <section style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Student Stories" />
@@ -1031,8 +1031,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       </section>
 
       {/* ══════════════════════════════
-                FOR UNIVERSITIES
-             ══════════════════════════════ */}
+                  FOR UNIVERSITIES
+               ══════════════════════════════ */}
       <section id="for-universities" style={{ padding: "7rem 1.5rem", background: "#F5F1EC" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="For Institutions" />
@@ -1140,8 +1140,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       </section>
 
       {/* ══════════════════════════════
-                ABOUT / CTA
-             ══════════════════════════════ */}
+                  ABOUT / CTA
+               ══════════════════════════════ */}
       <section
         id="about"
         style={{ padding: "7rem 1.5rem", background: "var(--ink)", position: "relative", overflow: "hidden" }}>
