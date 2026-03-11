@@ -12,7 +12,7 @@ import {
   Plus, ArrowUp, BookOpen, Calendar, FileText, ListChecks, LogOut, Trash2, Sparkles,
   ChevronDown, Paperclip, Settings, FolderOpen, Loader2, Shield, Image as ImageIcon,
   File, CalendarDays, PanelLeftOpen, LayoutGrid, X, Code2, ChevronUp,
-  User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight } from
+  User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight, PanelLeft } from
 "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -370,7 +370,7 @@ const ChatPage = () => {
               <Sparkles className="w-5 h-5 text-sidebar-primary" />
             </div>
             <button onClick={toggleSidebar} className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors" title="Expand sidebar">
-              <PanelLeftOpen className="w-5 h-5" />
+              <PanelLeft className="w-5 h-5" />
             </button>
           </div>
       }
