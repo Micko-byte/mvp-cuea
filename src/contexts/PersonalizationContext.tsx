@@ -65,6 +65,12 @@ const THEME_VARS: Record<ThemeOption, Record<string, string>> = {
     "--border": "345 15% 20%",
     "--input": "345 15% 20%",
     "--ring": "345 80% 50%",
+    "--sidebar-background": "345 20% 6%",
+    "--sidebar-foreground": "0 0% 85%",
+    "--sidebar-accent": "345 30% 14%",
+    "--sidebar-accent-foreground": "0 0% 95%",
+    "--sidebar-border": "345 15% 12%",
+    "--chat-input-bg": "345 15% 12%",
   },
   ocean: {
     "--background": "210 30% 8%",
