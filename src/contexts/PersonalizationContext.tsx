@@ -115,6 +115,12 @@ const THEME_VARS: Record<ThemeOption, Record<string, string>> = {
     "--border": "150 15% 18%",
     "--input": "150 15% 18%",
     "--ring": "150 60% 40%",
+    "--sidebar-background": "150 25% 5%",
+    "--sidebar-foreground": "0 0% 85%",
+    "--sidebar-accent": "150 20% 12%",
+    "--sidebar-accent-foreground": "0 0% 95%",
+    "--sidebar-border": "150 15% 10%",
+    "--chat-input-bg": "150 15% 10%",
   },
   lavender: {
     "--background": "270 20% 8%",
