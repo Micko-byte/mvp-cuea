@@ -90,6 +90,12 @@ const THEME_VARS: Record<ThemeOption, Record<string, string>> = {
     "--border": "210 20% 20%",
     "--input": "210 20% 20%",
     "--ring": "210 80% 55%",
+    "--sidebar-background": "210 30% 6%",
+    "--sidebar-foreground": "0 0% 85%",
+    "--sidebar-accent": "210 25% 14%",
+    "--sidebar-accent-foreground": "0 0% 95%",
+    "--sidebar-border": "210 20% 12%",
+    "--chat-input-bg": "210 20% 12%",
   },
   forest: {
     "--background": "150 25% 7%",
