@@ -622,7 +622,7 @@ const ChatPage = () => {
             </button>
             <div className="flex-1 min-w-0">
               <h2 className="font-display font-semibold text-foreground text-sm truncate">
-                {showArtifacts ? "Artifacts" : selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : activeChat ? activeChat.title : "Soma na Sekani"}
+                {showArtifacts ? "Artifacts" : selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : activeChat ? activeChat.title : "Sekani"}
               </h2>
             </div>
             <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-foreground/10 rounded-lg" title="Academic Calendar">
