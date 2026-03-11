@@ -586,7 +586,7 @@ const ChatPage = () => {
             <Mic className="w-4 h-4" />
           </button>
         </div>
-        <button onClick={() => handleSend()} disabled={!input.trim() || isStreaming} className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
+        <button onClick={() => handleSend()} disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming} className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
           {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
         </button>
       </div>
