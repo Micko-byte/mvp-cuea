@@ -642,9 +642,9 @@ const ChatPage = () => {
                     {isNewChat ?
                     <motion.div key="new-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: 40 }} transition={{ duration: 0.3 }} className="flex flex-col items-center justify-center h-full px-4">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
-                          <div className="w-20 h-20 rounded-3xl bg-gradient-maroon flex items-center justify-center mx-auto mb-6 shadow-glow">
-                            <Sparkles className="w-10 h-10 text-primary-foreground" />
-                          </div>
+                          
+
+                        
                           <h2 className="text-2xl font-display font-bold text-foreground mb-2">
                             {greeting}, {displayName.split(" ")[0]}
                           </h2>
