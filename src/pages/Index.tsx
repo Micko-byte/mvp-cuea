@@ -377,8 +377,8 @@ export default function Index() {
       </motion.nav>
 
       {/* ══════════════════════════════
-            HERO
-         ══════════════════════════════ */}
+             HERO
+          ══════════════════════════════ */}
       <section
         id="hero"
         ref={heroRef}
@@ -596,31 +596,31 @@ export default function Index() {
                 </button>
               </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                style={{ display: "flex", alignItems: "center", gap: 12, marginTop: "2.5rem" }}>
-                
-                <div style={{ display: "flex" }}>
-                  {["#E57373", "#F06292", "#BA68C8"].map((c, i) =>
-                  <div
-                    key={i}
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      background: c,
-                      border: "2px solid white",
-                      marginLeft: i > 0 ? -8 : 0
-                    }} />
+              
 
-                  )}
-                </div>
-                
 
-                
-              </motion.div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              
             </motion.div>
 
             {/* Right — Visual card */}
@@ -816,8 +816,8 @@ export default function Index() {
       <StatsSection />
 
       {/* ══════════════════════════════
-            FEATURES
-         ══════════════════════════════ */}
+             FEATURES
+          ══════════════════════════════ */}
       <section id="features" style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Platform Features" />
@@ -886,8 +886,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-            HOW IT WORKS
-         ══════════════════════════════ */}
+             HOW IT WORKS
+          ══════════════════════════════ */}
       <section id="how-it-works" style={{ padding: "7rem 1.5rem", background: "var(--ink)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="How It Works" light />
@@ -965,8 +965,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-            TESTIMONIALS
-         ══════════════════════════════ */}
+             TESTIMONIALS
+          ══════════════════════════════ */}
       <section style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Student Stories" />
@@ -1031,8 +1031,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-            FOR UNIVERSITIES
-         ══════════════════════════════ */}
+             FOR UNIVERSITIES
+          ══════════════════════════════ */}
       <section id="for-universities" style={{ padding: "7rem 1.5rem", background: "#F5F1EC" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="For Institutions" />
@@ -1140,8 +1140,8 @@ export default function Index() {
       </section>
 
       {/* ══════════════════════════════
-            ABOUT / CTA
-         ══════════════════════════════ */}
+             ABOUT / CTA
+          ══════════════════════════════ */}
       <section
         id="about"
         style={{ padding: "7rem 1.5rem", background: "var(--ink)", position: "relative", overflow: "hidden" }}>
