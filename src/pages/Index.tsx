@@ -124,7 +124,7 @@ const STEPS = [
 
 /* ── Stats ── */
 const STATS = [
-{ value: "10K+", label: "Active Students" },
+{ value: "500+", label: "Active Students" },
 { value: "98%", label: "Satisfaction Rate" },
 { value: "50+", label: "Programmes Supported" },
 { value: "< 2s", label: "Average Response Time" }];
