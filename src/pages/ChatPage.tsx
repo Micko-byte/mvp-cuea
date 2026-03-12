@@ -616,7 +616,7 @@ const ChatPage = () => {
       <div className="flex-1 flex min-w-0">
         <div className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`} style={chatBgStyle}>
           {/* Header */}
-          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-background">
+          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent">
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
               <PanelLeft className="w-5 h-5" />
             </button>
