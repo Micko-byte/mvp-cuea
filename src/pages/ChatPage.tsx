@@ -11,9 +11,11 @@ import ReactMarkdown from "react-markdown";
 import {
   Plus, ArrowUp, BookOpen, Calendar, FileText, ListChecks, LogOut, Trash2, Sparkles,
   ChevronDown, Paperclip, Settings, FolderOpen, Loader2, Shield, Image as ImageIcon,
-  File, LayoutGrid, X, Code2, ChevronUp,
-  User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight, PanelLeft } from
+  File, LayoutGrid, X, Code2, ChevronUp, Camera, FileQuestion,
+  User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight, PanelLeft,
+  Copy, ThumbsUp, ThumbsDown, RotateCcw, Pen } from
 "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
