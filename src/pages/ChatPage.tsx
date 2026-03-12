@@ -268,6 +268,29 @@ const ChatPage = () => {
   const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const displayName = nickname || profile?.name || user?.email?.split("@")[0] || "Student";
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
+  const handleRetry = async (msgIndex: number) => {
+    if (!activeChat || isStreaming) return;
+    // Find the last user message before this bot message
+    const msgs = activeChat.messages;
+    let lastUserMsg = "";
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (msgs[i].sender === "user") { lastUserMsg = msgs[i].text; break; }
+    }
+    if (lastUserMsg) await sendMessage(lastUserMsg, activeChat.id);
+  };
+
+  const handleEditMessage = async (msgId: string, newText: string) => {
+    if (!newText.trim() || !activeChat) return;
+    setEditingMsgId(null);
+    // Re-send the edited message as a new message
+    await sendMessage(newText.trim(), activeChat.id);
+  };
+
   // Filter chats based on current tab/unit
   const filteredChats = useMemo(() => {
     if (mainTab === "general") return chats.filter((c) => c.chat_type !== "unit");
