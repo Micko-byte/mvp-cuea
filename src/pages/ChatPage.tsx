@@ -96,6 +96,8 @@ const ChatPage = () => {
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editingMsgText, setEditingMsgText] = useState("");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const recognitionRef = useRef<any>(null);
