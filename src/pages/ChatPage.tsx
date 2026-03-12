@@ -575,7 +575,7 @@ const ChatPage = () => {
       )}
         </div>
     }
-      <div className="flex items-center gap-1 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))]" style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
+      <div className="flex items-center gap-1 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit" style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
         <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv" className="hidden" onChange={(e) => {if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);e.target.value = "";}} />
         <button onClick={() => fileInputRef.current?.click()} className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
           <Paperclip className="w-4 h-4" />
