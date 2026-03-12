@@ -603,39 +603,95 @@ const AdminPage = () => {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
-      <aside className={`${sidebarOpen ? "w-[260px]" : "w-0 overflow-hidden"} flex-shrink-0 bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300`}>
-        <div className="p-4 border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
-            <div>
-              <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
-              <p className="text-xs text-sidebar-foreground/50">Admin Panel</p>
+      {/* Desktop Sidebar */}
+      <aside className={`hidden md:flex flex-col bg-sidebar flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarOpen ? "w-[260px]" : "w-[56px]"}`}>
+        <div className={`p-4 ${!sidebarOpen ? "px-1.5 py-3" : ""}`}>
+          {sidebarOpen ? (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
+              <div>
+                <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
+                <p className="text-xs text-sidebar-foreground/50">Admin Panel</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
+            </div>
+          )}
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {NAV_ITEMS.map((item) => (
-            <button key={item.id} onClick={() => setActiveSection(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeSection === item.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"}`}>
-              <item.icon className="w-4 h-4" />{item.label}
+            <button key={item.id} onClick={() => setActiveSection(item.id)} className={`w-full flex items-center ${sidebarOpen ? "gap-3 px-3" : "justify-center"} py-2.5 rounded-lg text-sm font-medium transition-colors ${activeSection === item.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"}`} title={item.label}>
+              <item.icon className="w-4 h-4" />{sidebarOpen && item.label}
             </button>
           ))}
         </nav>
         <div className="p-3">
-          <button onClick={() => navigate("/chat")} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground">
-            <ArrowLeft className="w-4 h-4" />Back to Chat
+          <button onClick={() => navigate("/chat")} className={`w-full flex items-center ${sidebarOpen ? "gap-3 px-3" : "justify-center"} py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground`} title="Back to Chat">
+            <ArrowLeft className="w-4 h-4" />{sidebarOpen && "Back to Chat"}
           </button>
         </div>
-        <div className="p-4 border-t border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-semibold text-sidebar-accent-foreground">A</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.name || user?.email}</p>
-              <p className="text-xs text-sidebar-foreground/50">Administrator</p>
+        <div className={`p-4 ${!sidebarOpen ? "px-1.5 py-3" : ""}`}>
+          {sidebarOpen ? (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-semibold text-sidebar-accent-foreground">A</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.name || user?.email}</p>
+                <p className="text-xs text-sidebar-foreground/50">Administrator</p>
+              </div>
+              <button onClick={async () => { await logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground"><LogOut className="w-4 h-4" /></button>
             </div>
-            <button onClick={async () => { await logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground"><LogOut className="w-4 h-4" /></button>
-          </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-semibold text-sidebar-accent-foreground" title={profile?.name || "Admin"}>A</div>
+            </div>
+          )}
         </div>
       </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      {!sidebarOpen && (
+        <div className="md:hidden" />
+      )}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-[260px] bg-sidebar flex flex-col z-50">
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
+                <div>
+                  <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span>
+                  <p className="text-xs text-sidebar-foreground/50">Admin Panel</p>
+                </div>
+              </div>
+            </div>
+            <nav className="flex-1 p-3 space-y-1">
+              {NAV_ITEMS.map((item) => (
+                <button key={item.id} onClick={() => { setActiveSection(item.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeSection === item.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"}`}>
+                  <item.icon className="w-4 h-4" />{item.label}
+                </button>
+              ))}
+            </nav>
+            <div className="p-3">
+              <button onClick={() => navigate("/chat")} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground">
+                <ArrowLeft className="w-4 h-4" />Back to Chat
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-semibold text-sidebar-accent-foreground">A</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">{profile?.name || user?.email}</p>
+                  <p className="text-xs text-sidebar-foreground/50">Administrator</p>
+                </div>
+                <button onClick={async () => { await logout(); navigate("/"); }} className="text-sidebar-foreground/40 hover:text-sidebar-foreground"><LogOut className="w-4 h-4" /></button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 flex items-center justify-between px-6 border-b border-border bg-card/50 backdrop-blur-sm flex-shrink-0">
