@@ -580,7 +580,7 @@ const ChatPage = () => {
         <button onClick={() => fileInputRef.current?.click()} className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
           <Paperclip className="w-4 h-4" />
         </button>
-        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Soma na Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
+        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
         <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
           <button onClick={toggleVoice} disabled={!speechSupported} className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
             <Mic className="w-4 h-4" />
