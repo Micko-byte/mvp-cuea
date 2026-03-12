@@ -683,7 +683,7 @@ const ChatPage = () => {
                                     {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                         <Sparkles className="w-3.5 h-3.5 text-primary" />
-                                        <span className="text-xs font-semibold text-primary">Soma na Sekani</span>
+                                        <span className="text-xs font-semibold text-primary">Sekani</span>
                                       </div>
                                 }
                                     {msg.sender === "bot" ?
