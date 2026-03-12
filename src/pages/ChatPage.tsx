@@ -713,16 +713,22 @@ const ChatPage = () => {
                       </motion.div> :
 
                     <motion.div key="active-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-4">
-                        {activeChat!.messages.map((msg) =>
-                      <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                        {activeChat!.messages.map((msg, msgIndex) =>
+                      <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`group/msg flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
                             <div className="flex flex-col gap-1 max-w-[85%]">
                               {(() => {
                             const chatBg = getChatBg();
                             const hasCustomBg = chatBg && chatBg.url;
-                            const bubbleStyle = hasCustomBg ? msg.sender === "user" ? { background: chatBg.userBubble, color: chatBg.userText } : { background: chatBg.botBubble, color: chatBg.botText } : undefined;
-                            const bubbleClass = hasCustomBg ?
-                            `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}` :
-                            `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-gradient-maroon text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`;
+                            const bubbleStyle = hasCustomBg
+                              ? msg.sender === "user"
+                                ? { background: chatBg.userBubble, color: chatBg.userText }
+                                : { background: chatBg.botBubble, color: chatBg.botText }
+                              : msg.sender === "user"
+                                ? { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
+                                : undefined;
+                            const bubbleClass = msg.sender === "user"
+                              ? `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-br-md`
+                              : `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-bl-md ${!hasCustomBg ? "bg-muted text-foreground" : ""}`;
                             return (
                               <div className={bubbleClass} style={bubbleStyle}>
                                     {msg.sender === "bot" &&
@@ -760,11 +766,39 @@ const ChatPage = () => {
                                         </ReactMarkdown>
                                       </div> :
 
+                                editingMsgId === msg.id ?
+                                <form onSubmit={(e) => { e.preventDefault(); handleEditMessage(msg.id, editingMsgText); }} className="flex items-center gap-2">
+                                  <input value={editingMsgText} onChange={(e) => setEditingMsgText(e.target.value)} className="flex-1 bg-transparent border-b border-primary-foreground/50 outline-none text-sm" autoFocus />
+                                  <button type="submit" className="p-0.5"><Check className="w-3.5 h-3.5" /></button>
+                                  <button type="button" onClick={() => setEditingMsgId(null)} className="p-0.5"><X className="w-3.5 h-3.5" /></button>
+                                </form> :
                                 <span className="break-words [word-break:break-word] [overflow-wrap:anywhere]">{msg.text}</span>
                                 }
                                   </div>);
 
                           })()}
+                              {/* Action buttons */}
+                              <div className={`flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                                <button onClick={() => copyToClipboard(msg.text)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Copy">
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                                {msg.sender === "user" &&
+                                  <button onClick={() => { setEditingMsgId(msg.id); setEditingMsgText(msg.text); }} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Edit">
+                                    <Pen className="w-3 h-3" />
+                                  </button>
+                                }
+                                {msg.sender === "bot" && <>
+                                  <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Good response">
+                                    <ThumbsUp className="w-3 h-3" />
+                                  </button>
+                                  <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Bad response">
+                                    <ThumbsDown className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={() => handleRetry(msgIndex)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Retry">
+                                    <RotateCcw className="w-3 h-3" />
+                                  </button>
+                                </>}
+                              </div>
                               <span className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
                                 {formatTime(msg.timestamp)}
                               </span>
