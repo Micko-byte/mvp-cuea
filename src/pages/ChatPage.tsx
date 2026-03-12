@@ -65,7 +65,7 @@ const TypingIndicator = () =>
         {[0, 1, 2].map((i) =>
       <motion.div key={i} className="w-2 h-2 rounded-full bg-muted-foreground/50" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} />
       )}
-        <span className="text-xs text-muted-foreground ml-2">Soma na Sekani is thinking...</span>
+        <span className="text-xs text-muted-foreground ml-2">Sekani is thinking...</span>
       </div>
     </div>
   </motion.div>;
@@ -580,7 +580,7 @@ const ChatPage = () => {
         <button onClick={() => fileInputRef.current?.click()} className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
           <Paperclip className="w-4 h-4" />
         </button>
-        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Soma na Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
+        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
         <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
           <button onClick={toggleVoice} disabled={!speechSupported} className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
             <Mic className="w-4 h-4" />
@@ -622,7 +622,7 @@ const ChatPage = () => {
             </button>
             <div className="flex-1 min-w-0">
               <h2 className="font-display font-semibold text-foreground text-sm truncate">
-                {showArtifacts ? "Artifacts" : selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : activeChat ? activeChat.title : "Soma na Sekani"}
+                {showArtifacts ? "Artifacts" : selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : activeChat ? activeChat.title : "Sekani"}
               </h2>
             </div>
             <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-foreground/10 rounded-lg" title="Academic Calendar">
@@ -683,7 +683,7 @@ const ChatPage = () => {
                                     {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                         <Sparkles className="w-3.5 h-3.5 text-primary" />
-                                        <span className="text-xs font-semibold text-primary">Soma na Sekani</span>
+                                        <span className="text-xs font-semibold text-primary">Sekani</span>
                                       </div>
                                 }
                                     {msg.sender === "bot" ?
