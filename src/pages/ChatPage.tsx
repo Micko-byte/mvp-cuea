@@ -11,7 +11,7 @@ import ReactMarkdown from "react-markdown";
 import {
   Plus, ArrowUp, BookOpen, Calendar, FileText, ListChecks, LogOut, Trash2, Sparkles,
   ChevronDown, Paperclip, Settings, FolderOpen, Loader2, Shield, Image as ImageIcon,
-  File, PanelLeftOpen, LayoutGrid, X, Code2, ChevronUp,
+  File, LayoutGrid, X, Code2, ChevronUp,
   User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight, PanelLeft } from
 "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -618,7 +618,7 @@ const ChatPage = () => {
           {/* Header */}
           <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-background">
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
-              <PanelLeftOpen className="w-5 h-5" />
+              <PanelLeft className="w-5 h-5" />
             </button>
             <div className="flex-1 min-w-0">
               <h2 className="font-display font-semibold text-foreground text-sm truncate">
