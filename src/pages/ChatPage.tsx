@@ -603,10 +603,28 @@ const ChatPage = () => {
         </div>
     }
       <div className="flex items-center gap-1 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit" style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
-        <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv" className="hidden" onChange={(e) => {if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);e.target.value = "";}} />
-        <button onClick={() => fileInputRef.current?.click()} className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
-          <Paperclip className="w-4 h-4" />
-        </button>
+        <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx" className="hidden" onChange={(e) => {if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);e.target.value = "";}} />
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
+              <Paperclip className="w-4 h-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-48 p-1.5">
+            <button onClick={() => { fileInputRef.current?.setAttribute("accept", "image/*"); fileInputRef.current?.setAttribute("capture", "environment"); fileInputRef.current?.click(); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <Camera className="w-4 h-4 text-muted-foreground" /> Camera
+            </button>
+            <button onClick={() => { fileInputRef.current?.setAttribute("accept", "image/*"); fileInputRef.current?.removeAttribute("capture"); fileInputRef.current?.click(); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Photo
+            </button>
+            <button onClick={() => { fileInputRef.current?.setAttribute("accept", ".pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx"); fileInputRef.current?.removeAttribute("capture"); fileInputRef.current?.click(); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <FileText className="w-4 h-4 text-muted-foreground" /> Files
+            </button>
+            <button onClick={() => { handleSuggestion("Enter Quiz Mode: Generate exam-style questions for my current unit to help me revise. Ask one question at a time, evaluate my answer, and explain the correct answer step by step."); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <FileQuestion className="w-4 h-4 text-muted-foreground" /> Quizzes
+            </button>
+          </PopoverContent>
+        </Popover>
         <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
         <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
           <button onClick={toggleVoice} disabled={!speechSupported} className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
