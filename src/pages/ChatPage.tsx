@@ -11,9 +11,11 @@ import ReactMarkdown from "react-markdown";
 import {
   Plus, ArrowUp, BookOpen, Calendar, FileText, ListChecks, LogOut, Trash2, Sparkles,
   ChevronDown, Paperclip, Settings, FolderOpen, Loader2, Shield, Image as ImageIcon,
-  File, LayoutGrid, X, Code2, ChevronUp,
-  User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight, PanelLeft } from
+  File, LayoutGrid, X, Code2, ChevronUp, Camera, FileQuestion,
+  User, CircleHelp, Mic, Globe, MessageSquare, Search, PenLine, Pencil, Check, PanelRight, PanelLeft,
+  Copy, ThumbsUp, ThumbsDown, RotateCcw, Pen } from
 "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -94,6 +96,8 @@ const ChatPage = () => {
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editingMsgText, setEditingMsgText] = useState("");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const recognitionRef = useRef<any>(null);
@@ -263,6 +267,29 @@ const ChatPage = () => {
 
   const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const displayName = nickname || profile?.name || user?.email?.split("@")[0] || "Student";
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
+  const handleRetry = async (msgIndex: number) => {
+    if (!activeChat || isStreaming) return;
+    // Find the last user message before this bot message
+    const msgs = activeChat.messages;
+    let lastUserMsg = "";
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (msgs[i].sender === "user") { lastUserMsg = msgs[i].text; break; }
+    }
+    if (lastUserMsg) await sendMessage(lastUserMsg, activeChat.id);
+  };
+
+  const handleEditMessage = async (msgId: string, newText: string) => {
+    if (!newText.trim() || !activeChat) return;
+    setEditingMsgId(null);
+    // Re-send the edited message as a new message
+    await sendMessage(newText.trim(), activeChat.id);
+  };
 
   // Filter chats based on current tab/unit
   const filteredChats = useMemo(() => {
@@ -576,10 +603,28 @@ const ChatPage = () => {
         </div>
     }
       <div className="flex items-center gap-1 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit" style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
-        <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv" className="hidden" onChange={(e) => {if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);e.target.value = "";}} />
-        <button onClick={() => fileInputRef.current?.click()} className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
-          <Paperclip className="w-4 h-4" />
-        </button>
+        <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx" className="hidden" onChange={(e) => {if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);e.target.value = "";}} />
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
+              <Paperclip className="w-4 h-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-48 p-1.5">
+            <button onClick={() => { fileInputRef.current?.setAttribute("accept", "image/*"); fileInputRef.current?.setAttribute("capture", "environment"); fileInputRef.current?.click(); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <Camera className="w-4 h-4 text-muted-foreground" /> Camera
+            </button>
+            <button onClick={() => { fileInputRef.current?.setAttribute("accept", "image/*"); fileInputRef.current?.removeAttribute("capture"); fileInputRef.current?.click(); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Photo
+            </button>
+            <button onClick={() => { fileInputRef.current?.setAttribute("accept", ".pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx"); fileInputRef.current?.removeAttribute("capture"); fileInputRef.current?.click(); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <FileText className="w-4 h-4 text-muted-foreground" /> Files
+            </button>
+            <button onClick={() => { handleSuggestion("Enter Quiz Mode: Generate exam-style questions for my current unit to help me revise. Ask one question at a time, evaluate my answer, and explain the correct answer step by step."); }} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <FileQuestion className="w-4 h-4 text-muted-foreground" /> Quizzes
+            </button>
+          </PopoverContent>
+        </Popover>
         <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."} className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0" disabled={isStreaming} />
         <div className="relative flex-shrink-0" title={!speechSupported ? "Voice input isn't supported on this browser" : isListening ? "Stop recording" : "Voice input"}>
           <button onClick={toggleVoice} disabled={!speechSupported} className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
@@ -625,8 +670,8 @@ const ChatPage = () => {
                 {showArtifacts ? "Artifacts" : selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : activeChat ? activeChat.title : "Sekani"}
               </h2>
             </div>
-            <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-foreground/10 rounded-lg" title="Academic Calendar">
-              
+            <button onClick={() => setCalendarOpen(!calendarOpen)} className="p-2 hover:bg-foreground/10 rounded-lg text-foreground" title="Academic Calendar">
+              <Calendar className="w-5 h-5" />
             </button>
           </header>
 
@@ -668,16 +713,22 @@ const ChatPage = () => {
                       </motion.div> :
 
                     <motion.div key="active-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-4">
-                        {activeChat!.messages.map((msg) =>
-                      <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                        {activeChat!.messages.map((msg, msgIndex) =>
+                      <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`group/msg flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
                             <div className="flex flex-col gap-1 max-w-[85%]">
                               {(() => {
                             const chatBg = getChatBg();
                             const hasCustomBg = chatBg && chatBg.url;
-                            const bubbleStyle = hasCustomBg ? msg.sender === "user" ? { background: chatBg.userBubble, color: chatBg.userText } : { background: chatBg.botBubble, color: chatBg.botText } : undefined;
-                            const bubbleClass = hasCustomBg ?
-                            `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "rounded-br-md" : "rounded-bl-md"}` :
-                            `px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-gradient-maroon text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`;
+                            const bubbleStyle = hasCustomBg
+                              ? msg.sender === "user"
+                                ? { background: chatBg.userBubble, color: chatBg.userText }
+                                : { background: chatBg.botBubble, color: chatBg.botText }
+                              : msg.sender === "user"
+                                ? { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
+                                : undefined;
+                            const bubbleClass = msg.sender === "user"
+                              ? `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-br-md`
+                              : `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-bl-md ${!hasCustomBg ? "bg-muted text-foreground" : ""}`;
                             return (
                               <div className={bubbleClass} style={bubbleStyle}>
                                     {msg.sender === "bot" &&
@@ -715,11 +766,39 @@ const ChatPage = () => {
                                         </ReactMarkdown>
                                       </div> :
 
+                                editingMsgId === msg.id ?
+                                <form onSubmit={(e) => { e.preventDefault(); handleEditMessage(msg.id, editingMsgText); }} className="flex items-center gap-2">
+                                  <input value={editingMsgText} onChange={(e) => setEditingMsgText(e.target.value)} className="flex-1 bg-transparent border-b border-primary-foreground/50 outline-none text-sm" autoFocus />
+                                  <button type="submit" className="p-0.5"><Check className="w-3.5 h-3.5" /></button>
+                                  <button type="button" onClick={() => setEditingMsgId(null)} className="p-0.5"><X className="w-3.5 h-3.5" /></button>
+                                </form> :
                                 <span className="break-words [word-break:break-word] [overflow-wrap:anywhere]">{msg.text}</span>
                                 }
                                   </div>);
 
                           })()}
+                              {/* Action buttons */}
+                              <div className={`flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                                <button onClick={() => copyToClipboard(msg.text)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Copy">
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                                {msg.sender === "user" &&
+                                  <button onClick={() => { setEditingMsgId(msg.id); setEditingMsgText(msg.text); }} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Edit">
+                                    <Pen className="w-3 h-3" />
+                                  </button>
+                                }
+                                {msg.sender === "bot" && <>
+                                  <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Good response">
+                                    <ThumbsUp className="w-3 h-3" />
+                                  </button>
+                                  <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Bad response">
+                                    <ThumbsDown className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={() => handleRetry(msgIndex)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Retry">
+                                    <RotateCcw className="w-3 h-3" />
+                                  </button>
+                                </>}
+                              </div>
                               <span className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
                                 {formatTime(msg.timestamp)}
                               </span>
