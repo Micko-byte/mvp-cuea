@@ -302,6 +302,11 @@ const ChatPage = () => {
   };
 
   const handlePayment = async () => {
+    const phone = paymentPhone.trim();
+    if (!phone || phone.length < 10) {
+      toast.error("Please enter a valid phone number (e.g. 0712345678)");
+      return;
+    }
     setPaymentLoading(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -316,11 +321,19 @@ const ChatPage = () => {
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken}`
-        }
+        },
+        body: JSON.stringify({ phone })
       });
       const data = await resp.json();
-      if (data.authorization_url) window.location.href = data.authorization_url;else
-      toast.error(data.error || "Failed to initialize payment");
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else if (data.success) {
+        toast.success("Payment initiated! Check your phone for the M-Pesa prompt.");
+        setShowPaymentDialog(false);
+        setPaymentPhone("");
+      } else {
+        toast.error(data.error || "Failed to initialize payment");
+      }
     } catch {
       toast.error("Payment initialization failed.");
     } finally {
