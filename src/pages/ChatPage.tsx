@@ -138,6 +138,7 @@ const ChatPage = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentPhone, setPaymentPhone] = useState("");
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
@@ -159,7 +160,7 @@ const ChatPage = () => {
   }, [profileMenuOpen]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const touchStartRef = useRef<{x: number;y: number;} | null>(null);
 
@@ -301,6 +302,11 @@ const ChatPage = () => {
   };
 
   const handlePayment = async () => {
+    const phone = paymentPhone.trim();
+    if (!phone || phone.length < 10) {
+      toast.error("Please enter a valid phone number (e.g. 0712345678)");
+      return;
+    }
     setPaymentLoading(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -315,11 +321,19 @@ const ChatPage = () => {
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken}`
-        }
+        },
+        body: JSON.stringify({ phone })
       });
       const data = await resp.json();
-      if (data.authorization_url) window.location.href = data.authorization_url;else
-      toast.error(data.error || "Failed to initialize payment");
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else if (data.success) {
+        toast.success("Payment initiated! Check your phone for the M-Pesa prompt.");
+        setShowPaymentDialog(false);
+        setPaymentPhone("");
+      } else {
+        toast.error(data.error || "Failed to initialize payment");
+      }
     } catch {
       toast.error("Payment initialization failed.");
     } finally {
@@ -820,7 +834,7 @@ const ChatPage = () => {
         </div>
     }
       <div
-      className="flex items-center gap-1 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
+      className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
       style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
       
         <input
@@ -883,14 +897,26 @@ const ChatPage = () => {
             </button>
           </PopoverContent>
         </Popover>
-        <input
+        <textarea
         ref={inputRef}
-        type="text"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+        onChange={(e) => {
+          setInput(e.target.value);
+          // Auto-expand height
+          const el = e.target;
+          el.style.height = "auto";
+          el.style.height = Math.min(el.scrollHeight, 150) + "px";
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
         placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
-        className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0"
+        className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
+        style={{ maxHeight: "150px" }}
+        rows={1}
         disabled={isStreaming} />
       
         <div
@@ -1374,9 +1400,22 @@ const ChatPage = () => {
               <p className="text-lg font-bold">KES 200</p>
               <p className="text-xs text-muted-foreground">One-time payment</p>
             </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
+              <Input
+                type="tel"
+                placeholder="e.g. 0712345678"
+                value={paymentPhone}
+                onChange={(e) => setPaymentPhone(e.target.value)}
+                className="text-center text-lg tracking-wider"
+              />
+              <p className="text-xs text-muted-foreground text-center">
+                Enter your M-Pesa phone number to receive the payment prompt
+              </p>
+            </div>
             <Button
               onClick={handlePayment}
-              disabled={paymentLoading}
+              disabled={paymentLoading || !paymentPhone.trim()}
               className="w-full text-white font-semibold py-3"
               style={{ backgroundColor: "#800000" }}>
               
@@ -1385,7 +1424,7 @@ const ChatPage = () => {
                   <Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...
                 </> :
 
-              "Pay KES 200 with Paystack"
+              "Pay KES 200"
               }
             </Button>
           </div>

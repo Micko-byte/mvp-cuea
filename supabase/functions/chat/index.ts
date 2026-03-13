@@ -158,7 +158,7 @@ serve(async (req) => {
         const embResponse = await withTimeout("https://api.openai.com/v1/embeddings", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
-          body: JSON.stringify({ model: "text-embedding-3-small", input: lastUserMessage, dimensions: 768 }),
+          body: JSON.stringify({ model: "text-embedding-3-large", input: lastUserMessage, dimensions: 768 }),
         }, 8000);
         
         if (embResponse.ok) {
