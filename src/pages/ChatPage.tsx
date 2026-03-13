@@ -1400,9 +1400,22 @@ const ChatPage = () => {
               <p className="text-lg font-bold">KES 200</p>
               <p className="text-xs text-muted-foreground">One-time payment</p>
             </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
+              <Input
+                type="tel"
+                placeholder="e.g. 0712345678"
+                value={paymentPhone}
+                onChange={(e) => setPaymentPhone(e.target.value)}
+                className="text-center text-lg tracking-wider"
+              />
+              <p className="text-xs text-muted-foreground text-center">
+                Enter your M-Pesa phone number to receive the payment prompt
+              </p>
+            </div>
             <Button
               onClick={handlePayment}
-              disabled={paymentLoading}
+              disabled={paymentLoading || !paymentPhone.trim()}
               className="w-full text-white font-semibold py-3"
               style={{ backgroundColor: "#800000" }}>
               
@@ -1411,7 +1424,7 @@ const ChatPage = () => {
                   <Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...
                 </> :
 
-              "Pay KES 200 with Paystack"
+              "Pay KES 200"
               }
             </Button>
           </div>

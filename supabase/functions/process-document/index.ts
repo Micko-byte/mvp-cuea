@@ -226,7 +226,7 @@ serve(async (req) => {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "text-embedding-3-small",
+          model: "text-embedding-3-large",
           input: batch,
           dimensions: 768,
         }),
