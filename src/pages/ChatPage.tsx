@@ -138,6 +138,7 @@ const ChatPage = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentPhone, setPaymentPhone] = useState("");
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
