@@ -883,14 +883,26 @@ const ChatPage = () => {
             </button>
           </PopoverContent>
         </Popover>
-        <input
+        <textarea
         ref={inputRef}
-        type="text"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+        onChange={(e) => {
+          setInput(e.target.value);
+          // Auto-expand height
+          const el = e.target;
+          el.style.height = "auto";
+          el.style.height = Math.min(el.scrollHeight, 150) + "px";
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
         placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
-        className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0"
+        className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
+        style={{ maxHeight: "150px" }}
+        rows={1}
         disabled={isStreaming} />
       
         <div
