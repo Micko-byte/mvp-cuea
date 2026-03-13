@@ -820,7 +820,7 @@ const ChatPage = () => {
         </div>
     }
       <div
-      className="flex items-center gap-1 rounded-[30px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
+      className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
       style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
       
         <input
