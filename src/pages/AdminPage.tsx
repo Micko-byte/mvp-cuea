@@ -96,6 +96,10 @@ const AdminPage = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [tokenUsageToday, setTokenUsageToday] = useState(0);
   const [totalChats, setTotalChats] = useState(0);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [paidUsersCount, setPaidUsersCount] = useState(0);
+  const [freeUsersCount, setFreeUsersCount] = useState(0);
 
   // Search
   const [userSearch, setUserSearch] = useState("");
@@ -114,13 +118,14 @@ const AdminPage = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [profilesRes, rolesRes, coursesRes, unitsRes, materialsRes, chatsRes] = await Promise.all([
+    const [profilesRes, rolesRes, coursesRes, unitsRes, materialsRes, chatsRes, paymentsRes] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("courses").select("*").order("name"),
       supabase.from("units").select("*").order("name"),
       supabase.from("materials").select("*").order("created_at", { ascending: false }),
       supabase.from("chats").select("id", { count: "exact", head: true }),
+      supabase.from("payments").select("*").order("created_at", { ascending: false }),
     ]);
     if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
     if (rolesRes.data) setUserRoles(rolesRes.data as UserRole[]);
@@ -128,6 +133,17 @@ const AdminPage = () => {
     if (unitsRes.data) setUnits(unitsRes.data as Unit[]);
     if (materialsRes.data) setMaterials(materialsRes.data as Material[]);
     setTotalChats(chatsRes.count || 0);
+
+    // Payment analytics
+    if (paymentsRes.data) {
+      setPayments(paymentsRes.data);
+      const successPayments = paymentsRes.data.filter((p: any) => p.status === "success");
+      setTotalRevenue(successPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0));
+      const paidUserIds = new Set(successPayments.map((p: any) => p.user_id));
+      setPaidUsersCount(paidUserIds.size);
+      const totalUsers = profilesRes.data?.length || 0;
+      setFreeUsersCount(totalUsers - paidUserIds.size);
+    }
 
     const { data: tokenData } = await supabase
       .from("token_usage")
@@ -293,8 +309,8 @@ const AdminPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: "Total Users", value: profiles.length, icon: UserCheck, color: "text-primary" },
-                { label: "Total Courses", value: courses.length, icon: BookMarked, color: "text-primary" },
-                { label: "Chat Sessions", value: totalChats, icon: MessageSquare, color: "text-primary" },
+                { label: "Paid Users", value: paidUsersCount, icon: BookMarked, color: "text-primary" },
+                { label: "Revenue (KES)", value: `${totalRevenue.toLocaleString()}`, icon: MessageSquare, color: "text-primary" },
                 { label: "Tokens Today", value: tokenUsageToday.toLocaleString(), icon: Clock, color: "text-primary" },
               ].map((m, i) => (
                 <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-card rounded-xl border border-border p-5 shadow-card">
@@ -544,9 +560,9 @@ const AdminPage = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: "Total Users", value: profiles.length },
-                { label: "Total Courses", value: courses.length },
-                { label: "Total Units", value: units.length },
-                { label: "Total Documents", value: materials.length },
+                { label: "Paid Users", value: paidUsersCount },
+                { label: "Free Users", value: freeUsersCount },
+                { label: "Revenue (KES)", value: `KES ${totalRevenue.toLocaleString()}` },
               ].map((kpi) => (
                 <div key={kpi.label} className="bg-card rounded-xl border border-border p-4 shadow-card">
                   <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{kpi.label}</p>
@@ -554,21 +570,82 @@ const AdminPage = () => {
                 </div>
               ))}
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-card rounded-xl border border-border p-6 shadow-card">
+                <h3 className="font-display font-semibold text-foreground mb-4">Role Distribution</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {["admin", "lecturer", "student"].map(r => (
+                    <div key={r} className="text-center p-4 bg-muted/50 rounded-xl">
+                      <p className="text-2xl font-display font-bold text-foreground">{userRoles.filter(ur => ur.role === r).length}</p>
+                      <p className="text-xs text-muted-foreground capitalize mt-1">{r}s</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-6 shadow-card">
+                <h3 className="font-display font-semibold text-foreground mb-4">Token Usage Today</h3>
+                <p className="text-3xl font-display font-bold text-foreground">{tokenUsageToday.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground mt-1">tokens consumed today across all users</p>
+              </div>
+            </div>
+
             <div className="bg-card rounded-xl border border-border p-6 shadow-card">
-              <h3 className="font-display font-semibold text-foreground mb-4">Role Distribution</h3>
-              <div className="grid grid-cols-3 gap-4">
-                {["admin", "lecturer", "student"].map(r => (
-                  <div key={r} className="text-center p-4 bg-muted/50 rounded-xl">
-                    <p className="text-2xl font-display font-bold text-foreground">{userRoles.filter(ur => ur.role === r).length}</p>
-                    <p className="text-xs text-muted-foreground capitalize mt-1">{r}s</p>
+              <h3 className="font-display font-semibold text-foreground mb-4">System Stats</h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: "Total Courses", value: courses.length },
+                  { label: "Total Units", value: units.length },
+                  { label: "Total Documents", value: materials.length },
+                  { label: "Chat Sessions", value: totalChats },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center p-3 bg-muted/50 rounded-xl">
+                    <p className="text-xl font-display font-bold text-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="bg-card rounded-xl border border-border p-6 shadow-card">
-              <h3 className="font-display font-semibold text-foreground mb-4">Token Usage Today</h3>
-              <p className="text-3xl font-display font-bold text-foreground">{tokenUsageToday.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground mt-1">tokens consumed today across all users</p>
+
+            {/* Payment History */}
+            <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
+              <div className="p-5 border-b border-border">
+                <h3 className="font-display font-semibold text-foreground">Payment History</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{payments.length} total transactions</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Email</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Amount</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Status</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Date</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.slice(0, 20).map((p: any) => (
+                      <tr key={p.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                        <td className="px-6 py-3 text-sm text-foreground">{p.email || "—"}</td>
+                        <td className="px-6 py-3 text-sm font-medium text-foreground">{p.currency} {p.amount}</td>
+                        <td className="px-6 py-3">
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${
+                            p.status === "success" ? "bg-green-500/10 text-green-600" :
+                            p.status === "pending" ? "bg-yellow-500/10 text-yellow-600" :
+                            "bg-destructive/10 text-destructive"
+                          }`}>{p.status}</span>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-muted-foreground hidden md:table-cell">{new Date(p.created_at).toLocaleDateString()}</td>
+                        <td className="px-6 py-3 text-xs text-muted-foreground font-mono hidden lg:table-cell">{p.paystack_reference || "—"}</td>
+                      </tr>
+                    ))}
+                    {payments.length === 0 && (
+                      <tr><td colSpan={5} className="text-center py-8 text-muted-foreground text-sm">No payments yet</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         );
@@ -582,11 +659,13 @@ const AdminPage = () => {
                 <h3 className="font-display font-semibold text-foreground">System Information</h3>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Platform</span><span className="text-sm font-medium text-foreground">CUEA AI — Lovable Cloud</span></div>
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">AI Model</span><span className="text-sm font-medium text-foreground">google/gemini-3-flash-preview</span></div>
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Daily User Token Limit</span><span className="text-sm font-medium text-foreground">5,000</span></div>
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Global Daily Token Limit</span><span className="text-sm font-medium text-foreground">50,000</span></div>
-                <div className="flex justify-between py-2"><span className="text-sm text-muted-foreground">RAG Embedding Model</span><span className="text-sm font-medium text-foreground">gemini-embedding-001</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Platform</span><span className="text-sm font-medium text-foreground">CUEA AI — Sekani</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">AI Chat Model</span><span className="text-sm font-medium text-foreground">GPT-4o-mini</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Free Daily Limit</span><span className="text-sm font-medium text-foreground">50,000 tokens</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Paid Daily Limit</span><span className="text-sm font-medium text-foreground">200,000 tokens</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Global Daily Limit</span><span className="text-sm font-medium text-foreground">500,000 tokens</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">RAG Embedding Model</span><span className="text-sm font-medium text-foreground">text-embedding-3-large (768d)</span></div>
+                <div className="flex justify-between py-2"><span className="text-sm text-muted-foreground">Premium Price</span><span className="text-sm font-medium text-foreground">KES 200 (one-time)</span></div>
               </div>
             </div>
           </div>
