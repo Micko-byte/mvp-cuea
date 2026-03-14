@@ -96,6 +96,10 @@ const AdminPage = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [tokenUsageToday, setTokenUsageToday] = useState(0);
   const [totalChats, setTotalChats] = useState(0);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [paidUsersCount, setPaidUsersCount] = useState(0);
+  const [freeUsersCount, setFreeUsersCount] = useState(0);
 
   // Search
   const [userSearch, setUserSearch] = useState("");
