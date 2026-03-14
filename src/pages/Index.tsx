@@ -377,8 +377,8 @@ export default function Index() {
       </motion.nav>
 
       {/* ══════════════════════════════
-                     HERO
-                  ══════════════════════════════ */}
+                      HERO
+                   ══════════════════════════════ */}
       <section
         id="hero"
         ref={heroRef}
@@ -816,8 +816,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       <StatsSection />
 
       {/* ══════════════════════════════
-                     FEATURES
-                  ══════════════════════════════ */}
+                      FEATURES
+                   ══════════════════════════════ */}
       <section id="features" style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Platform Features" />
@@ -886,8 +886,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       </section>
 
       {/* ══════════════════════════════
-                     HOW IT WORKS
-                  ══════════════════════════════ */}
+                      HOW IT WORKS
+                   ══════════════════════════════ */}
       <section id="how-it-works" style={{ padding: "7rem 1.5rem", background: "var(--ink)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="How It Works" light />
@@ -965,8 +965,8 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       </section>
 
       {/* ══════════════════════════════
-                     TESTIMONIALS
-                  ══════════════════════════════ */}
+                      TESTIMONIALS
+                   ══════════════════════════════ */}
       <section style={{ padding: "7rem 1.5rem", background: "var(--cream)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Student Stories" />
@@ -1031,12 +1031,12 @@ It’s part of the national Soma na Sekani program, building smart, personalized
       </section>
 
       {/* ══════════════════════════════
-                     FOR UNIVERSITIES
-                  ══════════════════════════════ */}
+                      FOR UNIVERSITIES
+                   ══════════════════════════════ */}
 
       {/* ══════════════════════════════
-                     ABOUT / CTA
-                  ══════════════════════════════ */}
+                      ABOUT / CTA
+                   ══════════════════════════════ */}
       <section
         id="about"
         style={{ padding: "7rem 1.5rem", background: "var(--ink)", position: "relative", overflow: "hidden" }}>
@@ -1159,19 +1159,19 @@ It’s part of the national Soma na Sekani program, building smart, personalized
           }}>
           
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              className="grad-maroon"
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 8,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}>
-              
-              <Icon d={ICONS.graduation} size={14} stroke="white" strokeWidth={1.6} />
-            </div>
+            
+
+
+
+
+
+
+
+
+
+
+
+            
             <span
               className="display"
               style={{ fontWeight: 700, fontSize: 18, color: "white", letterSpacing: "-0.01em" }}>
