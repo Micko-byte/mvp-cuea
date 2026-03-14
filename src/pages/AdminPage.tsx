@@ -309,8 +309,8 @@ const AdminPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: "Total Users", value: profiles.length, icon: UserCheck, color: "text-primary" },
-                { label: "Total Courses", value: courses.length, icon: BookMarked, color: "text-primary" },
-                { label: "Chat Sessions", value: totalChats, icon: MessageSquare, color: "text-primary" },
+                { label: "Paid Users", value: paidUsersCount, icon: BookMarked, color: "text-primary" },
+                { label: "Revenue (KES)", value: `${totalRevenue.toLocaleString()}`, icon: MessageSquare, color: "text-primary" },
                 { label: "Tokens Today", value: tokenUsageToday.toLocaleString(), icon: Clock, color: "text-primary" },
               ].map((m, i) => (
                 <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-card rounded-xl border border-border p-5 shadow-card">
