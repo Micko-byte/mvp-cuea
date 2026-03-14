@@ -659,11 +659,13 @@ const AdminPage = () => {
                 <h3 className="font-display font-semibold text-foreground">System Information</h3>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Platform</span><span className="text-sm font-medium text-foreground">CUEA AI — Lovable Cloud</span></div>
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">AI Model</span><span className="text-sm font-medium text-foreground">google/gemini-3-flash-preview</span></div>
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Daily User Token Limit</span><span className="text-sm font-medium text-foreground">5,000</span></div>
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Global Daily Token Limit</span><span className="text-sm font-medium text-foreground">50,000</span></div>
-                <div className="flex justify-between py-2"><span className="text-sm text-muted-foreground">RAG Embedding Model</span><span className="text-sm font-medium text-foreground">gemini-embedding-001</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Platform</span><span className="text-sm font-medium text-foreground">CUEA AI — Sekani</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">AI Chat Model</span><span className="text-sm font-medium text-foreground">GPT-4o-mini</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Free Daily Limit</span><span className="text-sm font-medium text-foreground">50,000 tokens</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Paid Daily Limit</span><span className="text-sm font-medium text-foreground">200,000 tokens</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Global Daily Limit</span><span className="text-sm font-medium text-foreground">500,000 tokens</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">RAG Embedding Model</span><span className="text-sm font-medium text-foreground">text-embedding-3-large (768d)</span></div>
+                <div className="flex justify-between py-2"><span className="text-sm text-muted-foreground">Premium Price</span><span className="text-sm font-medium text-foreground">KES 200 (one-time)</span></div>
               </div>
             </div>
           </div>
