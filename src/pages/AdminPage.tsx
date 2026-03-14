@@ -560,9 +560,9 @@ const AdminPage = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: "Total Users", value: profiles.length },
-                { label: "Total Courses", value: courses.length },
-                { label: "Total Units", value: units.length },
-                { label: "Total Documents", value: materials.length },
+                { label: "Paid Users", value: paidUsersCount },
+                { label: "Free Users", value: freeUsersCount },
+                { label: "Revenue (KES)", value: `KES ${totalRevenue.toLocaleString()}` },
               ].map((kpi) => (
                 <div key={kpi.label} className="bg-card rounded-xl border border-border p-4 shadow-card">
                   <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{kpi.label}</p>
@@ -570,21 +570,82 @@ const AdminPage = () => {
                 </div>
               ))}
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-card rounded-xl border border-border p-6 shadow-card">
+                <h3 className="font-display font-semibold text-foreground mb-4">Role Distribution</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {["admin", "lecturer", "student"].map(r => (
+                    <div key={r} className="text-center p-4 bg-muted/50 rounded-xl">
+                      <p className="text-2xl font-display font-bold text-foreground">{userRoles.filter(ur => ur.role === r).length}</p>
+                      <p className="text-xs text-muted-foreground capitalize mt-1">{r}s</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-6 shadow-card">
+                <h3 className="font-display font-semibold text-foreground mb-4">Token Usage Today</h3>
+                <p className="text-3xl font-display font-bold text-foreground">{tokenUsageToday.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground mt-1">tokens consumed today across all users</p>
+              </div>
+            </div>
+
             <div className="bg-card rounded-xl border border-border p-6 shadow-card">
-              <h3 className="font-display font-semibold text-foreground mb-4">Role Distribution</h3>
-              <div className="grid grid-cols-3 gap-4">
-                {["admin", "lecturer", "student"].map(r => (
-                  <div key={r} className="text-center p-4 bg-muted/50 rounded-xl">
-                    <p className="text-2xl font-display font-bold text-foreground">{userRoles.filter(ur => ur.role === r).length}</p>
-                    <p className="text-xs text-muted-foreground capitalize mt-1">{r}s</p>
+              <h3 className="font-display font-semibold text-foreground mb-4">System Stats</h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: "Total Courses", value: courses.length },
+                  { label: "Total Units", value: units.length },
+                  { label: "Total Documents", value: materials.length },
+                  { label: "Chat Sessions", value: totalChats },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center p-3 bg-muted/50 rounded-xl">
+                    <p className="text-xl font-display font-bold text-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="bg-card rounded-xl border border-border p-6 shadow-card">
-              <h3 className="font-display font-semibold text-foreground mb-4">Token Usage Today</h3>
-              <p className="text-3xl font-display font-bold text-foreground">{tokenUsageToday.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground mt-1">tokens consumed today across all users</p>
+
+            {/* Payment History */}
+            <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
+              <div className="p-5 border-b border-border">
+                <h3 className="font-display font-semibold text-foreground">Payment History</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">{payments.length} total transactions</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Email</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Amount</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Status</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Date</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.slice(0, 20).map((p: any) => (
+                      <tr key={p.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                        <td className="px-6 py-3 text-sm text-foreground">{p.email || "—"}</td>
+                        <td className="px-6 py-3 text-sm font-medium text-foreground">{p.currency} {p.amount}</td>
+                        <td className="px-6 py-3">
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${
+                            p.status === "success" ? "bg-green-500/10 text-green-600" :
+                            p.status === "pending" ? "bg-yellow-500/10 text-yellow-600" :
+                            "bg-destructive/10 text-destructive"
+                          }`}>{p.status}</span>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-muted-foreground hidden md:table-cell">{new Date(p.created_at).toLocaleDateString()}</td>
+                        <td className="px-6 py-3 text-xs text-muted-foreground font-mono hidden lg:table-cell">{p.paystack_reference || "—"}</td>
+                      </tr>
+                    ))}
+                    {payments.length === 0 && (
+                      <tr><td colSpan={5} className="text-center py-8 text-muted-foreground text-sm">No payments yet</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         );
