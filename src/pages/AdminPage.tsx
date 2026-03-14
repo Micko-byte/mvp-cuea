@@ -118,13 +118,14 @@ const AdminPage = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [profilesRes, rolesRes, coursesRes, unitsRes, materialsRes, chatsRes] = await Promise.all([
+    const [profilesRes, rolesRes, coursesRes, unitsRes, materialsRes, chatsRes, paymentsRes] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("courses").select("*").order("name"),
       supabase.from("units").select("*").order("name"),
       supabase.from("materials").select("*").order("created_at", { ascending: false }),
       supabase.from("chats").select("id", { count: "exact", head: true }),
+      supabase.from("payments").select("*").order("created_at", { ascending: false }),
     ]);
     if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
     if (rolesRes.data) setUserRoles(rolesRes.data as UserRole[]);
@@ -132,6 +133,17 @@ const AdminPage = () => {
     if (unitsRes.data) setUnits(unitsRes.data as Unit[]);
     if (materialsRes.data) setMaterials(materialsRes.data as Material[]);
     setTotalChats(chatsRes.count || 0);
+
+    // Payment analytics
+    if (paymentsRes.data) {
+      setPayments(paymentsRes.data);
+      const successPayments = paymentsRes.data.filter((p: any) => p.status === "success");
+      setTotalRevenue(successPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0));
+      const paidUserIds = new Set(successPayments.map((p: any) => p.user_id));
+      setPaidUsersCount(paidUserIds.size);
+      const totalUsers = profilesRes.data?.length || 0;
+      setFreeUsersCount(totalUsers - paidUserIds.size);
+    }
 
     const { data: tokenData } = await supabase
       .from("token_usage")
