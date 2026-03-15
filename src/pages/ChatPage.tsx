@@ -1175,7 +1175,7 @@ const ChatPage = () => {
                                       {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                           <Sparkles className="w-3.5 h-3.5 text-primary" />
-                                          <span className="text-xs font-semibold text-primary">Sekani</span>
+                                          <span className="text-xs font-semibold text-primary">CUEA AI</span>
                                         </div>
                                 }
                                       {msg.sender === "bot" ?
