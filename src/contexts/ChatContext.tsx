@@ -8,6 +8,7 @@ export interface ChatMessage {
   text: string;
   sender: "user" | "bot";
   timestamp: number;
+  attachments?: { name: string; type: string; url: string }[];
 }
 
 export interface Chat {
@@ -25,13 +26,22 @@ interface ChatContextType {
   isStreaming: boolean;
   createChat: (chatType?: "general" | "unit", unitId?: string) => Promise<Chat | null>;
   setActiveChat: (id: string) => void;
-  sendMessage: (text: string, overrideChatId?: string) => Promise<void>;
+  sendMessage: (text: string, overrideChatId?: string, files?: File[]) => Promise<void>;
   deleteChat: (id: string) => Promise<void>;
   renameChat: (id: string, newTitle: string) => Promise<void>;
   loadChats: () => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -112,26 +122,38 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setChats((prev) => prev.map((c) => c.id === id ? { ...c, title: trimmed } : c));
   }, []);
 
-  const sendMessage = useCallback(async (text: string, overrideChatId?: string) => {
+  const sendMessage = useCallback(async (text: string, overrideChatId?: string, files?: File[]) => {
     const chatId = overrideChatId || activeChatId;
     if (!user || !chatId) return;
 
+    // Build attachment info for display
+    const attachments = files?.map(f => ({
+      name: f.name,
+      type: f.type,
+      url: URL.createObjectURL(f),
+    }));
+
+    const displayText = files && files.length > 0
+      ? `${files.map(f => `📎 ${f.name}`).join("\n")}${text ? "\n" + text : ""}`
+      : text;
+
     const { data: userMsg } = await supabase
       .from("chat_messages")
-      .insert({ chat_id: chatId, user_id: user.id, role: "user", content: text })
+      .insert({ chat_id: chatId, user_id: user.id, role: "user", content: displayText })
       .select()
       .single();
 
     if (!userMsg) return;
 
     const userChatMsg: ChatMessage = {
-      id: userMsg.id, text, sender: "user", timestamp: Date.now(),
+      id: userMsg.id, text: displayText, sender: "user", timestamp: Date.now(),
+      attachments,
     };
 
     setChats((prev) =>
       prev.map((c) => {
         if (c.id === chatId) {
-          const title = c.messages.length === 0 ? (text.length > 30 ? text.slice(0, 30) + "…" : text) : c.title;
+          const title = c.messages.length === 0 ? (text.length > 30 ? text.slice(0, 30) + "…" : text || "Image analysis") : c.title;
           if (c.messages.length === 0) {
             supabase.from("chats").update({ title }).eq("id", chatId).then(() => {});
           }
@@ -141,13 +163,51 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
 
+    // Build AI messages - convert files to base64 for multimodal
     const currentChat = chats.find((c) => c.id === chatId);
+    const historyMessages = (currentChat?.messages || []).map((m) => ({
+      role: m.sender === "user" ? "user" as const : "assistant" as const,
+      content: m.text,
+    }));
+
+    // Build the current user message with potential image content
+    let currentUserContent: any;
+    if (files && files.length > 0) {
+      const contentParts: any[] = [];
+      if (text) contentParts.push({ type: "text", text });
+      
+      for (const file of files) {
+        if (file.type.startsWith("image/")) {
+          const base64 = await fileToBase64(file);
+          contentParts.push({
+            type: "image_url",
+            image_url: { url: base64 },
+          });
+        } else {
+          // For non-image files, read as text if possible
+          try {
+            const fileText = await file.text();
+            contentParts.push({
+              type: "text",
+              text: `[Attached file: ${file.name}]\n${fileText.slice(0, 10000)}`,
+            });
+          } catch {
+            contentParts.push({
+              type: "text",
+              text: `[Attached file: ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)]`,
+            });
+          }
+        }
+      }
+      if (contentParts.length === 0) contentParts.push({ type: "text", text: text || "Analyze this" });
+      currentUserContent = contentParts;
+    } else {
+      currentUserContent = text;
+    }
+
     const aiMessages = [
-      ...(currentChat?.messages || []).map((m) => ({
-        role: m.sender === "user" ? "user" as const : "assistant" as const,
-        content: m.text,
-      })),
-      { role: "user" as const, content: text },
+      ...historyMessages,
+      { role: "user" as const, content: currentUserContent },
     ];
 
     setIsStreaming(true);
@@ -167,7 +227,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const controller = new AbortController();
       requestTimeout = setTimeout(() => controller.abort(), 45000);
 
-      // Include unit_id for unit-specific chats
       const bodyPayload: any = { messages: aiMessages, chatId };
       if (currentChat?.unit_id) bodyPayload.unitId = currentChat.unit_id;
 
