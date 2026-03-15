@@ -8,6 +8,8 @@ import { usePersonalization } from "@/contexts/PersonalizationContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
+import { Download } from "lucide-react";
 import {
   Plus,
   ArrowUp,
