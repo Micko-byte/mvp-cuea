@@ -113,7 +113,7 @@ const TypingIndicator = () =>
         transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} />
 
       )}
-        <span className="text-xs text-muted-foreground ml-2">Sekani is thinking...</span>
+        <span className="text-xs text-muted-foreground ml-2">CUEA AI is thinking...</span>
       </div>
     </div>
   </motion.div>;
@@ -971,7 +971,7 @@ const ChatPage = () => {
             handleSend();
           }
         }}
-        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
+        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask CUEA AI anything..."}
         className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
         style={{ maxHeight: "150px" }}
         rows={1}
@@ -1059,7 +1059,7 @@ const ChatPage = () => {
                 `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` :
                 activeChat ?
                 activeChat.title :
-                "Sekani"}
+                "CUEA AI"}
               </h2>
             </div>
             <button
@@ -1175,7 +1175,7 @@ const ChatPage = () => {
                                       {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                           <Sparkles className="w-3.5 h-3.5 text-primary" />
-                                          <span className="text-xs font-semibold text-primary">Sekani</span>
+                                          <span className="text-xs font-semibold text-primary">CUEA AI</span>
                                         </div>
                                 }
                                       {msg.sender === "bot" ?
