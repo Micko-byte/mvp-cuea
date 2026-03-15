@@ -139,6 +139,8 @@ const ChatPage = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState("");
+  const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
@@ -301,7 +303,63 @@ const ChatPage = () => {
     setIsListening(true);
   };
 
+  const pollPaymentStatus = async (reference: string) => {
+    setPaymentVerifying(true);
+    const maxAttempts = 60; // 5 minutes at 5s intervals
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      const { data } = await supabase
+        .from("payments")
+        .select("status")
+        .eq("paystack_reference", reference)
+        .single();
+      if (data?.status === "success") {
+        setPaymentVerifying(false);
+        setShowPaymentDialog(false);
+        toast.success("Payment successful! 🎉 You now have 200,000 tokens/day.");
+        return;
+      } else if (data?.status === "failed") {
+        setPaymentVerifying(false);
+        toast.error("Payment failed. Please try again.");
+        return;
+      }
+    }
+    setPaymentVerifying(false);
+    toast.error("Payment verification timed out. If you paid, it will be confirmed shortly.");
+  };
+
   const handlePayment = async () => {
+    if (paymentMethod === "card") {
+      // Card payment via Paystack redirect
+      setPaymentLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) { toast.error("Please sign in again."); return; }
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ method: "card" })
+        });
+        const data = await resp.json();
+        if (data.authorization_url) {
+          window.open(data.authorization_url, "_blank");
+          toast.info("Complete payment in the new tab.");
+        } else {
+          toast.error(data.error || "Failed to initialize card payment");
+        }
+      } catch {
+        toast.error("Payment initialization failed.");
+      } finally {
+        setPaymentLoading(false);
+      }
+      return;
+    }
+
     const phone = paymentPhone.trim();
     if (!phone || phone.length < 10) {
       toast.error("Please enter a valid phone number (e.g. 0712345678)");
@@ -311,10 +369,7 @@ const ChatPage = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        toast.error("Please sign in again.");
-        return;
-      }
+      if (!accessToken) { toast.error("Please sign in again."); return; }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
         method: "POST",
         headers: {
@@ -326,15 +381,16 @@ const ChatPage = () => {
       });
       const data = await resp.json();
       if (data.reference) {
-        toast.success("Payment initiated! Check your phone for the M-Pesa prompt.");
-        setShowPaymentDialog(false);
+        setPaymentLoading(false);
         setPaymentPhone("");
+        toast.success("Check your phone for the M-Pesa prompt.");
+        pollPaymentStatus(data.reference);
       } else {
         toast.error(data.error || "Failed to initialize payment");
+        setPaymentLoading(false);
       }
     } catch {
       toast.error("Payment initialization failed.");
-    } finally {
       setPaymentLoading(false);
     }
   };
@@ -1373,59 +1429,95 @@ const ChatPage = () => {
       
 
       {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!paymentVerifying) setShowPaymentDialog(open); }}>
         <DialogContent className="backdrop-blur-xl bg-card/80 border-border/50 shadow-2xl max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium 🎓</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground text-center">
-              You've reached your free daily limit. Upgrade to keep learning!
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="border border-border rounded-xl p-4 text-center">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Free Plan</p>
-                <p className="text-2xl font-bold mt-1">50K</p>
-                <p className="text-xs text-muted-foreground">tokens/day</p>
-              </div>
-              <div className="border-2 border-primary rounded-xl p-4 text-center bg-primary/5">
-                <p className="text-xs font-semibold text-primary uppercase">Premium</p>
-                <p className="text-2xl font-bold mt-1">200K</p>
-                <p className="text-xs text-muted-foreground">tokens/day</p>
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold">KES 200</p>
-              <p className="text-xs text-muted-foreground">One-time payment</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
-              <Input
-                type="tel"
-                placeholder="e.g. 0712345678"
-                value={paymentPhone}
-                onChange={(e) => setPaymentPhone(e.target.value)}
-                className="text-center text-lg tracking-wider"
-              />
-              <p className="text-xs text-muted-foreground text-center">
-                Enter your M-Pesa phone number to receive the payment prompt
+          {paymentVerifying ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="w-12 h-12 animate-spin text-primary" />
+              <p className="text-lg font-semibold">Authenticating Payment...</p>
+              <p className="text-sm text-muted-foreground text-center">
+                Please complete the M-Pesa prompt on your phone.<br />This may take a moment.
               </p>
             </div>
-            <Button
-              onClick={handlePayment}
-              disabled={paymentLoading || !paymentPhone.trim()}
-              className="w-full text-white font-semibold py-3"
-              style={{ backgroundColor: "#800000" }}>
-              
-              {paymentLoading ?
-              <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...
-                </> :
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium 🎓</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground text-center">
+                  You've reached your free daily limit. Upgrade to keep learning!
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="border border-border rounded-xl p-4 text-center">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Free Plan</p>
+                    <p className="text-2xl font-bold mt-1">50K</p>
+                    <p className="text-xs text-muted-foreground">tokens/day</p>
+                  </div>
+                  <div className="border-2 border-primary rounded-xl p-4 text-center bg-primary/5">
+                    <p className="text-xs font-semibold text-primary uppercase">Premium</p>
+                    <p className="text-2xl font-bold mt-1">200K</p>
+                    <p className="text-xs text-muted-foreground">tokens/day</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold">KES 200</p>
+                  <p className="text-xs text-muted-foreground">One-time payment</p>
+                </div>
 
-              "Pay KES 200"
-              }
-            </Button>
-          </div>
+                {/* Payment Method Tabs */}
+                <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
+                  <button
+                    onClick={() => setPaymentMethod("mpesa")}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "mpesa" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    📱 M-Pesa
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod("card")}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "card" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    💳 Card
+                  </button>
+                </div>
+
+                {paymentMethod === "mpesa" ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
+                    <Input
+                      type="tel"
+                      placeholder="e.g. 0712345678"
+                      value={paymentPhone}
+                      onChange={(e) => setPaymentPhone(e.target.value)}
+                      className="text-center text-lg tracking-wider"
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      Enter your M-Pesa phone number to receive the payment prompt
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    You'll be redirected to a secure Paystack page to complete your card payment.
+                  </p>
+                )}
+
+                <Button
+                  onClick={handlePayment}
+                  disabled={paymentLoading || (paymentMethod === "mpesa" && !paymentPhone.trim())}
+                  className="w-full text-white font-semibold py-3"
+                  style={{ backgroundColor: "#800000" }}
+                >
+                  {paymentLoading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...</>
+                  ) : paymentMethod === "mpesa" ? (
+                    "Pay KES 200 via M-Pesa"
+                  ) : (
+                    "Pay KES 200 via Card"
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>);
