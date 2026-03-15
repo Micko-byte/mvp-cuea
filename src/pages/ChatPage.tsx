@@ -325,9 +325,7 @@ const ChatPage = () => {
         body: JSON.stringify({ phone })
       });
       const data = await resp.json();
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url;
-      } else if (data.success) {
+      if (data.reference) {
         toast.success("Payment initiated! Check your phone for the M-Pesa prompt.");
         setShowPaymentDialog(false);
         setPaymentPhone("");
