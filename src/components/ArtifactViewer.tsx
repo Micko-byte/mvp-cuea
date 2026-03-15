@@ -1,7 +1,7 @@
 import { useArtifacts } from "@/contexts/ArtifactContext";
-import { X, Eye, Code2, Copy, Check, Play, Loader2 } from "lucide-react";
+import { X, Eye, Code2, Copy, Check, Play, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,38 +22,55 @@ const ArtifactViewer = () => {
   const canPreview = activeArtifact && ["html", "svg", "markdown"].includes(activeArtifact.type);
   const canExecute = activeArtifact?.type === "code";
 
-  // Check if code is runnable in iframe (HTML/JS)
   const isWebRunnable = activeArtifact && (
     activeArtifact.language === "html" ||
     activeArtifact.language === "htm" ||
     activeArtifact.language === "javascript" ||
-    activeArtifact.language === "js"
+    activeArtifact.language === "js" ||
+    activeArtifact.language === "css"
   );
+
+  const wrapJSCode = (code: string) => `<!DOCTYPE html><html><head><style>
+body{font-family:'Courier New',monospace;padding:1rem;background:#1e1e2e;color:#cdd6f4;white-space:pre-wrap;font-size:14px;line-height:1.5;margin:0;}
+.error{color:#f38ba8;} .log{color:#a6e3a1;} .warn{color:#f9e2af;}
+</style></head><body><script>
+const _out=[];const _el=document.body;
+const _fmt=(...a)=>a.map(x=>typeof x==='object'?JSON.stringify(x,null,2):String(x)).join(' ');
+console.log=(...a)=>{_out.push('<span class="log">'+_fmt(...a)+'</span>');_el.innerHTML=_out.join('\\n');};
+console.error=(...a)=>{_out.push('<span class="error">Error: '+_fmt(...a)+'</span>');_el.innerHTML=_out.join('\\n');};
+console.warn=(...a)=>{_out.push('<span class="warn">Warning: '+_fmt(...a)+'</span>');_el.innerHTML=_out.join('\\n');};
+try{${code}}catch(e){_out.push('<span class="error">'+e.name+': '+e.message+'</span>');_el.innerHTML=_out.join('\\n');}
+</script></body></html>`;
+
+  const wrapCSSCode = (code: string) => `<!DOCTYPE html><html><head><style>${code}</style></head><body>
+<div class="preview-container"><h1>CSS Preview</h1><p>This is a paragraph to demonstrate styles.</p>
+<button>Button</button><a href="#">Link</a><ul><li>Item 1</li><li>Item 2</li></ul></div></body></html>`;
+
+  const writeToIframe = useCallback((content: string) => {
+    if (!iframeRef.current) return;
+    const doc = iframeRef.current.contentDocument;
+    if (!doc) return;
+    doc.open();
+    doc.write(content);
+    doc.close();
+  }, []);
 
   const handleExecute = async () => {
     if (!activeArtifact) return;
 
     if (isWebRunnable) {
-      // Run in sandboxed iframe
       setViewMode("preview");
       setExecOutput(null);
-      if (iframeRef.current) {
-        const doc = iframeRef.current.contentDocument;
-        if (doc) {
-          let content = activeArtifact.content;
-          if (activeArtifact.language === "javascript" || activeArtifact.language === "js") {
-            content = `<!DOCTYPE html><html><head><style>body{font-family:monospace;padding:1rem;background:#1a1a2e;color:#e0e0e0;white-space:pre-wrap;}</style></head><body><script>
-const _output = [];
-const _origLog = console.log;
-console.log = (...args) => { _output.push(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ')); document.body.textContent = _output.join('\\n'); };
-try { ${content} } catch(e) { document.body.textContent = _output.join('\\n') + '\\nError: ' + e.message; }
-</script></body></html>`;
-          }
-          doc.open();
-          doc.write(content);
-          doc.close();
+      // Small delay to ensure iframe is mounted
+      requestAnimationFrame(() => {
+        let content = activeArtifact.content;
+        if (activeArtifact.language === "javascript" || activeArtifact.language === "js") {
+          content = wrapJSCode(content);
+        } else if (activeArtifact.language === "css") {
+          content = wrapCSSCode(content);
         }
-      }
+        writeToIframe(content);
+      });
       return;
     }
 
@@ -78,7 +95,7 @@ try { ${content} } catch(e) { document.body.textContent = _output.join('\\n') + 
         body: JSON.stringify({
           messages: [{
             role: "user",
-            content: `You are a code executor. Here is the user's ${activeArtifact.language} code:\n\`\`\`${activeArtifact.language}\n${activeArtifact.content}\n\`\`\`\nPlease run the code safely and provide the output in a readable format. If the code is not runnable, explain why and give suggestions to fix it. Show ONLY the output, be concise.`
+            content: `Execute this ${activeArtifact.language} code and show ONLY the output. No explanations, just the output:\n\`\`\`${activeArtifact.language}\n${activeArtifact.content}\n\`\`\``
           }],
           chatId: "artifact-exec"
         }),
@@ -130,22 +147,28 @@ try { ${content} } catch(e) { document.body.textContent = _output.join('\\n') + 
     }
   };
 
+  // Auto-render previews
   useEffect(() => {
-    if (viewMode === "preview" && canPreview && iframeRef.current && activeArtifact) {
-      const doc = iframeRef.current.contentDocument;
-      if (doc) {
+    if (viewMode === "preview" && iframeRef.current && activeArtifact) {
+      if (canPreview) {
         let content = activeArtifact.content;
         if (activeArtifact.type === "svg") {
           content = `<!DOCTYPE html><html><body style="margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f9f9f9">${content}</body></html>`;
         } else if (activeArtifact.type === "markdown") {
-          content = `<!DOCTYPE html><html><head><style>body{font-family:system-ui;padding:2rem;max-width:700px;margin:0 auto;line-height:1.6;color:#333}pre{background:#f4f4f4;padding:1rem;border-radius:8px;overflow-x:auto}code{font-size:0.9em}</style></head><body>${content}</body></html>`;
+          content = `<!DOCTYPE html><html><head><style>body{font-family:system-ui,-apple-system,sans-serif;padding:2rem;max-width:700px;margin:0 auto;line-height:1.7;color:#333}pre{background:#f4f4f4;padding:1rem;border-radius:8px;overflow-x:auto}code{font-size:0.9em}h1,h2,h3{margin-top:1.5em}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body>${content}</body></html>`;
         }
-        doc.open();
-        doc.write(content);
-        doc.close();
+        writeToIframe(content);
+      } else if (isWebRunnable) {
+        let content = activeArtifact.content;
+        if (activeArtifact.language === "javascript" || activeArtifact.language === "js") {
+          content = wrapJSCode(content);
+        } else if (activeArtifact.language === "css") {
+          content = wrapCSSCode(content);
+        }
+        writeToIframe(content);
       }
     }
-  }, [viewMode, activeArtifact, canPreview]);
+  }, [viewMode, activeArtifact, canPreview, isWebRunnable, writeToIframe]);
 
   // Reset exec output when artifact changes
   useEffect(() => {
@@ -154,25 +177,27 @@ try { ${content} } catch(e) { document.body.textContent = _output.join('\\n') + 
 
   if (!viewerOpen || !activeArtifact) return null;
 
+  const showPreviewTab = canPreview || isWebRunnable;
+
   return (
     <AnimatePresence>
       <motion.div
         initial={{ width: 0, opacity: 0 }}
         animate={{ width: "100%", opacity: 1 }}
         exit={{ width: 0, opacity: 0 }}
-        transition={{ duration: 0.25 }}
+        transition={{ duration: 0.2 }}
         className="flex flex-col h-full border-l border-border bg-card overflow-hidden"
       >
         {/* Toolbar */}
         <div className="h-12 flex items-center justify-between px-3 border-b border-border bg-muted/50 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              {activeArtifact.type}
+              {activeArtifact.language || activeArtifact.type}
             </span>
             <span className="text-sm font-medium text-foreground truncate">{activeArtifact.title}</span>
           </div>
           <div className="flex items-center gap-1">
-            {canPreview && (
+            {showPreviewTab && (
               <div className="flex bg-muted rounded-md p-0.5">
                 <button
                   onClick={() => setViewMode("preview")}
@@ -188,7 +213,7 @@ try { ${content} } catch(e) { document.body.textContent = _output.join('\\n') + 
                 </button>
               </div>
             )}
-            {canExecute && (
+            {canExecute && !isWebRunnable && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -198,6 +223,16 @@ try { ${content} } catch(e) { document.body.textContent = _output.join('\\n') + 
               >
                 {executing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
                 Run
+              </Button>
+            )}
+            {isWebRunnable && viewMode === "code" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleExecute}
+              >
+                <Play className="w-3 h-3" /> Run
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy}>
@@ -211,29 +246,23 @@ try { ${content} } catch(e) { document.body.textContent = _output.join('\\n') + 
 
         {/* Content */}
         <div className="flex-1 overflow-auto flex flex-col">
-          {viewMode === "preview" && canPreview ? (
+          {viewMode === "preview" && showPreviewTab ? (
             <iframe
               ref={iframeRef}
               title="Artifact Preview"
-              className="w-full flex-1 border-0"
-              sandbox="allow-scripts"
-            />
-          ) : isWebRunnable && viewMode === "preview" ? (
-            <iframe
-              ref={iframeRef}
-              title="Code Execution"
-              className="w-full flex-1 border-0"
-              sandbox="allow-scripts"
+              className="w-full flex-1 border-0 bg-white"
+              sandbox="allow-scripts allow-modals"
+              style={{ minHeight: "300px" }}
             />
           ) : (
             <div className="flex flex-col flex-1">
-              <pre className="p-4 text-sm font-mono text-foreground whitespace-pre-wrap break-words leading-relaxed flex-1">
+              <pre className="p-4 text-sm font-mono text-foreground whitespace-pre-wrap break-words leading-relaxed flex-1 bg-card">
                 <code>{activeArtifact.content}</code>
               </pre>
               {execOutput !== null && (
                 <div className="border-t border-border bg-muted/30 p-3">
                   <p className="text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Output</p>
-                  <pre className="text-sm font-mono text-foreground whitespace-pre-wrap break-words leading-relaxed max-h-[200px] overflow-y-auto">
+                  <pre className="text-sm font-mono text-foreground whitespace-pre-wrap break-words leading-relaxed max-h-[300px] overflow-y-auto">
                     {execOutput}
                   </pre>
                 </div>
