@@ -260,7 +260,7 @@ export async function generatePPTX(content: string, title: string = "Presentatio
   }
   flushBullets();
 
-  if (pptx.slides.length === 0) {
+  if (!currentSlide) {
     const slide = pptx.addSlide();
     slide.addText(stripMarkdown(content).slice(0, 2000), { x: 0.5, y: 0.5, w: 9, h: 5, fontSize: 14 });
   }
