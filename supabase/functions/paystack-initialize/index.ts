@@ -37,12 +37,49 @@ serve(async (req) => {
       throw new Error("Paystack secret key not configured");
     }
 
-    const { phone: rawPhone } = await req.json();
+    const body = await req.json();
+    const { phone: rawPhone, method } = body;
+
+    const email = user.email;
+    const amount = 20000; // 200 KES in kobo/cents
+
+    // ── CARD PAYMENT (redirect flow) ──
+    if (method === "card") {
+      const appUrl = Deno.env.get("APP_URL") || "https://mvp-cuea.lovable.app";
+      const paystackResp = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          amount,
+          currency: "KES",
+          callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paystack-callback`,
+          metadata: { user_id: user.id, plan: "paid" },
+        }),
+      });
+      const paystackData = await paystackResp.json();
+      console.log("Paystack card response:", JSON.stringify(paystackData));
+      if (!paystackData.status) {
+        throw new Error(paystackData.message || "Failed to initialize payment");
+      }
+      const reference = paystackData.data.reference;
+      await supabaseAdmin.from("payments").insert({
+        user_id: user.id, amount: 200, currency: "KES", status: "pending",
+        paystack_reference: reference, paystack_access_code: paystackData.data.access_code, email,
+      });
+      return new Response(JSON.stringify({ authorization_url: paystackData.data.authorization_url, reference }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── M-PESA PAYMENT (no redirect) ──
     if (!rawPhone) {
       return new Response(JSON.stringify({ error: "Phone number is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Format phone to E.164: 0712... → +254712..., 254712... → +254712..., +254712... stays
     let phone = String(rawPhone).replace(/\s+/g, "").replace(/-/g, "");
     if (phone.startsWith("0")) {
       phone = "+254" + phone.slice(1);
@@ -52,10 +89,6 @@ serve(async (req) => {
       phone = "+254" + phone;
     }
 
-    const email = user.email;
-    const amount = 20000; // 200 KES in kobo/cents
-
-    // Use Paystack charge endpoint for mobile money (no redirect)
     const paystackResp = await fetch("https://api.paystack.co/charge", {
       method: "POST",
       headers: {
@@ -63,17 +96,9 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email,
-        amount,
-        currency: "KES",
-        mobile_money: {
-          phone,
-          provider: "mpesa",
-        },
-        metadata: {
-          user_id: user.id,
-          plan: "paid",
-        },
+        email, amount, currency: "KES",
+        mobile_money: { phone, provider: "mpesa" },
+        metadata: { user_id: user.id, plan: "paid" },
       }),
     });
 
@@ -86,14 +111,9 @@ serve(async (req) => {
 
     const reference = paystackData.data.reference;
 
-    // Save payment record
     await supabaseAdmin.from("payments").insert({
-      user_id: user.id,
-      amount: 200,
-      currency: "KES",
-      status: "pending",
-      paystack_reference: reference,
-      email,
+      user_id: user.id, amount: 200, currency: "KES", status: "pending",
+      paystack_reference: reference, email,
     });
 
     return new Response(JSON.stringify({ reference }), {

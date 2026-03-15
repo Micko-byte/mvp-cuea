@@ -303,7 +303,63 @@ const ChatPage = () => {
     setIsListening(true);
   };
 
+  const pollPaymentStatus = async (reference: string) => {
+    setPaymentVerifying(true);
+    const maxAttempts = 60; // 5 minutes at 5s intervals
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      const { data } = await supabase
+        .from("payments")
+        .select("status")
+        .eq("paystack_reference", reference)
+        .single();
+      if (data?.status === "success") {
+        setPaymentVerifying(false);
+        setShowPaymentDialog(false);
+        toast.success("Payment successful! 🎉 You now have 200,000 tokens/day.");
+        return;
+      } else if (data?.status === "failed") {
+        setPaymentVerifying(false);
+        toast.error("Payment failed. Please try again.");
+        return;
+      }
+    }
+    setPaymentVerifying(false);
+    toast.error("Payment verification timed out. If you paid, it will be confirmed shortly.");
+  };
+
   const handlePayment = async () => {
+    if (paymentMethod === "card") {
+      // Card payment via Paystack redirect
+      setPaymentLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) { toast.error("Please sign in again."); return; }
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ method: "card" })
+        });
+        const data = await resp.json();
+        if (data.authorization_url) {
+          window.open(data.authorization_url, "_blank");
+          toast.info("Complete payment in the new tab.");
+        } else {
+          toast.error(data.error || "Failed to initialize card payment");
+        }
+      } catch {
+        toast.error("Payment initialization failed.");
+      } finally {
+        setPaymentLoading(false);
+      }
+      return;
+    }
+
     const phone = paymentPhone.trim();
     if (!phone || phone.length < 10) {
       toast.error("Please enter a valid phone number (e.g. 0712345678)");
@@ -313,10 +369,7 @@ const ChatPage = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        toast.error("Please sign in again.");
-        return;
-      }
+      if (!accessToken) { toast.error("Please sign in again."); return; }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
         method: "POST",
         headers: {
@@ -328,15 +381,16 @@ const ChatPage = () => {
       });
       const data = await resp.json();
       if (data.reference) {
-        toast.success("Payment initiated! Check your phone for the M-Pesa prompt.");
-        setShowPaymentDialog(false);
+        setPaymentLoading(false);
         setPaymentPhone("");
+        toast.success("Check your phone for the M-Pesa prompt.");
+        pollPaymentStatus(data.reference);
       } else {
         toast.error(data.error || "Failed to initialize payment");
+        setPaymentLoading(false);
       }
     } catch {
       toast.error("Payment initialization failed.");
-    } finally {
       setPaymentLoading(false);
     }
   };
