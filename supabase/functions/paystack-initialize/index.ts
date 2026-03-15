@@ -37,9 +37,19 @@ serve(async (req) => {
       throw new Error("Paystack secret key not configured");
     }
 
-    const { phone } = await req.json();
-    if (!phone) {
+    const { phone: rawPhone } = await req.json();
+    if (!rawPhone) {
       return new Response(JSON.stringify({ error: "Phone number is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Format phone to E.164: 0712... → +254712..., 254712... → +254712..., +254712... stays
+    let phone = String(rawPhone).replace(/\s+/g, "").replace(/-/g, "");
+    if (phone.startsWith("0")) {
+      phone = "+254" + phone.slice(1);
+    } else if (phone.startsWith("254")) {
+      phone = "+" + phone;
+    } else if (!phone.startsWith("+")) {
+      phone = "+254" + phone;
     }
 
     const email = user.email;
