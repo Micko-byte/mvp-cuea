@@ -1059,7 +1059,7 @@ const ChatPage = () => {
                 `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` :
                 activeChat ?
                 activeChat.title :
-                "Sekani"}
+                "CUEA AI"}
               </h2>
             </div>
             <button
