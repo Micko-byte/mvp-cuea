@@ -659,7 +659,7 @@ const AdminPage = () => {
                 <h3 className="font-display font-semibold text-foreground">System Information</h3>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Platform</span><span className="text-sm font-medium text-foreground">CUEA AI — Sekani</span></div>
+                <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Platform</span><span className="text-sm font-medium text-foreground">CUEA AI — Soma na Sekani</span></div>
                 <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">AI Chat Model</span><span className="text-sm font-medium text-foreground">GPT-4o-mini</span></div>
                 <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Free Daily Limit</span><span className="text-sm font-medium text-foreground">50,000 tokens</span></div>
                 <div className="flex justify-between py-2 border-b border-border"><span className="text-sm text-muted-foreground">Paid Daily Limit</span><span className="text-sm font-medium text-foreground">200,000 tokens</span></div>
