@@ -255,7 +255,7 @@ const ChatPage = () => {
 
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText || input).trim();
-    if (!text || isStreaming) return;
+    if ((!text && attachedFiles.length === 0) || isStreaming) return;
     let chat = activeChat;
     if (!chat) {
       if (mainTab === "units" && selectedUnitId) {
@@ -265,9 +265,11 @@ const ChatPage = () => {
       }
       if (!chat) return;
     }
+    const filesToSend = attachedFiles.length > 0 ? [...attachedFiles] : undefined;
     setInput("");
+    setAttachedFiles([]);
     inputRef.current?.focus();
-    await sendMessage(text, chat.id);
+    await sendMessage(text, chat.id, filesToSend);
   };
 
   const speechSupported =
