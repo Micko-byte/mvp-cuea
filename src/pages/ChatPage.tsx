@@ -1324,6 +1324,7 @@ const ChatPage = () => {
                             </Popover>
                             }
                                 </div>
+                                <span
                             className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
                             
                                   {formatTime(msg.timestamp)}
