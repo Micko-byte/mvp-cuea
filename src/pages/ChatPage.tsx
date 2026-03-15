@@ -1182,6 +1182,33 @@ const ChatPage = () => {
                                 <div className="prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
                                           <ReactMarkdown
                                     components={{
+                                      a({ href, children, ...props }) {
+                                        if (href?.startsWith("download:")) {
+                                          const format = href.replace("download:", "") as "pdf" | "docx" | "pptx" | "xlsx";
+                                          const generators: Record<string, () => void> = {
+                                            pdf: () => generatePDF(msg.text, activeChat?.title || "Document"),
+                                            docx: () => generateDOCX(msg.text, activeChat?.title || "Document"),
+                                            pptx: () => generatePPTX(msg.text, activeChat?.title || "Presentation"),
+                                            xlsx: () => generateXLSX(msg.text, activeChat?.title || "Spreadsheet"),
+                                          };
+                                          const icons: Record<string, string> = { pdf: "📄", docx: "📝", pptx: "📊", xlsx: "📈" };
+                                          return (
+                                            <button
+                                              onClick={() => generators[format]?.()}
+                                              className="inline-flex items-center gap-2 px-4 py-2.5 my-1 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                              style={{
+                                                background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))",
+                                                color: "hsl(var(--primary-foreground))",
+                                                boxShadow: "0 2px 8px hsl(var(--primary) / 0.3)",
+                                              }}
+                                            >
+                                              <Download className="w-4 h-4" />
+                                              <span>{String(children).replace("📥 ", "")}</span>
+                                            </button>
+                                          );
+                                        }
+                                        return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                                      },
                                       code({ className, children, ...props }) {
                                         const match = /language-(\w+)/.exec(className || "");
                                         const lang = match ? match[1] : "";
