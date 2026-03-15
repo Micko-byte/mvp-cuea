@@ -355,14 +355,19 @@ ${ragContext ? `Course Material Context:\n${ragContext}` : "No specific course m
 
 Answer the student's question helpfully, comprehensively, and naturally.`;
 
-    // Call OpenAI API
+    // Call OpenAI API - use vision model if multimodal content detected
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+
+    const hasImageContent = messages.some((m: any) => 
+      Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url")
+    );
+    const model = hasImageContent ? "gpt-4o" : "gpt-4o-mini";
 
     const response = await withTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model,
         messages: [{ role: "system", content: systemPrompt }, ...messages],
         temperature: 0.7,
         max_tokens: 4096,
