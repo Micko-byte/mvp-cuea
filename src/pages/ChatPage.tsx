@@ -971,7 +971,7 @@ const ChatPage = () => {
             handleSend();
           }
         }}
-        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
+        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask CUEA AI anything..."}
         className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
         style={{ maxHeight: "150px" }}
         rows={1}
