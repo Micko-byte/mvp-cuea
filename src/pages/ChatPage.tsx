@@ -1429,59 +1429,95 @@ const ChatPage = () => {
       
 
       {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!paymentVerifying) setShowPaymentDialog(open); }}>
         <DialogContent className="backdrop-blur-xl bg-card/80 border-border/50 shadow-2xl max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium 🎓</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground text-center">
-              You've reached your free daily limit. Upgrade to keep learning!
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="border border-border rounded-xl p-4 text-center">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Free Plan</p>
-                <p className="text-2xl font-bold mt-1">50K</p>
-                <p className="text-xs text-muted-foreground">tokens/day</p>
-              </div>
-              <div className="border-2 border-primary rounded-xl p-4 text-center bg-primary/5">
-                <p className="text-xs font-semibold text-primary uppercase">Premium</p>
-                <p className="text-2xl font-bold mt-1">200K</p>
-                <p className="text-xs text-muted-foreground">tokens/day</p>
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold">KES 200</p>
-              <p className="text-xs text-muted-foreground">One-time payment</p>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
-              <Input
-                type="tel"
-                placeholder="e.g. 0712345678"
-                value={paymentPhone}
-                onChange={(e) => setPaymentPhone(e.target.value)}
-                className="text-center text-lg tracking-wider"
-              />
-              <p className="text-xs text-muted-foreground text-center">
-                Enter your M-Pesa phone number to receive the payment prompt
+          {paymentVerifying ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="w-12 h-12 animate-spin text-primary" />
+              <p className="text-lg font-semibold">Authenticating Payment...</p>
+              <p className="text-sm text-muted-foreground text-center">
+                Please complete the M-Pesa prompt on your phone.<br />This may take a moment.
               </p>
             </div>
-            <Button
-              onClick={handlePayment}
-              disabled={paymentLoading || !paymentPhone.trim()}
-              className="w-full text-white font-semibold py-3"
-              style={{ backgroundColor: "#800000" }}>
-              
-              {paymentLoading ?
-              <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...
-                </> :
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium 🎓</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground text-center">
+                  You've reached your free daily limit. Upgrade to keep learning!
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="border border-border rounded-xl p-4 text-center">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Free Plan</p>
+                    <p className="text-2xl font-bold mt-1">50K</p>
+                    <p className="text-xs text-muted-foreground">tokens/day</p>
+                  </div>
+                  <div className="border-2 border-primary rounded-xl p-4 text-center bg-primary/5">
+                    <p className="text-xs font-semibold text-primary uppercase">Premium</p>
+                    <p className="text-2xl font-bold mt-1">200K</p>
+                    <p className="text-xs text-muted-foreground">tokens/day</p>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold">KES 200</p>
+                  <p className="text-xs text-muted-foreground">One-time payment</p>
+                </div>
 
-              "Pay KES 200"
-              }
-            </Button>
-          </div>
+                {/* Payment Method Tabs */}
+                <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
+                  <button
+                    onClick={() => setPaymentMethod("mpesa")}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "mpesa" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    📱 M-Pesa
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod("card")}
+                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "card" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    💳 Card
+                  </button>
+                </div>
+
+                {paymentMethod === "mpesa" ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
+                    <Input
+                      type="tel"
+                      placeholder="e.g. 0712345678"
+                      value={paymentPhone}
+                      onChange={(e) => setPaymentPhone(e.target.value)}
+                      className="text-center text-lg tracking-wider"
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      Enter your M-Pesa phone number to receive the payment prompt
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    You'll be redirected to a secure Paystack page to complete your card payment.
+                  </p>
+                )}
+
+                <Button
+                  onClick={handlePayment}
+                  disabled={paymentLoading || (paymentMethod === "mpesa" && !paymentPhone.trim())}
+                  className="w-full text-white font-semibold py-3"
+                  style={{ backgroundColor: "#800000" }}
+                >
+                  {paymentLoading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...</>
+                  ) : paymentMethod === "mpesa" ? (
+                    "Pay KES 200 via M-Pesa"
+                  ) : (
+                    "Pay KES 200 via Card"
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>);
