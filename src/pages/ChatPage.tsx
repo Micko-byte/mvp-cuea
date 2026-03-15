@@ -139,6 +139,8 @@ const ChatPage = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState("");
+  const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
