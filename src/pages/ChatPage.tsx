@@ -8,6 +8,8 @@ import { usePersonalization } from "@/contexts/PersonalizationContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
+import { Download } from "lucide-react";
 import {
   Plus,
   ArrowUp,
@@ -255,7 +257,7 @@ const ChatPage = () => {
 
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText || input).trim();
-    if (!text || isStreaming) return;
+    if ((!text && attachedFiles.length === 0) || isStreaming) return;
     let chat = activeChat;
     if (!chat) {
       if (mainTab === "units" && selectedUnitId) {
@@ -265,9 +267,11 @@ const ChatPage = () => {
       }
       if (!chat) return;
     }
+    const filesToSend = attachedFiles.length > 0 ? [...attachedFiles] : undefined;
     setInput("");
+    setAttachedFiles([]);
     inputRef.current?.focus();
-    await sendMessage(text, chat.id);
+    await sendMessage(text, chat.id, filesToSend);
   };
 
   const speechSupported =
@@ -993,7 +997,7 @@ const ChatPage = () => {
         </div>
         <button
         onClick={() => handleSend()}
-        disabled={!input.trim() || isStreaming}
+        disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming}
         className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40">
         
           {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
@@ -1285,6 +1289,39 @@ const ChatPage = () => {
                                         <RotateCcw className="w-3 h-3" />
                                       </button>
                                     </>
+                            }
+                                  {msg.sender === "bot" && msg.text.length > 100 &&
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                  title="Download as document">
+                                  <Download className="w-3 h-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent side="top" align="start" className="w-40 p-1.5">
+                                <button
+                                  onClick={() => generatePDF(msg.text, activeChat?.title || "Document")}
+                                  className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">
+                                  📄 PDF
+                                </button>
+                                <button
+                                  onClick={() => generateDOCX(msg.text, activeChat?.title || "Document")}
+                                  className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">
+                                  📝 Word (.docx)
+                                </button>
+                                <button
+                                  onClick={() => generatePPTX(msg.text, activeChat?.title || "Presentation")}
+                                  className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">
+                                  📊 PowerPoint (.pptx)
+                                </button>
+                                <button
+                                  onClick={() => generateXLSX(msg.text, activeChat?.title || "Spreadsheet")}
+                                  className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">
+                                  📈 Excel (.xlsx)
+                                </button>
+                              </PopoverContent>
+                            </Popover>
                             }
                                 </div>
                                 <span
