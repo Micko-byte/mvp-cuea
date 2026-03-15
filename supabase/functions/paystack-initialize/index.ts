@@ -37,11 +37,16 @@ serve(async (req) => {
       throw new Error("Paystack secret key not configured");
     }
 
+    const { phone } = await req.json();
+    if (!phone) {
+      return new Response(JSON.stringify({ error: "Phone number is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const email = user.email;
     const amount = 20000; // 200 KES in kobo/cents
 
-    // Initialize Paystack transaction
-    const paystackResp = await fetch("https://api.paystack.co/transaction/initialize", {
+    // Use Paystack charge endpoint for mobile money (no redirect)
+    const paystackResp = await fetch("https://api.paystack.co/charge", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
@@ -51,18 +56,25 @@ serve(async (req) => {
         email,
         amount,
         currency: "KES",
+        mobile_money: {
+          phone,
+          provider: "mpesa",
+        },
         metadata: {
           user_id: user.id,
           plan: "paid",
         },
-        callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paystack-callback`,
       }),
     });
 
     const paystackData = await paystackResp.json();
+    console.log("Paystack charge response:", JSON.stringify(paystackData));
+
     if (!paystackData.status) {
       throw new Error(paystackData.message || "Failed to initialize payment");
     }
+
+    const reference = paystackData.data.reference;
 
     // Save payment record
     await supabaseAdmin.from("payments").insert({
@@ -70,16 +82,11 @@ serve(async (req) => {
       amount: 200,
       currency: "KES",
       status: "pending",
-      paystack_reference: paystackData.data.reference,
-      paystack_access_code: paystackData.data.access_code,
+      paystack_reference: reference,
       email,
     });
 
-    return new Response(JSON.stringify({
-      authorization_url: paystackData.data.authorization_url,
-      reference: paystackData.data.reference,
-      access_code: paystackData.data.access_code,
-    }), {
+    return new Response(JSON.stringify({ reference }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
