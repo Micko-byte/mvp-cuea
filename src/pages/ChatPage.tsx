@@ -899,11 +899,19 @@ const ChatPage = () => {
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx"
+        accept="image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx,.xls"
         className="hidden"
         onChange={(e) => {
-          if (e.target.files) setAttachedFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+          const files = e.target.files;
+          if (files && files.length > 0) {
+            setAttachedFiles((prev) => [...prev, ...Array.from(files)]);
+          }
           e.target.value = "";
+          // Reset accept attribute
+          if (fileInputRef.current) {
+            fileInputRef.current.setAttribute("accept", "image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx,.xls");
+            fileInputRef.current.removeAttribute("capture");
+          }
         }} />
       
         <Popover>
