@@ -184,13 +184,39 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             image_url: { url: base64 },
           });
         } else {
-          // For non-image files, read as text if possible
+          // For non-image files, read as text and embed into knowledge base
           try {
             const fileText = await file.text();
             contentParts.push({
               type: "text",
               text: `[Attached file: ${file.name}]\n${fileText.slice(0, 10000)}`,
             });
+
+            // Embed document into knowledge base in background
+            if (fileText.trim().length >= 20) {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const token = sessionData.session?.access_token;
+              if (token) {
+                fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    content: fileText.slice(0, 50000),
+                    title: file.name,
+                    fileName: file.name,
+                    unitId: currentChat?.unit_id || null,
+                  }),
+                }).then(res => {
+                  if (res.ok) {
+                    toast.success(`📚 "${file.name}" added to knowledge base`);
+                  }
+                }).catch(() => {});
+              }
+            }
           } catch {
             contentParts.push({
               type: "text",
