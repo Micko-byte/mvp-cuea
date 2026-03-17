@@ -337,6 +337,42 @@ export type Database = {
         }
         Relationships: []
       }
+      student_memory: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          last_seen_at: string | null
+          memory_type: string
+          strength_level: number | null
+          subject: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          memory_type?: string
+          strength_level?: number | null
+          subject?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          memory_type?: string
+          strength_level?: number | null
+          subject?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_units: {
         Row: {
           created_at: string

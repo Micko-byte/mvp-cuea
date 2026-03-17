@@ -1414,6 +1414,35 @@ const ChatPage = () => {
                             </Popover>
                             }
                                 </div>
+                                {/* Smart Suggestions after bot messages */}
+                                {msg.sender === "bot" && msg.text.length > 50 && msgIndex === activeChat!.messages.length - 1 && !isStreaming && (
+                                  <div className="flex flex-wrap gap-1.5 mt-1">
+                                    <button
+                                      onClick={() => handleSend("Explain that in simpler terms, like I'm a beginner")}
+                                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
+                                    >
+                                      💡 Explain simpler
+                                    </button>
+                                    <button
+                                      onClick={() => handleSend("Quiz me on what you just explained")}
+                                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
+                                    >
+                                      🎯 Quiz me
+                                    </button>
+                                    <button
+                                      onClick={() => handleSend("Give me exam-style questions on this topic")}
+                                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
+                                    >
+                                      📝 Exam questions
+                                    </button>
+                                    <button
+                                      onClick={() => handleSend("Summarize the key points from your last response in bullet points")}
+                                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
+                                    >
+                                      📋 Summarize
+                                    </button>
+                                  </div>
+                                )}
                                 <span
                             className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
                             
