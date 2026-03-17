@@ -1,7 +1,7 @@
 import { useArtifacts } from "@/contexts/ArtifactContext";
 import { X, Eye, Code2, Copy, Check, Play, Loader2, Download, RefreshCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -104,7 +104,6 @@ const ArtifactViewer = () => {
   const [copied, setCopied] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [execOutput, setExecOutput] = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
 
   const handleCopy = () => {
@@ -133,19 +132,6 @@ const ArtifactViewer = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleOpenNewTab = () => {
-    if (!activeArtifact) return;
-    const content = getPreviewContent();
-    if (!content) return;
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-  };
-
-  const handleRefresh = () => {
-    setIframeKey(k => k + 1);
-  };
-
   const lang = activeArtifact?.language?.toLowerCase() || '';
   const type = activeArtifact?.type || 'code';
 
@@ -170,15 +156,18 @@ const ArtifactViewer = () => {
     return null;
   }, [activeArtifact, isHtml, isJs, isJsx, isCss, isSvg, isMarkdown]);
 
-  // Set iframe srcdoc when in preview mode
-  useEffect(() => {
-    if (viewMode === "preview" && iframeRef.current && activeArtifact && canPreview) {
-      const content = getPreviewContent();
-      if (content) {
-        iframeRef.current.srcdoc = content;
-      }
-    }
-  }, [viewMode, activeArtifact, canPreview, getPreviewContent, iframeKey]);
+  const previewContent = canPreview ? getPreviewContent() : null;
+
+  const handleOpenNewTab = () => {
+    if (!previewContent) return;
+    const blob = new Blob([previewContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  };
+
+  const handleRefresh = () => {
+    setIframeKey(k => k + 1);
+  };
 
   // AI execution for non-web languages
   const handleExecute = async () => {
@@ -314,13 +303,13 @@ const ArtifactViewer = () => {
 
         {/* Content */}
         <div className="flex-1 overflow-auto flex flex-col">
-          {viewMode === "preview" && showPreviewTab ? (
+          {viewMode === "preview" && showPreviewTab && previewContent ? (
             <iframe
               key={iframeKey}
-              ref={iframeRef}
               title="Artifact Preview"
+              srcDoc={previewContent}
               className="w-full flex-1 border-0 bg-white"
-              sandbox="allow-scripts allow-modals"
+              sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
               style={{ minHeight: "400px", resize: "vertical" }}
             />
           ) : isPython ? (
