@@ -133,11 +133,6 @@ const ChatPage = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [unitsOpen, setUnitsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  interface ProcessedFile {
-    file: File;
-    preview?: string;
-    textContent?: string;
-  }
   const [attachedFiles, setAttachedFiles] = useState<ProcessedFile[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
