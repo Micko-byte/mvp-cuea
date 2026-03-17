@@ -264,6 +264,34 @@ const ChatPage = () => {
     };
   }, [handleTouchStart, handleTouchEnd]);
 
+  const processFiles = async (files: File[]) => {
+    const processed: ProcessedFile[] = [];
+    for (const file of files) {
+      if (file.type.startsWith("image/")) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        processed.push({ file, preview: dataUrl });
+      } else if (['text/plain', 'text/csv', 'text/markdown'].includes(file.type) || 
+                   file.name.endsWith('.txt') || file.name.endsWith('.csv') || file.name.endsWith('.md')) {
+        const text = await file.text();
+        processed.push({ file, textContent: text.slice(0, 10000) });
+      } else {
+        processed.push({ file });
+      }
+    }
+    return processed;
+  };
+
+  const handleFileSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const processed = await processFiles(Array.from(files));
+    setAttachedFiles(prev => [...prev, ...processed]);
+  };
+
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText || input).trim();
     if ((!text && attachedFiles.length === 0) || isStreaming) return;
@@ -276,7 +304,7 @@ const ChatPage = () => {
       }
       if (!chat) return;
     }
-    const filesToSend = attachedFiles.length > 0 ? [...attachedFiles] : undefined;
+    const filesToSend = attachedFiles.length > 0 ? attachedFiles.map(pf => pf.file) : undefined;
     setInput("");
     setAttachedFiles([]);
     inputRef.current?.focus();
