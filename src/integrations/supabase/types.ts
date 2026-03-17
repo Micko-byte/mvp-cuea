@@ -93,6 +93,7 @@ export type Database = {
           chat_type: string
           created_at: string
           id: string
+          openai_thread_id: string | null
           title: string
           unit_id: string | null
           updated_at: string
@@ -102,6 +103,7 @@ export type Database = {
           chat_type?: string
           created_at?: string
           id?: string
+          openai_thread_id?: string | null
           title?: string
           unit_id?: string | null
           updated_at?: string
@@ -111,6 +113,7 @@ export type Database = {
           chat_type?: string
           created_at?: string
           id?: string
+          openai_thread_id?: string | null
           title?: string
           unit_id?: string | null
           updated_at?: string
@@ -193,36 +196,45 @@ export type Database = {
       }
       materials: {
         Row: {
+          chunk_count: number | null
           created_at: string
           downloads: number
+          embedding_status: string | null
           file_name: string
           file_size: number
           file_type: string
           id: string
+          openai_file_id: string | null
           storage_path: string | null
           title: string
           unit_id: string
           uploaded_by: string
         }
         Insert: {
+          chunk_count?: number | null
           created_at?: string
           downloads?: number
+          embedding_status?: string | null
           file_name: string
           file_size?: number
           file_type: string
           id?: string
+          openai_file_id?: string | null
           storage_path?: string | null
           title: string
           unit_id: string
           uploaded_by: string
         }
         Update: {
+          chunk_count?: number | null
           created_at?: string
           downloads?: number
+          embedding_status?: string | null
           file_name?: string
           file_size?: number
           file_type?: string
           id?: string
+          openai_file_id?: string | null
           storage_path?: string | null
           title?: string
           unit_id?: string
@@ -354,6 +366,24 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       token_usage: {
         Row: {
           created_at: string
@@ -388,6 +418,7 @@ export type Database = {
           is_active: boolean
           lecturer: string | null
           name: string
+          openai_vector_store_id: string | null
           semester: number
           year: number
         }
@@ -400,6 +431,7 @@ export type Database = {
           is_active?: boolean
           lecturer?: string | null
           name: string
+          openai_vector_store_id?: string | null
           semester: number
           year: number
         }
@@ -412,6 +444,7 @@ export type Database = {
           is_active?: boolean
           lecturer?: string | null
           name?: string
+          openai_vector_store_id?: string | null
           semester?: number
           year?: number
         }
