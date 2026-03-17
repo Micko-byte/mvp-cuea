@@ -11,12 +11,21 @@ const corsHeaders = {
 const CHUNK_SIZE = 1000;
 const CHUNK_OVERLAP = 200;
 
+function sanitizeText(text: string): string {
+  return text
+    .replace(/\u0000/g, '')
+    .replace(/\\u0000/g, '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .replace(/\uFFFD/g, '');
+}
+
 function chunkText(text: string): string[] {
   const chunks: string[] = [];
+  const clean = sanitizeText(text);
   let start = 0;
-  while (start < text.length) {
-    const end = Math.min(start + CHUNK_SIZE, text.length);
-    chunks.push(text.slice(start, end));
+  while (start < clean.length) {
+    const end = Math.min(start + CHUNK_SIZE, clean.length);
+    chunks.push(clean.slice(start, end));
     start += CHUNK_SIZE - CHUNK_OVERLAP;
   }
   return chunks;
