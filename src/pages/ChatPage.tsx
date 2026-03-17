@@ -1394,7 +1394,13 @@ const ChatPage = () => {
                                       }
                                     }}>
                                     
-                                            {msg.text || "..."}
+                                            {(() => {
+                                              const raw = msg.text || "...";
+                                              // Convert \(...\) → $...$ and \[...\] → $$...$$
+                                              return raw
+                                                .replace(/\\\((.+?)\\\)/g, '$$$1$$')
+                                                .replace(/\\\[(.+?)\\\]/gs, '$$$$$1$$$$');
+                                            })()}
                                           </ReactMarkdown>
                                         </div> :
                                 editingMsgId === msg.id ?
