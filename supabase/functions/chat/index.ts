@@ -479,74 +479,7 @@ serve(async (req) => {
       }
     }
 
-    // --- DALL-E 3 Image Generation ---
-    const isImageRequest = /\b(generate|create|draw|illustrate|visualize|make|show me)\b.*\b(image|picture|diagram|chart|illustration|figure|graph|sketch)\b/i.test(lastUserMessage)
-      || (/\b(what does|how does)\b/i.test(lastUserMessage) && /\b(look like|diagram|chart)\b/i.test(lastUserMessage));
-
-    if (isImageRequest && OPENAI_API_KEY) {
-      try {
-        // Step 1: Enhance the prompt
-        const promptRes = await withTimeout("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [{ role: "user", content: `Convert this student request into a precise DALL-E 3 image prompt. Make it educational and academic. Request: "${lastUserMessage}". Return only the prompt text, nothing else.` }],
-            max_tokens: 150,
-          }),
-        }, 10000);
-
-        let enhancedPrompt = lastUserMessage;
-        if (promptRes.ok) {
-          const promptData = await promptRes.json();
-          enhancedPrompt = promptData.choices?.[0]?.message?.content || lastUserMessage;
-        }
-
-        // Step 2: Generate image
-        const imgRes = await withTimeout("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: `Educational illustration for a university student. Clean, professional, clearly labelled. ${enhancedPrompt}`,
-            n: 1,
-            size: "1024x1024",
-            quality: "standard",
-            style: "natural",
-          }),
-        }, 30000);
-
-        if (imgRes.ok) {
-          const imgData = await imgRes.json();
-          const imageUrl = imgData.data?.[0]?.url;
-          if (imageUrl) {
-            const responseText = `Here's the illustration I created:\n\n![${lastUserMessage}](${imageUrl})\n\n*Click the image to open full size. Right-click to save.*\n\nWould you like me to explain this diagram or create a variation?`;
-            const encoder = new TextEncoder();
-            const readable = new ReadableStream({
-              start(controller) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: responseText } }] })}\n\n`));
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                controller.close();
-              }
-            });
-
-            // Track approximate token usage
-            supabaseAdmin.from("token_usage").insert({ user_id: userId, tokens_used: 500, model: "dall-e-3" }).then(() => {});
-            await redis.del(tokenCacheKey);
-
-            return new Response(readable, {
-              headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" }
-            });
-          }
-        }
-        // If image gen fails, fall through to normal chat
-        console.warn("DALL-E generation failed, falling through to normal chat");
-      } catch (err) {
-        console.error("DALL-E error:", err);
-        // Fall through to normal chat
-      }
-    }
-
+    // --- Math detection: upgrade model ---
     // --- Math detection: upgrade model ---
     const mathPatterns = /(\b(calculus|integral|derivative|equation|matrix|algebra|theorem|proof|polynomial|trigonometry|logarithm|differential|eigenvalue|laplace|fourier)\b|[∫∑∏√±≈≠≤≥∞∂∇]|\\frac|\\sqrt|\d+\s*[\+\-\*\/\^]\s*\d+)/i;
     const hasMathContent = mathPatterns.test(lastUserMessage);
