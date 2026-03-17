@@ -446,12 +446,22 @@ const ChatPage = () => {
   };
 
   const handleCreateArtifact = (content: string, language: string) => {
-    let type: "code" | "html" | "svg" | "markdown" | "table" = "code";
-    if (language === "html" || language === "htm") type = "html";else
-    if (language === "svg") type = "svg";else
-    if (language === "markdown" || language === "md") type = "markdown";else
-    if (language === "csv") type = "table";
-    addArtifact({ title: `${language.toUpperCase()} Snippet`, content, language, type });
+    const type = detectArtifactType(language, content);
+    addArtifact({ title: `${language.toUpperCase() || 'CODE'} Snippet`, content, language, type });
+  };
+
+  const handleDocumentDownload = async (format: DocType) => {
+    if (!activeChat) return;
+    const lastBotMsg = [...activeChat.messages].reverse().find(m => m.sender === 'bot');
+    if (!lastBotMsg) return;
+    const cleanContent = lastBotMsg.text.replace(/\[.*?\]\(download:[^)]+\)/g, '').trim();
+    const title = activeChat.title || 'CUEA AI Document';
+    try {
+      await generateDocument({ title, content: cleanContent, type: format });
+      toast.success(`${format.toUpperCase()} downloaded!`);
+    } catch (e: any) {
+      toast.error('Download failed: ' + e.message);
+    }
   };
 
   const handleRenameSubmit = async (chatId: string) => {
