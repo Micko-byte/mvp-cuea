@@ -919,19 +919,19 @@ const ChatPage = () => {
   // Chat input component
   const chatInput =
   <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
-      {attachedFiles.length > 0 &&
+    {attachedFiles.length > 0 &&
     <div className="flex flex-wrap gap-1.5 mb-2">
-          {attachedFiles.map((file, i) =>
+          {attachedFiles.map((pf, i) =>
       <span
         key={i}
         className="inline-flex items-center gap-1 text-xs bg-card border border-border px-2 py-1 rounded-lg">
-        
-              {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
-              <span className="max-w-[120px] truncate">{file.name}</span>
+              {pf.preview ? (
+                <img src={pf.preview} alt="" className="w-6 h-6 rounded object-cover" />
+              ) : pf.file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
+              <span className="max-w-[120px] truncate">{pf.file.name}</span>
               <button
           onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))}
           className="text-muted-foreground hover:text-destructive">
-          
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -942,22 +942,13 @@ const ChatPage = () => {
       className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
       style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
       
-        <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx,.xls"
-        className="hidden"
-        onChange={(e) => {
-          const files = e.target.files;
-          if (files && files.length > 0) {
-            setAttachedFiles((prev) => [...prev, ...Array.from(files)]);
-          }
-          e.target.value = "";
-          // Reset accept attribute
-          if (fileInputRef.current) {
-            fileInputRef.current.setAttribute("accept", "image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx,.xls");
-            fileInputRef.current.removeAttribute("capture");
+        {/* Three separate hidden file inputs */}
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+          onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+        <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden"
+          onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+        <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.pptx,.ppt,.md" multiple className="hidden"
+          onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
           }
         }} />
       
