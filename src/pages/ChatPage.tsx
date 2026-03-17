@@ -1280,6 +1280,22 @@ const ChatPage = () => {
                                             </div>);
                                         }
                                         return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
+                                      },
+                                      img({ src, alt, ...props }) {
+                                        return (
+                                          <div className="my-3">
+                                            <img
+                                              src={src}
+                                              alt={alt || "Generated image"}
+                                              className="max-w-full rounded-xl border border-border shadow-md cursor-pointer hover:opacity-90 transition-opacity"
+                                              loading="lazy"
+                                              onClick={() => window.open(src, "_blank")}
+                                            />
+                                            {alt && (
+                                              <p className="text-xs text-muted-foreground mt-1.5 text-center italic">{alt}</p>
+                                            )}
+                                          </div>
+                                        );
                                       }
                                     }}>
                                     
