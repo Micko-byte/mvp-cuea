@@ -260,37 +260,129 @@ const ChatPage = () => {
     };
   }, [handleTouchStart, handleTouchEnd]);
 
-  const processFiles = async (files: File[]) => {
-    const processed: ProcessedFile[] = [];
-    for (const file of files) {
-      if (file.type.startsWith("image/")) {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        processed.push({ file, preview: dataUrl });
-      } else if (['text/plain', 'text/csv', 'text/markdown'].includes(file.type) || 
-                   file.name.endsWith('.txt') || file.name.endsWith('.csv') || file.name.endsWith('.md')) {
-        const text = await file.text();
-        processed.push({ file, textContent: text.slice(0, 10000) });
-      } else {
-        processed.push({ file });
-      }
+  const humanSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const toBase64 = async (file: File) => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const [, base64 = ""] = dataUrl.split(",");
+    return { dataUrl, base64 };
+  };
+
+  const getCategory = (file: File): ProcessedFile["type"] => {
+    if (file.type.startsWith("image/")) return "image";
+    if (file.type === "application/pdf") return "pdf";
+    if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) return "word";
+    if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("spreadsheetml")) return "spreadsheet";
+    if (
+      file.type === "text/plain" ||
+      file.type === "text/csv" ||
+      file.type === "text/markdown" ||
+      file.name.endsWith(".txt") ||
+      file.name.endsWith(".csv") ||
+      file.name.endsWith(".md")
+    ) {
+      return "text";
     }
+    return "file";
+  };
+
+  const processAttachedFile = async (file: File): Promise<ProcessedFile> => {
+    const processed: ProcessedFile = {
+      file,
+      name: file.name,
+      type: getCategory(file),
+      size: humanSize(file.size),
+    };
+
+    if (file.type.startsWith("image/")) {
+      const { base64, dataUrl } = await toBase64(file);
+      processed.base64 = base64;
+      processed.mediaType = file.type;
+      processed.preview = dataUrl;
+      return processed;
+    }
+
+    if (
+      file.type === "text/plain" ||
+      file.type === "text/csv" ||
+      file.type === "text/markdown" ||
+      file.name.endsWith(".txt") ||
+      file.name.endsWith(".csv") ||
+      file.name.endsWith(".md")
+    ) {
+      const text = await file.text();
+      processed.text = text;
+      processed.embeddingText = text;
+      return processed;
+    }
+
+    if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
+      try {
+        const mammoth = await import("mammoth");
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        processed.text = result.value;
+        processed.embeddingText = result.value;
+      } catch {
+        processed.text = `[Word document: ${file.name} — content extraction unavailable in browser]`;
+      }
+      return processed;
+    }
+
+    if (file.type === "application/pdf") {
+      const { base64 } = await toBase64(file);
+      processed.base64 = base64;
+      processed.mediaType = "application/pdf";
+      processed.text = `[PDF document: ${file.name} (${humanSize(file.size)}). Note: PDF text extraction is limited in the browser. The AI will do its best to help based on the filename and any context you provide. For best results with PDFs, copy and paste the text content directly into the chat.]`;
+      return processed;
+    }
+
+    if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("spreadsheetml")) {
+      try {
+        const XLSX = await import("xlsx");
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const parts: string[] = [];
+
+        for (const sheetName of workbook.SheetNames) {
+          const worksheet = workbook.Sheets[sheetName];
+          parts.push(`Sheet: ${sheetName}\n${XLSX.utils.sheet_to_csv(worksheet)}`);
+        }
+
+        processed.text = parts.join("\n\n");
+        processed.embeddingText = processed.text;
+      } catch {
+        processed.text = `[Excel file: ${file.name}]`;
+      }
+      return processed;
+    }
+
+    processed.text = `[Attached file: ${file.name} (${processed.type})]`;
     return processed;
   };
+
+  const processFiles = async (files: File[]) => Promise.all(files.map(processAttachedFile));
 
   const handleFileSelected = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const processed = await processFiles(Array.from(files));
-    setAttachedFiles(prev => [...prev, ...processed]);
+    setAttachedFiles((prev) => [...prev, ...processed]);
   };
 
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText || input).trim();
     if ((!text && attachedFiles.length === 0) || isStreaming) return;
+
     let chat = activeChat;
     if (!chat) {
       if (mainTab === "units" && selectedUnitId) {
@@ -300,7 +392,8 @@ const ChatPage = () => {
       }
       if (!chat) return;
     }
-    const filesToSend = attachedFiles.length > 0 ? attachedFiles.map(pf => pf.file) : undefined;
+
+    const filesToSend = attachedFiles.length > 0 ? attachedFiles : undefined;
     setInput("");
     setAttachedFiles([]);
     inputRef.current?.focus();
