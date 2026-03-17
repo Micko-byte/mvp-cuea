@@ -497,8 +497,6 @@ serve(async (req) => {
     // --- Build the final system prompt ---
     const systemPrompt = `${SEKANI_SYSTEM_PROMPT}
 
-You CAN generate images and diagrams using DALL-E 3. When a student asks you to draw, illustrate, visualize, or generate any image, do it — never say you cannot generate images.
-
 ## SMART FOLLOW-UP BEHAVIOR
 At the end of your responses (especially for longer ones), naturally suggest 1-2 follow-up directions the student might want. Frame them as questions or actions. Examples:
 - "Want me to break this down simpler?"
