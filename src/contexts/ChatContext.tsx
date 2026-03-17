@@ -1,14 +1,31 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
+
+type MessagePart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+export interface ProcessedFile {
+  file: File;
+  name: string;
+  type: "image" | "text" | "pdf" | "word" | "spreadsheet" | "file";
+  size: string;
+  preview?: string;
+  text?: string;
+  embeddingText?: string;
+  base64?: string;
+  mediaType?: string;
+}
 
 export interface ChatMessage {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: number;
-  attachments?: { name: string; type: string; url: string }[];
+  attachments?: { name: string; type: string; url?: string }[];
+  rawContent?: string | MessagePart[];
 }
 
 export interface Chat {
@@ -26,7 +43,7 @@ interface ChatContextType {
   isStreaming: boolean;
   createChat: (chatType?: "general" | "unit", unitId?: string) => Promise<Chat | null>;
   setActiveChat: (id: string) => void;
-  sendMessage: (text: string, overrideChatId?: string, files?: File[]) => Promise<void>;
+  sendMessage: (text: string, overrideChatId?: string, files?: ProcessedFile[]) => Promise<void>;
   deleteChat: (id: string) => Promise<void>;
   renameChat: (id: string, newTitle: string) => Promise<void>;
   loadChats: () => Promise<void>;
@@ -34,14 +51,60 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+const parseStoredContent = (content: string): string | MessagePart[] => {
+  if (typeof content === "string" && content.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed)) return parsed as MessagePart[];
+    } catch {
+      return content;
+    }
+  }
+
+  return content;
+};
+
+const extractAttachmentLabel = (text: string) => {
+  const firstLine = text.split("\n")[0]?.trim() ?? "";
+  const match = firstLine.match(/^\[(?:Attached file|Attached PDF):\s*(.+?)(?:\s+—.*)?\]$/);
+  return match?.[1]?.trim() ?? null;
+};
+
+const getDisplayTextPart = (text: string) => {
+  const attachmentLabel = extractAttachmentLabel(text);
+  if (attachmentLabel) return `📎 ${attachmentLabel}`;
+  return text.trim();
+};
+
+const getDisplayText = (content: string | MessagePart[]) => {
+  if (typeof content === "string") {
+    return getDisplayTextPart(content) || "Attachment sent";
+  }
+
+  const parts: string[] = [];
+
+  for (const part of content) {
+    if (part.type === "image_url") {
+      parts.push("🖼️ Image attached");
+      continue;
+    }
+
+    const line = getDisplayTextPart(part.text);
+    if (line) parts.push(line);
+  }
+
+  return parts.join("\n\n").trim() || "Attachment sent";
+};
+
+const buildAttachmentPreviews = (files?: ProcessedFile[]) => {
+  if (!files?.length) return undefined;
+
+  return files.map((file) => ({
+    name: file.file.name,
+    type: file.file.type,
+    url: file.preview,
+  }));
+};
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -53,6 +116,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadChats = useCallback(async () => {
     if (!user) return;
+
     const { data: chatRows } = await supabase
       .from("chats")
       .select("*")
@@ -62,6 +126,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!chatRows) return;
 
     const loaded: Chat[] = [];
+
     for (const row of chatRows) {
       const { data: msgRows } = await supabase
         .from("chat_messages")
@@ -75,27 +140,35 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         timestamp: new Date(row.created_at).getTime(),
         chat_type: ((row as any).chat_type as "general" | "unit") || "general",
         unit_id: (row as any).unit_id || undefined,
-        messages: (msgRows || []).map((m) => ({
-          id: m.id,
-          text: m.content,
-          sender: m.role === "user" ? "user" : "bot",
-          timestamp: new Date(m.created_at).getTime(),
-        })),
+        messages: (msgRows || []).map((message) => {
+          const rawContent = parseStoredContent(message.content);
+
+          return {
+            id: message.id,
+            text: getDisplayText(rawContent),
+            rawContent,
+            sender: message.role === "user" ? "user" : "bot",
+            timestamp: new Date(message.created_at).getTime(),
+          };
+        }),
       });
     }
+
     setChats(loaded);
   }, [user]);
 
   const createChat = useCallback(async (chatType: "general" | "unit" = "general", unitId?: string) => {
     if (!user) return null;
+
     const insertData: any = { user_id: user.id, title: "New Chat", chat_type: chatType };
     if (unitId) insertData.unit_id = unitId;
-    
+
     const { data, error } = await supabase
       .from("chats")
       .insert(insertData)
       .select()
       .single();
+
     if (error || !data) return null;
 
     const newChat: Chat = {
@@ -106,6 +179,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       chat_type: chatType,
       unit_id: unitId,
     };
+
     setChats((prev) => [newChat, ...prev]);
     setActiveChatId(data.id);
     return newChat;
@@ -118,170 +192,170 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const renameChat = useCallback(async (id: string, newTitle: string) => {
     const trimmed = newTitle.trim();
     if (!trimmed) return;
+
     await supabase.from("chats").update({ title: trimmed }).eq("id", id);
-    setChats((prev) => prev.map((c) => c.id === id ? { ...c, title: trimmed } : c));
+    setChats((prev) => prev.map((chat) => chat.id === id ? { ...chat, title: trimmed } : chat));
   }, []);
 
-  const sendMessage = useCallback(async (text: string, overrideChatId?: string, files?: File[]) => {
+  const embedFilesInBackground = useCallback(async (files: ProcessedFile[], unitId: string, chatId: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+
+      for (const file of files) {
+        if (!file.embeddingText || file.embeddingText.trim().length < 20) continue;
+
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: file.embeddingText.slice(0, 50000),
+            fileName: file.file.name,
+            title: file.file.name,
+            unitId,
+            chatId,
+          }),
+        });
+      }
+
+      toast.success(`📚 ${files.map((file) => `"${file.file.name}"`).join(", ")} added to unit knowledge base`);
+    } catch (error) {
+      console.error("Background embedding failed:", error);
+    }
+  }, []);
+
+  const sendMessage = useCallback(async (text: string, overrideChatId?: string, attachedFiles?: ProcessedFile[]) => {
     const chatId = overrideChatId || activeChatId;
     if (!user || !chatId) return;
 
-    // Build attachment info for display
-    const attachments = files?.map(f => ({
-      name: f.name,
-      type: f.type,
-      url: URL.createObjectURL(f),
-    }));
+    let currentChat = chats.find((chat) => chat.id === chatId) || null;
 
-    const displayText = files && files.length > 0
-      ? `${files.map(f => `📎 ${f.name}`).join("\n")}${text ? "\n" + text : ""}`
-      : text;
+    if (!currentChat) {
+      const { data: chatRow } = await supabase
+        .from("chats")
+        .select("id, title, chat_type, unit_id, created_at")
+        .eq("id", chatId)
+        .single();
 
-    const { data: userMsg } = await supabase
+      if (chatRow) {
+        currentChat = {
+          id: chatRow.id,
+          title: chatRow.title,
+          messages: [],
+          timestamp: new Date(chatRow.created_at).getTime(),
+          chat_type: ((chatRow as any).chat_type as "general" | "unit") || "general",
+          unit_id: (chatRow as any).unit_id || undefined,
+        };
+      }
+    }
+
+    const messageContent: MessagePart[] = [];
+
+    if (attachedFiles?.length) {
+      for (const file of attachedFiles) {
+        if (file.type === "image" && file.base64 && file.mediaType) {
+          messageContent.push({
+            type: "image_url",
+            image_url: { url: `data:${file.mediaType};base64,${file.base64}` },
+          });
+        } else if (file.text) {
+          const truncated = file.text.length > 15000
+            ? `${file.text.slice(0, 15000)}\n...[truncated for length]`
+            : file.text;
+
+          messageContent.push({
+            type: "text",
+            text: `[Attached file: ${file.file.name}]\n\`\`\`\n${truncated}\n\`\`\``,
+          });
+        } else if (file.base64 && file.mediaType === "application/pdf") {
+          messageContent.push({
+            type: "text",
+            text: `[Attached PDF: ${file.file.name} — Please analyze this document based on any text content provided]`,
+          });
+        } else {
+          messageContent.push({
+            type: "text",
+            text: `[Attached file: ${file.file.name} (${file.type})]`,
+          });
+        }
+      }
+    }
+
+    if (text.trim()) {
+      messageContent.push({ type: "text", text: text.trim() });
+    }
+
+    const finalContent = messageContent.length === 1 && messageContent[0].type === "text"
+      ? messageContent[0].text
+      : messageContent;
+
+    const storedContent = typeof finalContent === "string" ? finalContent : JSON.stringify(finalContent);
+    const displayText = getDisplayText(finalContent);
+
+    const { data: userMessage } = await supabase
       .from("chat_messages")
-      .insert({ chat_id: chatId, user_id: user.id, role: "user", content: displayText })
+      .insert({
+        chat_id: chatId,
+        user_id: user.id,
+        role: "user",
+        content: storedContent,
+      })
       .select()
       .single();
 
-    if (!userMsg) return;
+    if (!userMessage) return;
 
-    const userChatMsg: ChatMessage = {
-      id: userMsg.id, text: displayText, sender: "user", timestamp: Date.now(),
-      attachments,
+    const attachmentPreviews = buildAttachmentPreviews(attachedFiles);
+    const userChatMessage: ChatMessage = {
+      id: userMessage.id,
+      text: displayText,
+      rawContent: finalContent,
+      sender: "user",
+      timestamp: Date.now(),
+      attachments: attachmentPreviews,
     };
 
     setChats((prev) =>
-      prev.map((c) => {
-        if (c.id === chatId) {
-          const title = c.messages.length === 0 ? (text.length > 30 ? text.slice(0, 30) + "…" : text || "Image analysis") : c.title;
-          if (c.messages.length === 0) {
-            supabase.from("chats").update({ title }).eq("id", chatId).then(() => {});
-          }
-          return { ...c, title, messages: [...c.messages, userChatMsg] };
+      prev.map((chat) => {
+        if (chat.id !== chatId) return chat;
+
+        const titleSeed = text.trim() || attachedFiles?.[0]?.file.name || "File analysis";
+        const title = chat.messages.length === 0
+          ? (titleSeed.length > 30 ? `${titleSeed.slice(0, 30)}…` : titleSeed)
+          : chat.title;
+
+        if (chat.messages.length === 0) {
+          supabase.from("chats").update({ title }).eq("id", chatId).then(() => {});
         }
-        return c;
+
+        return {
+          ...chat,
+          title,
+          messages: [...chat.messages, userChatMessage],
+        };
       })
     );
 
-    // Build AI messages - convert files to base64 for multimodal
-    const currentChat = chats.find((c) => c.id === chatId);
-    const historyMessages = (currentChat?.messages || []).map((m) => ({
-      role: m.sender === "user" ? "user" as const : "assistant" as const,
-      content: m.text,
+    if (currentChat?.chat_type === "unit" && currentChat.unit_id && attachedFiles?.length) {
+      const filesToEmbed = attachedFiles.filter((file) => file.embeddingText && file.embeddingText.trim().length >= 20);
+      if (filesToEmbed.length > 0) {
+        void embedFilesInBackground(filesToEmbed, currentChat.unit_id, chatId);
+      }
+    }
+
+    const historyMessages = (currentChat?.messages || []).map((message) => ({
+      role: message.sender === "user" ? "user" as const : "assistant" as const,
+      content: message.rawContent ?? message.text,
     }));
-
-    // Build the current user message with potential image/file content
-    let currentUserContent: any;
-    if (files && files.length > 0) {
-      const contentParts: any[] = [];
-      if (text) contentParts.push({ type: "text", text });
-      
-      for (const file of files) {
-        if (file.type.startsWith("image/")) {
-          const base64 = await fileToBase64(file);
-          contentParts.push({
-            type: "image_url",
-            image_url: { url: base64 },
-          });
-        } else {
-          // For non-image files, try to read as text and send inline for AI analysis
-          try {
-            let fileText = "";
-            if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md") || file.name.endsWith(".csv") || file.type === "text/csv") {
-              fileText = await file.text();
-            } else if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
-              try {
-                const mammoth = await import("mammoth");
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer });
-                fileText = result.value || "";
-              } catch {
-                fileText = `[Word document: ${file.name} — content extraction unavailable in browser]`;
-              }
-            } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("spreadsheetml")) {
-              try {
-                const XLSX = await import("xlsx");
-                const arrayBuffer = await file.arrayBuffer();
-                const wb = XLSX.read(arrayBuffer, { type: "array" });
-                const parts: string[] = [];
-                for (const sheetName of wb.SheetNames) {
-                  const ws = wb.Sheets[sheetName];
-                  parts.push(`Sheet: ${sheetName}\n${XLSX.utils.sheet_to_csv(ws)}`);
-                }
-                fileText = parts.join("\n\n");
-              } catch {
-                fileText = `[Excel file: ${file.name}]`;
-              }
-            } else if (file.type === "application/pdf") {
-              fileText = `[PDF document: ${file.name} (${(file.size / 1024).toFixed(1)}KB). PDF text extraction is limited in the browser. For best results, copy and paste key text sections directly.]`;
-            } else {
-              fileText = await file.text().catch(() => `[File: ${file.name} (${file.type})]`);
-            }
-
-            const truncated = fileText.length > 15000 ? fileText.slice(0, 15000) + "\n...[truncated for length]" : fileText;
-            contentParts.push({
-              type: "text",
-              text: `[Attached file: ${file.name}]\n\`\`\`\n${truncated}\n\`\`\``,
-            });
-          } catch {
-            contentParts.push({
-              type: "text",
-              text: `[Attached file: ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)]`,
-            });
-          }
-        }
-      }
-      if (contentParts.length === 0) contentParts.push({ type: "text", text: text || "Analyze this" });
-      
-      // If only one text part, send as plain string
-      const allText = contentParts.every((p: any) => p.type === "text");
-      if (allText && contentParts.length === 1) {
-        currentUserContent = contentParts[0].text;
-      } else {
-        currentUserContent = contentParts;
-      }
-    } else {
-      currentUserContent = text;
-    }
-
-    // ONLY embed if this is a UNIT chat AND files have extractable text
-    if (currentChat?.chat_type === "unit" && currentChat?.unit_id && files && files.length > 0) {
-      // Fire and forget — don't await, don't block
-      (async () => {
-        try {
-          const { data: sd } = await supabase.auth.getSession();
-          const token = sd.session?.access_token;
-          if (!token) return;
-          for (const file of files) {
-            if (file.type.startsWith("image/")) continue;
-            let fileText = "";
-            try { fileText = await file.text(); } catch { continue; }
-            if (fileText.trim().length < 20) continue;
-            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                content: fileText.slice(0, 50000),
-                title: file.name,
-                fileName: file.name,
-                unitId: currentChat.unit_id,
-              }),
-            });
-          }
-          toast.success(`📚 Files added to unit knowledge base`);
-        } catch (err) {
-          console.error("Background embedding failed:", err);
-        }
-      })();
-    }
 
     const aiMessages = [
       ...historyMessages,
-      { role: "user" as const, content: currentUserContent },
+      { role: "user" as const, content: finalContent },
     ];
 
     setIsStreaming(true);
@@ -301,10 +375,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const controller = new AbortController();
       requestTimeout = setTimeout(() => controller.abort(), 45000);
 
-      const bodyPayload: any = { messages: aiMessages, chatId };
+      const bodyPayload: Record<string, unknown> = { messages: aiMessages, chatId };
       if (currentChat?.unit_id) bodyPayload.unitId = currentChat.unit_id;
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -315,68 +389,78 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify(bodyPayload),
       });
 
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({ error: "Failed to connect to AI" }));
-        if (errData.limit_reached) {
-          toast.error(errData.error, { duration: 10000 });
-          if (!errData.is_paid) {
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to connect to AI" }));
+
+        if (errorData.limit_reached) {
+          toast.error(errorData.error, { duration: 10000 });
+          if (!errorData.is_paid) {
             setTimeout(() => window.dispatchEvent(new CustomEvent("show-payment-prompt")), 500);
           }
         } else {
-          toast.error(errData.error || "AI service error");
+          toast.error(errorData.error || "AI service error");
         }
+
         return;
       }
 
-      if (!resp.body) throw new Error("No response body");
+      if (!response.body) throw new Error("No response body");
 
-      const reader = resp.body.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
 
-      const botMsgId = `bot-${Date.now()}`;
+      const botMessageId = `bot-${Date.now()}`;
       setChats((prev) =>
-        prev.map((c) =>
-          c.id === chatId
-            ? { ...c, messages: [...c.messages, { id: botMsgId, text: "", sender: "bot" as const, timestamp: Date.now() }] }
-            : c
+        prev.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                messages: [...chat.messages, { id: botMessageId, text: "", sender: "bot", timestamp: Date.now() }],
+              }
+            : chat
         )
       );
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+
         textBuffer += decoder.decode(value, { stream: true });
 
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
           textBuffer = textBuffer.slice(newlineIndex + 1);
+
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (line.startsWith(":") || line.trim() === "") continue;
           if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
+
+          const jsonString = line.slice(6).trim();
+          if (jsonString === "[DONE]") break;
+
           try {
-            const parsed = JSON.parse(jsonStr);
+            const parsed = JSON.parse(jsonString);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+
             if (content) {
               assistantContent += content;
               setChats((prev) =>
-                prev.map((c) =>
-                  c.id === chatId
+                prev.map((chat) =>
+                  chat.id === chatId
                     ? {
-                        ...c,
-                        messages: c.messages.map((m) =>
-                          m.id === botMsgId ? { ...m, text: assistantContent } : m
+                        ...chat,
+                        messages: chat.messages.map((message) =>
+                          message.id === botMessageId ? { ...message, text: assistantContent } : message
                         ),
                       }
-                    : c
+                    : chat
                 )
               );
             }
           } catch {
-            textBuffer = line + "\n" + textBuffer;
+            textBuffer = `${line}\n${textBuffer}`;
             break;
           }
         }
@@ -390,11 +474,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           content: assistantContent,
         });
       }
-    } catch (e) {
-      console.error("Stream error:", e);
-      if (e instanceof Error && e.name === "AbortError") {
+    } catch (error) {
+      console.error("Stream error:", error);
+      if (error instanceof Error && error.name === "AbortError") {
         toast.error("AI response timed out. Please try a shorter question.");
-      } else if (e instanceof TypeError && e.message.includes("Failed to fetch")) {
+      } else if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
         toast.error("Connection failed while reaching AI. Please try again.");
       } else {
         toast.error("Failed to get AI response");
@@ -404,11 +488,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearTimeout(streamingTimeout);
       setIsStreaming(false);
     }
-  }, [user, activeChatId, chats]);
+  }, [activeChatId, chats, embedFilesInBackground, user]);
 
   const deleteChat = useCallback(async (id: string) => {
     await supabase.from("chats").delete().eq("id", id);
-    setChats((prev) => prev.filter((c) => c.id !== id));
+    setChats((prev) => prev.filter((chat) => chat.id !== id));
     if (activeChatId === id) setActiveChatId(null);
   }, [activeChatId]);
 
