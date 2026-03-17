@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 
+export type ArtifactType = "code" | "html" | "svg" | "markdown" | "table";
+
 export interface Artifact {
   id: string;
   title: string;
   content: string;
   language: string;
-  type: "code" | "html" | "markdown" | "svg" | "table";
+  type: ArtifactType;
   timestamp: number;
   chatId?: string;
 }
@@ -20,6 +22,25 @@ interface ArtifactContextType {
   setViewerOpen: (open: boolean) => void;
   setViewMode: (mode: "preview" | "code") => void;
   removeArtifact: (id: string) => void;
+  createFromCodeBlock: (content: string, language: string) => void;
+}
+
+export function detectArtifactType(language: string, content: string): ArtifactType {
+  const lang = language.toLowerCase().trim();
+
+  // Explicit language matches
+  if (['html', 'htm'].includes(lang)) return 'html';
+  if (['svg'].includes(lang)) return 'svg';
+  if (['markdown', 'md'].includes(lang)) return 'markdown';
+  if (['csv', 'tsv'].includes(lang)) return 'table';
+  if (['jsx', 'tsx', 'react'].includes(lang)) return 'html'; // will be wrapped as React
+
+  // Content-based detection for unlabeled blocks
+  if (content.includes('<html') || content.includes('<!DOCTYPE') || content.includes('<body')) return 'html';
+  if (content.trimStart().startsWith('<svg')) return 'svg';
+  if (content.includes('## ') || content.includes('**') || content.includes('- [')) return 'markdown';
+
+  return 'code';
 }
 
 const ArtifactContext = createContext<ArtifactContextType | null>(null);
@@ -43,6 +64,16 @@ export const ArtifactProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setViewerOpen(true);
     return artifact;
   }, []);
+
+  const createFromCodeBlock = useCallback((content: string, language: string) => {
+    const type = detectArtifactType(language, content);
+    addArtifact({
+      title: `${language.toUpperCase() || 'CODE'} Snippet`,
+      content,
+      language,
+      type,
+    });
+  }, [addArtifact]);
 
   const setActiveArtifact = useCallback((id: string | null) => {
     setActiveArtifactId(id);
@@ -69,6 +100,7 @@ export const ArtifactProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setViewerOpen,
         setViewMode,
         removeArtifact,
+        createFromCodeBlock,
       }}
     >
       {children}

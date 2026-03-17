@@ -17,6 +17,49 @@ const withTimeout = async (url: string, init: RequestInit, timeoutMs: number) =>
   }
 };
 
+// --- Redis helper (Upstash REST API) ---
+const redis = {
+  async get(key: string) {
+    const url = Deno.env.get('UPSTASH_REDIS_REST_URL');
+    const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
+    if (!url || !token) return null;
+    try {
+      const res = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      return data.result ? JSON.parse(data.result) : null;
+    } catch (e) {
+      console.warn("Redis get error:", e);
+      return null;
+    }
+  },
+  async set(key: string, value: any, exSeconds = 3600) {
+    const url = Deno.env.get('UPSTASH_REDIS_REST_URL');
+    const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
+    if (!url || !token) return;
+    try {
+      await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}?ex=${exSeconds}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (e) {
+      console.warn("Redis set error:", e);
+    }
+  },
+  async del(key: string) {
+    const url = Deno.env.get('UPSTASH_REDIS_REST_URL');
+    const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
+    if (!url || !token) return;
+    try {
+      await fetch(`${url}/del/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (e) {
+      console.warn("Redis del error:", e);
+    }
+  }
+};
+
 const FREE_DAILY_LIMIT = 50000;
 const PAID_DAILY_LIMIT = 200000;
 const DAILY_GLOBAL_LIMIT = 500000;
@@ -248,14 +291,59 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check paid status
-    const { data: paymentData } = await supabaseAdmin.from("payments").select("id").eq("user_id", userId).eq("status", "success").limit(1);
-    const isPaidUser = paymentData && paymentData.length > 0;
-    const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
+    // --- Rate Limiting: max 20 requests per minute per user ---
+    const rateLimitKey = `ratelimit:${userId}:${Math.floor(Date.now() / 60000)}`;
+    const requests = await redis.get(rateLimitKey) || 0;
+    if (requests >= 20) {
+      return new Response(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    await redis.set(rateLimitKey, requests + 1, 90);
 
-    // Check daily per-user token limit
-    const { data: userUsage } = await supabaseAdmin.rpc("get_daily_token_usage", { _user_id: userId });
-    const dailyUserUsage = userUsage || 0;
+    // --- Cached: Check paid status + token usage ---
+    const today = new Date().toISOString().split('T')[0];
+
+    // Profile + enrolled units cache (10 min)
+    const profileCacheKey = `profile:${userId}`;
+    let profileCache = await redis.get(profileCacheKey);
+    let profileData: any = null;
+    let studentUnits: any[] | null = null;
+    let roleData: any = null;
+    let isPaidUser = false;
+
+    if (profileCache) {
+      profileData = profileCache.profile;
+      studentUnits = profileCache.studentUnits;
+      roleData = profileCache.roleData;
+      isPaidUser = profileCache.isPaidUser;
+    } else {
+      const [profileRes, roleRes, unitsRes, paymentRes] = await Promise.all([
+        supabaseAdmin.from("profiles").select("name, program, course_name, year, semester, course").eq("user_id", userId).single(),
+        supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).single(),
+        supabaseAdmin.from("student_units").select("unit_id, units(code, name, lecturer)").eq("user_id", userId),
+        supabaseAdmin.from("payments").select("id").eq("user_id", userId).eq("status", "success").limit(1),
+      ]);
+      profileData = profileRes.data;
+      roleData = roleRes.data;
+      studentUnits = unitsRes.data;
+      isPaidUser = (paymentRes.data && paymentRes.data.length > 0) || false;
+      await redis.set(profileCacheKey, { profile: profileData, studentUnits, roleData, isPaidUser }, 600);
+    }
+
+    const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
+    const isAdmin = roleData?.role === "admin";
+
+    // Token usage cache (60 sec)
+    const tokenCacheKey = `tokens:${userId}:${today}`;
+    let dailyUserUsage = await redis.get(tokenCacheKey);
+    if (dailyUserUsage === null) {
+      const { data: userUsage } = await supabaseAdmin.rpc("get_daily_token_usage", { _user_id: userId });
+      dailyUserUsage = userUsage || 0;
+      await redis.set(tokenCacheKey, dailyUserUsage, 60);
+    }
+
     if (dailyUserUsage >= userDailyLimit) {
       const errorMsg = isPaidUser
         ? "You've used all your tokens for today. Come back tomorrow! 🎓"
@@ -264,22 +352,14 @@ serve(async (req) => {
     }
 
     // Check global daily limit
-    const { data: globalData } = await supabaseAdmin.from("token_usage").select("tokens_used").gte("created_at", new Date().toISOString().split("T")[0]);
+    const { data: globalData } = await supabaseAdmin.from("token_usage").select("tokens_used").gte("created_at", today);
     const globalUsage = globalData?.reduce((sum: number, t: any) => sum + t.tokens_used, 0) || 0;
     if (globalUsage >= DAILY_GLOBAL_LIMIT) {
       return new Response(JSON.stringify({ error: "System is at capacity today. Come back tomorrow! 🎓" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Fetch user profile
-    const { data: profileData } = await supabaseAdmin.from("profiles").select("name, program, course_name, year, semester, course").eq("user_id", userId).single();
-
-    // Check if admin
-    const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).single();
-    const isAdmin = roleData?.role === "admin";
-
-    // Fetch enrolled units
+    // Enrolled units context
     let enrolledUnitsContext = "";
-    const { data: studentUnits } = await supabaseAdmin.from("student_units").select("unit_id, units(code, name, lecturer)").eq("user_id", userId);
     if (studentUnits && studentUnits.length > 0) {
       enrolledUnitsContext = "\n\nStudent's Enrolled Units:\n" + studentUnits.map((su: any) => {
         const u = su.units;
@@ -298,9 +378,14 @@ serve(async (req) => {
       }
     }
 
-    // Fetch upcoming academic calendar events
-    const today = new Date().toISOString().split("T")[0];
-    const { data: calendarEvents } = await supabaseAdmin.from("academic_calendar").select("event_name, start_date, end_date, category, trimester, description").gte("start_date", today).order("start_date").limit(15);
+    // Calendar cache (1 hour)
+    const calendarCacheKey = 'calendar:upcoming';
+    let calendarEvents = await redis.get(calendarCacheKey);
+    if (!calendarEvents) {
+      const { data } = await supabaseAdmin.from("academic_calendar").select("event_name, start_date, end_date, category, trimester, description").gte("start_date", today).order("start_date").limit(15);
+      calendarEvents = data || [];
+      await redis.set(calendarCacheKey, calendarEvents, 3600);
+    }
     let calendarContext = "";
     if (calendarEvents && calendarEvents.length > 0) {
       calendarContext = "\n\n## Upcoming Academic Calendar Events:\n" + calendarEvents.map((e: any) => {
@@ -308,56 +393,73 @@ serve(async (req) => {
       }).join("\n");
     }
 
-    // RAG: Get relevant context from embeddings
+    // RAG: Get relevant context from embeddings (with cache)
     let ragContext = "";
-    const lastUserMessage = messages[messages.length - 1]?.content?.trim() || "";
+    const lastUserMessage = (() => {
+      const last = messages[messages.length - 1];
+      if (typeof last?.content === 'string') return last.content.trim();
+      if (Array.isArray(last?.content)) {
+        return last.content.filter((p: any) => p.type === 'text').map((p: any) => p.text).join(' ').trim();
+      }
+      return '';
+    })();
     const shouldRunRag = lastUserMessage.length >= 12;
-    
+
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY && shouldRunRag) {
       try {
-        const embResponse = await withTimeout("https://api.openai.com/v1/embeddings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
-          body: JSON.stringify({ model: "text-embedding-3-large", input: lastUserMessage, dimensions: 768 }),
-        }, 8000);
-        
-        if (embResponse.ok) {
-          const embData = await embResponse.json();
-          const queryEmbedding = embData.data?.[0]?.embedding;
-          
-          if (queryEmbedding) {
-            const { data: docs } = await supabaseAdmin.rpc("match_documents", {
-              query_embedding: JSON.stringify(queryEmbedding),
-              match_threshold: 0.5,
-              match_count: isAdmin ? 10 : 8,
-            });
-            
-            if (docs && docs.length > 0) {
-              let filteredDocs = docs;
-              
-              if (unitId && unitCode) {
-                filteredDocs = docs.filter((d: any) => {
-                  const docUnitCode = d.metadata?.unit_code;
-                  return !docUnitCode || docUnitCode === unitCode;
-                });
-              } else if (!isAdmin) {
-                const enrolledCodes = new Set(studentUnits?.map((su: any) => su.units?.code).filter(Boolean) || []);
-                if (enrolledCodes.size > 0) {
-                  filteredDocs = docs.filter((d: any) => {
-                    const docUnitCode = d.metadata?.unit_code;
-                    return !docUnitCode || enrolledCodes.has(docUnitCode);
-                  });
-                }
-              }
-              
-              if (filteredDocs.length > 0) {
-                ragContext = "\n\n## Relevant Course Materials (from uploaded documents):\n" + filteredDocs.map((d: any) => {
-                  const meta = d.metadata || {};
-                  return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'} | Similarity: ${(d.similarity * 100).toFixed(1)}%]\n${d.content}`;
-                }).join("\n---\n");
-              }
+        // RAG cache (5 min)
+        const queryHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lastUserMessage))
+          .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16));
+        const ragCacheKey = `rag:${userId}:${queryHash}`;
+        let ragResults = await redis.get(ragCacheKey);
+
+        if (!ragResults) {
+          const embResponse = await withTimeout("https://api.openai.com/v1/embeddings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
+            body: JSON.stringify({ model: "text-embedding-3-large", input: lastUserMessage, dimensions: 768 }),
+          }, 8000);
+
+          if (embResponse.ok) {
+            const embData = await embResponse.json();
+            const queryEmbedding = embData.data?.[0]?.embedding;
+
+            if (queryEmbedding) {
+              const { data: docs } = await supabaseAdmin.rpc("match_documents", {
+                query_embedding: JSON.stringify(queryEmbedding),
+                match_threshold: 0.5,
+                match_count: isAdmin ? 10 : 8,
+              });
+              ragResults = docs || [];
+              await redis.set(ragCacheKey, ragResults, 300);
             }
+          }
+        }
+
+        if (ragResults && ragResults.length > 0) {
+          let filteredDocs = ragResults;
+
+          if (unitId && unitCode) {
+            filteredDocs = ragResults.filter((d: any) => {
+              const docUnitCode = d.metadata?.unit_code;
+              return !docUnitCode || docUnitCode === unitCode;
+            });
+          } else if (!isAdmin) {
+            const enrolledCodes = new Set(studentUnits?.map((su: any) => su.units?.code).filter(Boolean) || []);
+            if (enrolledCodes.size > 0) {
+              filteredDocs = ragResults.filter((d: any) => {
+                const docUnitCode = d.metadata?.unit_code;
+                return !docUnitCode || enrolledCodes.has(docUnitCode);
+              });
+            }
+          }
+
+          if (filteredDocs.length > 0) {
+            ragContext = "\n\n## Relevant Course Materials (from uploaded documents):\n" + filteredDocs.map((d: any) => {
+              const meta = d.metadata || {};
+              return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'} | Similarity: ${((d.similarity || 0) * 100).toFixed(1)}%]\n${d.content}`;
+            }).join("\n---\n");
           }
         }
       } catch (e) {
@@ -370,7 +472,7 @@ serve(async (req) => {
     }
 
     // Build student context
-    const studentContext = profileData 
+    const studentContext = profileData
       ? `\nStudent Profile:\n- Name: ${profileData.name}\n- Program: ${profileData.program || 'N/A'}\n- Course: ${profileData.course_name || 'N/A'}\n- Year: ${profileData.year || 'N/A'}, Semester: ${profileData.semester || 'N/A'}`
       : "";
 
@@ -397,7 +499,7 @@ Answer the student's question helpfully, comprehensively, and naturally.`;
     // Call OpenAI API - use vision model if multimodal content detected
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    const hasImageContent = messages.some((m: any) => 
+    const hasImageContent = messages.some((m: any) =>
       Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url")
     );
     const model = hasImageContent ? "gpt-4o" : "gpt-4o-mini";
@@ -426,14 +528,17 @@ Answer the student's question helpfully, comprehensively, and naturally.`;
       return new Response(JSON.stringify({ error: "AI service temporarily unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Track estimated token usage (exclude system prompt from estimate)
-    const userTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((m.content || "").length / 4), 0);
+    // Track estimated token usage
+    const userTokens = messages.reduce((sum: number, m: any) => sum + Math.ceil((typeof m.content === 'string' ? m.content : JSON.stringify(m.content) || "").length / 4), 0);
     const estimatedTokens = userTokens + 500;
     await supabaseAdmin.from("token_usage").insert({
       user_id: userId,
       tokens_used: Math.min(estimatedTokens, userDailyLimit - dailyUserUsage),
-      model: "gpt-4o-mini",
+      model,
     });
+
+    // Invalidate token cache after usage
+    await redis.del(tokenCacheKey);
 
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },

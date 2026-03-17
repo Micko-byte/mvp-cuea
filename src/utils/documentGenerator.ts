@@ -4,6 +4,18 @@ import PptxGenJS from "pptxgenjs";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
+export type DocType = "pdf" | "docx" | "pptx" | "xlsx";
+
+export async function generateDocument({ title, content, type }: { title: string; content: string; type: DocType }) {
+  switch (type) {
+    case "pdf": return generatePDF(content, title);
+    case "docx": return generateDOCX(content, title);
+    case "pptx": return generatePPTX(content, title);
+    case "xlsx": return generateXLSX(content, title);
+    default: throw new Error(`Unsupported document type: ${type}`);
+  }
+}
+
 // Parse markdown into simple blocks
 interface Block {
   type: "h1" | "h2" | "h3" | "paragraph" | "bullet" | "code" | "table";

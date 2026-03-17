@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
-import { useArtifacts } from "@/contexts/ArtifactContext";
+import { useArtifacts, detectArtifactType } from "@/contexts/ArtifactContext";
+import { generateDocument, type DocType } from "@/utils/documentGenerator";
 import { usePersonalization } from "@/contexts/PersonalizationContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,7 +50,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   RotateCcw,
-  Pen } from
+  Pen,
+  Play } from
 "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -123,7 +125,7 @@ const ChatPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading: authLoading } = useAuth();
   const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, renameChat, loadChats } =
   useChat();
-  const { viewerOpen, addArtifact } = useArtifacts();
+  const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
   const { nickname, getChatBg } = usePersonalization();
   const navigate = useNavigate();
   const [input, setInput] = useState("");
@@ -131,7 +133,12 @@ const ChatPage = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [unitsOpen, setUnitsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  interface ProcessedFile {
+    file: File;
+    preview?: string;
+    textContent?: string;
+  }
+  const [attachedFiles, setAttachedFiles] = useState<ProcessedFile[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -166,6 +173,9 @@ const ChatPage = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const touchStartRef = useRef<{x: number;y: number;} | null>(null);
 
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
@@ -255,6 +265,34 @@ const ChatPage = () => {
     };
   }, [handleTouchStart, handleTouchEnd]);
 
+  const processFiles = async (files: File[]) => {
+    const processed: ProcessedFile[] = [];
+    for (const file of files) {
+      if (file.type.startsWith("image/")) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        processed.push({ file, preview: dataUrl });
+      } else if (['text/plain', 'text/csv', 'text/markdown'].includes(file.type) || 
+                   file.name.endsWith('.txt') || file.name.endsWith('.csv') || file.name.endsWith('.md')) {
+        const text = await file.text();
+        processed.push({ file, textContent: text.slice(0, 10000) });
+      } else {
+        processed.push({ file });
+      }
+    }
+    return processed;
+  };
+
+  const handleFileSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const processed = await processFiles(Array.from(files));
+    setAttachedFiles(prev => [...prev, ...processed]);
+  };
+
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText || input).trim();
     if ((!text && attachedFiles.length === 0) || isStreaming) return;
@@ -267,7 +305,7 @@ const ChatPage = () => {
       }
       if (!chat) return;
     }
-    const filesToSend = attachedFiles.length > 0 ? [...attachedFiles] : undefined;
+    const filesToSend = attachedFiles.length > 0 ? attachedFiles.map(pf => pf.file) : undefined;
     setInput("");
     setAttachedFiles([]);
     inputRef.current?.focus();
@@ -409,12 +447,22 @@ const ChatPage = () => {
   };
 
   const handleCreateArtifact = (content: string, language: string) => {
-    let type: "code" | "html" | "svg" | "markdown" | "table" = "code";
-    if (language === "html" || language === "htm") type = "html";else
-    if (language === "svg") type = "svg";else
-    if (language === "markdown" || language === "md") type = "markdown";else
-    if (language === "csv") type = "table";
-    addArtifact({ title: `${language.toUpperCase()} Snippet`, content, language, type });
+    const type = detectArtifactType(language, content);
+    addArtifact({ title: `${language.toUpperCase() || 'CODE'} Snippet`, content, language, type });
+  };
+
+  const handleDocumentDownload = async (format: DocType) => {
+    if (!activeChat) return;
+    const lastBotMsg = [...activeChat.messages].reverse().find(m => m.sender === 'bot');
+    if (!lastBotMsg) return;
+    const cleanContent = lastBotMsg.text.replace(/\[.*?\]\(download:[^)]+\)/g, '').trim();
+    const title = activeChat.title || 'CUEA AI Document';
+    try {
+      await generateDocument({ title, content: cleanContent, type: format });
+      toast.success(`${format.toUpperCase()} downloaded!`);
+    } catch (e: any) {
+      toast.error('Download failed: ' + e.message);
+    }
   };
 
   const handleRenameSubmit = async (chatId: string) => {
@@ -872,19 +920,19 @@ const ChatPage = () => {
   // Chat input component
   const chatInput =
   <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
-      {attachedFiles.length > 0 &&
+    {attachedFiles.length > 0 &&
     <div className="flex flex-wrap gap-1.5 mb-2">
-          {attachedFiles.map((file, i) =>
+          {attachedFiles.map((pf, i) =>
       <span
         key={i}
         className="inline-flex items-center gap-1 text-xs bg-card border border-border px-2 py-1 rounded-lg">
-        
-              {file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
-              <span className="max-w-[120px] truncate">{file.name}</span>
+              {pf.preview ? (
+                <img src={pf.preview} alt="" className="w-6 h-6 rounded object-cover" />
+              ) : pf.file.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <File className="w-3 h-3" />}
+              <span className="max-w-[120px] truncate">{pf.file.name}</span>
               <button
           onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))}
           className="text-muted-foreground hover:text-destructive">
-          
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -895,25 +943,14 @@ const ChatPage = () => {
       className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
       style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}>
       
-        <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx,.xls"
-        className="hidden"
-        onChange={(e) => {
-          const files = e.target.files;
-          if (files && files.length > 0) {
-            setAttachedFiles((prev) => [...prev, ...Array.from(files)]);
-          }
-          e.target.value = "";
-          // Reset accept attribute
-          if (fileInputRef.current) {
-            fileInputRef.current.setAttribute("accept", "image/*,.pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx,.xls");
-            fileInputRef.current.removeAttribute("capture");
-          }
-        }} />
-      
+        {/* Three separate hidden file inputs */}
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+          onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+        <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden"
+          onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+        <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.pptx,.ppt,.md" multiple className="hidden"
+          onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+
         <Popover>
           <PopoverTrigger asChild>
             <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
@@ -922,33 +959,18 @@ const ChatPage = () => {
           </PopoverTrigger>
           <PopoverContent side="top" align="start" className="w-48 p-1.5">
             <button
-            onClick={() => {
-              fileInputRef.current?.setAttribute("accept", "image/*");
-              fileInputRef.current?.setAttribute("capture", "environment");
-              fileInputRef.current?.click();
-            }}
+            onClick={() => cameraInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <Camera className="w-4 h-4 text-muted-foreground" /> Camera
             </button>
             <button
-            onClick={() => {
-              fileInputRef.current?.setAttribute("accept", "image/*");
-              fileInputRef.current?.removeAttribute("capture");
-              fileInputRef.current?.click();
-            }}
+            onClick={() => photoInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <ImageIcon className="w-4 h-4 text-muted-foreground" /> Photo
             </button>
             <button
-            onClick={() => {
-              fileInputRef.current?.setAttribute("accept", ".pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx");
-              fileInputRef.current?.removeAttribute("capture");
-              fileInputRef.current?.click();
-            }}
+            onClick={() => docInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <FileText className="w-4 h-4 text-muted-foreground" /> Files
             </button>
             <button
@@ -958,7 +980,6 @@ const ChatPage = () => {
               );
             }}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <FileQuestion className="w-4 h-4 text-muted-foreground" /> Quizzes
             </button>
           </PopoverContent>
@@ -1221,29 +1242,44 @@ const ChatPage = () => {
                                         const match = /language-(\w+)/.exec(className || "");
                                         const lang = match ? match[1] : "";
                                         const codeStr = String(children).replace(/\n$/, "");
-                                        const isBlock = codeStr.includes("\n") || lang;
+                                        const isBlock = codeStr.includes("\n") || !!lang;
+                                        const canPreview = ['html', 'htm', 'javascript', 'js', 'jsx', 'tsx', 'svg'].includes(lang.toLowerCase());
                                         if (isBlock) {
                                           return (
-                                            <div className="relative group/code">
-                                                      <pre className="bg-card border border-border rounded-lg p-3 overflow-x-auto">
-                                                        <code className={className} {...props}>
-                                                          {children}
-                                                        </code>
-                                                      </pre>
+                                            <div className="relative group/code my-2">
+                                              {lang && (
+                                                <div className="flex items-center justify-between bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-t-lg text-xs">
+                                                  <span className="font-mono">{lang}</span>
+                                                  <div className="flex items-center gap-1 opacity-0 group-hover/code:opacity-100 transition-opacity">
+                                                    <button
+                                                      onClick={() => { navigator.clipboard.writeText(codeStr); toast.success('Copied!'); }}
+                                                      className="px-2 py-0.5 rounded hover:bg-zinc-700 transition-colors"
+                                                    >Copy</button>
+                                                    {canPreview && (
                                                       <button
-                                                onClick={() => handleCreateArtifact(codeStr, lang || "text")}
-                                                className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md">
-                                                
-                                                        <Code2 className="w-3 h-3" /> Open as Artifact
-                                                      </button>
-                                                    </div>);
-
+                                                        onClick={() => handleCreateArtifact(codeStr, lang)}
+                                                        className="px-2 py-0.5 rounded hover:bg-zinc-700 text-blue-400 transition-colors flex items-center gap-1"
+                                                      ><Play className="w-3 h-3" /> Run</button>
+                                                    )}
+                                                    <button
+                                                      onClick={() => handleCreateArtifact(codeStr, lang || 'text')}
+                                                      className="px-2 py-0.5 rounded hover:bg-zinc-700 text-emerald-400 transition-colors flex items-center gap-1"
+                                                    ><Code2 className="w-3 h-3" /> Artifact</button>
+                                                  </div>
+                                                </div>
+                                              )}
+                                              <pre className={`bg-zinc-900 text-zinc-100 ${lang ? 'rounded-b-lg' : 'rounded-lg'} p-3 overflow-x-auto`}>
+                                                <code className={className} {...props}>{children}</code>
+                                              </pre>
+                                              {!lang && (
+                                                <button
+                                                  onClick={() => handleCreateArtifact(codeStr, 'text')}
+                                                  className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md"
+                                                ><Code2 className="w-3 h-3" /> Artifact</button>
+                                              )}
+                                            </div>);
                                         }
-                                        return (
-                                          <code className={className} {...props}>
-                                                    {children}
-                                                  </code>);
-
+                                        return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
                                       }
                                     }}>
                                     
