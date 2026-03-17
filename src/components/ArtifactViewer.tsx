@@ -104,7 +104,6 @@ const ArtifactViewer = () => {
   const [copied, setCopied] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [execOutput, setExecOutput] = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeKey, setIframeKey] = useState(0);
 
   const handleCopy = () => {
@@ -133,19 +132,6 @@ const ArtifactViewer = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleOpenNewTab = () => {
-    if (!activeArtifact) return;
-    const content = getPreviewContent();
-    if (!content) return;
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-  };
-
-  const handleRefresh = () => {
-    setIframeKey(k => k + 1);
-  };
-
   const lang = activeArtifact?.language?.toLowerCase() || '';
   const type = activeArtifact?.type || 'code';
 
@@ -170,15 +156,18 @@ const ArtifactViewer = () => {
     return null;
   }, [activeArtifact, isHtml, isJs, isJsx, isCss, isSvg, isMarkdown]);
 
-  // Set iframe srcdoc when in preview mode
-  useEffect(() => {
-    if (viewMode === "preview" && iframeRef.current && activeArtifact && canPreview) {
-      const content = getPreviewContent();
-      if (content) {
-        iframeRef.current.srcdoc = content;
-      }
-    }
-  }, [viewMode, activeArtifact, canPreview, getPreviewContent, iframeKey]);
+  const previewContent = canPreview ? getPreviewContent() : null;
+
+  const handleOpenNewTab = () => {
+    if (!previewContent) return;
+    const blob = new Blob([previewContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  };
+
+  const handleRefresh = () => {
+    setIframeKey(k => k + 1);
+  };
 
   // AI execution for non-web languages
   const handleExecute = async () => {
