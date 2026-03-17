@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useChat } from "@/contexts/ChatContext";
+import { useChat, type ProcessedFile } from "@/contexts/ChatContext";
 import { useArtifacts, detectArtifactType } from "@/contexts/ArtifactContext";
 import { generateDocument, type DocType } from "@/utils/documentGenerator";
 import { usePersonalization } from "@/contexts/PersonalizationContext";
