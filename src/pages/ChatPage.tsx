@@ -9,6 +9,8 @@ import { usePersonalization } from "@/contexts/PersonalizationContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
 import { Download } from "lucide-react";
 import {
@@ -1301,6 +1303,8 @@ const ChatPage = () => {
                                       {msg.sender === "bot" ?
                                 <div className="prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
                                           <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
                                     components={{
                                       a({ href, children, ...props }) {
                                         if (href?.startsWith("download:")) {
