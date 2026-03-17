@@ -1241,29 +1241,44 @@ const ChatPage = () => {
                                         const match = /language-(\w+)/.exec(className || "");
                                         const lang = match ? match[1] : "";
                                         const codeStr = String(children).replace(/\n$/, "");
-                                        const isBlock = codeStr.includes("\n") || lang;
+                                        const isBlock = codeStr.includes("\n") || !!lang;
+                                        const canPreview = ['html', 'htm', 'javascript', 'js', 'jsx', 'tsx', 'svg'].includes(lang.toLowerCase());
                                         if (isBlock) {
                                           return (
-                                            <div className="relative group/code">
-                                                      <pre className="bg-card border border-border rounded-lg p-3 overflow-x-auto">
-                                                        <code className={className} {...props}>
-                                                          {children}
-                                                        </code>
-                                                      </pre>
+                                            <div className="relative group/code my-2">
+                                              {lang && (
+                                                <div className="flex items-center justify-between bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-t-lg text-xs">
+                                                  <span className="font-mono">{lang}</span>
+                                                  <div className="flex items-center gap-1 opacity-0 group-hover/code:opacity-100 transition-opacity">
+                                                    <button
+                                                      onClick={() => { navigator.clipboard.writeText(codeStr); toast.success('Copied!'); }}
+                                                      className="px-2 py-0.5 rounded hover:bg-zinc-700 transition-colors"
+                                                    >Copy</button>
+                                                    {canPreview && (
                                                       <button
-                                                onClick={() => handleCreateArtifact(codeStr, lang || "text")}
-                                                className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md">
-                                                
-                                                        <Code2 className="w-3 h-3" /> Open as Artifact
-                                                      </button>
-                                                    </div>);
-
+                                                        onClick={() => handleCreateArtifact(codeStr, lang)}
+                                                        className="px-2 py-0.5 rounded hover:bg-zinc-700 text-blue-400 transition-colors flex items-center gap-1"
+                                                      ><Play className="w-3 h-3" /> Run</button>
+                                                    )}
+                                                    <button
+                                                      onClick={() => handleCreateArtifact(codeStr, lang || 'text')}
+                                                      className="px-2 py-0.5 rounded hover:bg-zinc-700 text-emerald-400 transition-colors flex items-center gap-1"
+                                                    ><Code2 className="w-3 h-3" /> Artifact</button>
+                                                  </div>
+                                                </div>
+                                              )}
+                                              <pre className={`bg-zinc-900 text-zinc-100 ${lang ? 'rounded-b-lg' : 'rounded-lg'} p-3 overflow-x-auto`}>
+                                                <code className={className} {...props}>{children}</code>
+                                              </pre>
+                                              {!lang && (
+                                                <button
+                                                  onClick={() => handleCreateArtifact(codeStr, 'text')}
+                                                  className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md"
+                                                ><Code2 className="w-3 h-3" /> Artifact</button>
+                                              )}
+                                            </div>);
                                         }
-                                        return (
-                                          <code className={className} {...props}>
-                                                    {children}
-                                                  </code>);
-
+                                        return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
                                       }
                                     }}>
                                     
