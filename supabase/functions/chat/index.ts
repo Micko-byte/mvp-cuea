@@ -18,7 +18,7 @@ const withTimeout = async (url: string, init: RequestInit, timeoutMs: number) =>
 };
 
 // --- Redis helper (Upstash REST API) ---
-const redis = {
+const createRedis = () => ({
   async get(key: string) {
     const url = Deno.env.get('UPSTASH_REDIS_REST_URL');
     const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
@@ -29,22 +29,18 @@ const redis = {
       });
       const data = await res.json();
       return data.result ? JSON.parse(data.result) : null;
-    } catch (e) {
-      console.warn("Redis get error:", e);
-      return null;
-    }
+    } catch { return null; }
   },
-  async set(key: string, value: any, exSeconds = 3600) {
+  async set(key: string, value: any, ex = 3600) {
     const url = Deno.env.get('UPSTASH_REDIS_REST_URL');
     const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
     if (!url || !token) return;
     try {
-      await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}?ex=${exSeconds}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-    } catch (e) {
-      console.warn("Redis set error:", e);
-    }
+      const setUrl = ex > 0
+        ? `${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}?ex=${ex}`
+        : `${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}`;
+      await fetch(setUrl, { headers: { Authorization: `Bearer ${token}` } });
+    } catch { /* non-blocking */ }
   },
   async del(key: string) {
     const url = Deno.env.get('UPSTASH_REDIS_REST_URL');
@@ -54,14 +50,15 @@ const redis = {
       await fetch(`${url}/del/${encodeURIComponent(key)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-    } catch (e) {
-      console.warn("Redis del error:", e);
-    }
+    } catch { /* non-blocking */ }
   }
-};
+});
 
-const FREE_DAILY_LIMIT = 50000;
-const PAID_DAILY_LIMIT = 200000;
+const redis = createRedis();
+
+// Hardcoded fallback limits
+const DEFAULT_FREE_LIMIT = 50000;
+const DEFAULT_PAID_LIMIT = 200000;
 const DAILY_GLOBAL_LIMIT = 500000;
 
 const CUEA_KNOWLEDGE = `
@@ -151,121 +148,52 @@ When a student asks you to generate, create, or write a document (PDF, Word, Pow
    - For Excel: \`[📥 Download Excel](download:xlsx)\`
 3. Include the relevant download links based on what the user asked for. If they asked for a PDF, include the PDF link. If they said "generate a document" without specifying, include PDF and DOCX links.
 4. You can also offer to create more detailed versions, add sections, etc.
-5. Example ending:
-   "I've created your document! Click below to download:
-   
-   [📥 Download PDF](download:pdf)
-   [📥 Download Word Document](download:docx)
-   
-   Would you like me to make it more detailed or add additional sections?"
 
 ### 3. COURSE MATERIAL HUB
-Help students find, organize, and understand their lecture notes, past papers, reading lists, and study resources. Summarize chapters, explain concepts from specific units, and answer questions about specific course content.
+Help students find, organize, and understand their lecture notes, past papers, reading lists, and study resources.
 
 ### 4. EXAM PREPARATION
 - Generate practice questions tailored to CUEA's exact exam and CAT formats.
 - Provide topic summaries aligned to the CUEA syllabus.
 - Give step-by-step explanations for past paper questions.
-- Help students identify weak areas and build targeted study plans.
 
 ### 5. CODE & ARTIFACTS
-- Always use fenced code blocks with the language specified: \`\`\`python, \`\`\`javascript, \`\`\`html, \`\`\`java, \`\`\`c, \`\`\`cpp, etc.
-- For HTML/CSS/JS: generate complete, self-contained runnable code that can be previewed as an artifact.
-- For JavaScript: write clean executable code users can run directly.
-- For Python, Java, C++, and other languages: write clean, well-commented code and show the expected output in a separate block labeled "**Expected Output:**".
-- Always explain what the code does step by step after the code block.
+- Always use fenced code blocks with the language specified.
+- For HTML/CSS/JS: generate complete, self-contained runnable code.
 - Tell the user: "💡 Click **'Open as Artifact'** to preview or run this interactively" for HTML and JS code.
 
-### 6. WEB SEARCH & CURRENT INFORMATION
-- You have knowledge up to your training date. For current events, recommend reliable sources.
-- For academic research, recommend: Google Scholar, JSTOR, PubMed, ResearchGate, SSRN, government portals.
-- Always cite your sources when providing factual information.
+### 6. FILE & IMAGE ANALYSIS
+- Analyze: images, PDFs, Word documents, Excel files, CSV files, plain text.
 
-### 7. FILE & IMAGE ANALYSIS
-- Analyze: images (photos, diagrams, charts, screenshots), PDFs, Word documents, Excel files, CSV files, plain text.
-- For images: describe content, analyze diagrams, read text in images, interpret charts and graphs.
-- For PDFs and Word docs: summarize, extract key points, answer questions about the content.
-- For spreadsheets and CSV: analyze data, spot trends, suggest formulas, generate insights.
-- When a file is attached, always acknowledge it and ask what the student needs.
+### 7. ACADEMIC SUPPORT — ALL CUEA SUBJECTS
+- Mathematics, Sciences, Humanities, Business, Law — all 50+ programmes.
 
-### 8. ACADEMIC SUPPORT — ALL CUEA SUBJECTS
-- **Mathematics**: algebra, calculus, statistics, linear algebra — always show step-by-step working.
-- **Sciences**: biology, chemistry, physics, computer science — explain with real examples.
-- **Humanities**: history, philosophy, literature, theology, sociology — structured analysis and discussion.
-- **Business**: accounting, economics, management, marketing, finance — real-world African context.
-- **Law**: case analysis, legal reasoning, statute interpretation, legal writing.
-- All 50+ programmes offered at CUEA.
-
-### 9. QUIZ MODE
+### 8. QUIZ MODE
 When a student says "Quiz me", "Test me", or "Enter Quiz Mode":
 1. Ask which subject/topic and difficulty level.
 2. Generate one question at a time.
 3. Wait for the student's answer.
-4. Evaluate and explain fully — whether right or wrong.
+4. Evaluate and explain fully.
 5. Track score and give a performance summary at the end.
-6. Use a mix of MCQs, short answer, and true/false questions.
-
-### 10. PROGRESS ANALYTICS
-- Help students visualize their academic trajectory through conversation.
-- Identify weak areas based on quiz performance and questions asked.
-- Track improvement over a study session.
-- Suggest smarter preparation strategies for upcoming assessments.
-
-### 11. STUDY PLANNING
-- Create personalized study schedules based on exam dates and subjects.
-- Break large tasks into manageable daily goals.
-- Suggest proven study techniques: Pomodoro, spaced repetition, active recall, the Feynman technique.
-- Help prioritize assignments by deadline and grade weighting.
 
 ## COMMUNICATION STYLE
-- Warm, encouraging, and supportive — like a brilliant academic companion.
-- Patient and never condescending — no question is too basic or too advanced.
+- Warm, encouraging, and supportive.
+- Patient and never condescending.
 - Use Kenyan and African examples and context where relevant.
 - Respond in the same language the student uses (English or Swahili).
-- Celebrate effort and progress, not just correct answers.
-- Structure all responses clearly with headings, bullets, and numbered lists.
 
 ## FORMATTING RULES
-- Use **bold** for key terms and important points.
+- Use **bold** for key terms.
 - Use ## and ### headings for sections in long responses.
-- Use numbered lists for steps and procedures.
-- Use bullet points for lists of items.
-- Use \`inline code\` for technical terms, file names, commands.
+- Use numbered lists for steps.
 - Use fenced code blocks with language tags for ALL code.
-- Use tables for comparisons and structured data.
-- Use > blockquotes for important warnings or notes.
-- Use emojis sparingly to add warmth: 📚 🎓 ✅ 💡 🔬 📝
-
-## PRIVACY & TRUST
-- Student academic data is private and never shared or sold.
-- You are GDPR-aligned and built with student privacy first.
-- Always handle student information with discretion and respect.
-
-## ACADEMIC INTEGRITY
-- Guide students to understand and learn — always explain, never just give raw answers.
-- Encourage original thinking. Provide frameworks and guidance, not completed assignments.
-- Be honest about uncertainty: say "I recommend verifying this with [source]" when unsure.
-
-## EMOTIONAL SUPPORT
-- If a student seems stressed or overwhelmed, acknowledge their feelings before diving into content.
-- Remind them that struggling is part of learning, not a sign of failure.
-- Offer both encouragement and practical next steps.
+- Use tables for comparisons.
+- Use emojis sparingly: 📚 🎓 ✅ 💡 🔬 📝
 
 ## CRITICAL RESPONSE RULES
-- ALWAYS provide comprehensive, detailed answers. NEVER truncate or shorten your responses.
-- Use all the context provided to give complete explanations with examples.
-- Provide step-by-step explanations when appropriate.
-- Include practical examples, code snippets, or diagrams when they help understanding.
-- If a topic is complex, break it down into clear sections with headers.
-- At the end of longer responses, suggest 2-3 follow-up topics:
-  "📚 **Want to explore more?**
-  - [Topic 1]
-  - [Topic 2]
-  - [Topic 3]"
-
-## IMPORTANT RULES
-- NEVER say "I cannot assist with that topic" or "I'm here to help with CUEA academic matters only"
-- Always try to be helpful with ANY question — academic, general knowledge, coding, life advice
+- ALWAYS provide comprehensive, detailed answers.
+- At the end of longer responses, suggest follow-up topics.
+- NEVER say "I cannot assist with that topic"
 - You are a FULL-CAPABILITY assistant, not a restricted bot`;
 
 serve(async (req) => {
@@ -291,10 +219,34 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // --- Rate Limiting: max 20 requests per minute per user ---
+    // --- Load system settings from cache/DB ---
+    let settings: Record<string, any> = {};
+    try {
+      const cachedSettings = await redis.get('settings:system');
+      if (cachedSettings) {
+        settings = cachedSettings;
+      } else {
+        const { data: settingsRows } = await supabaseAdmin.from("system_settings").select("key, value");
+        if (settingsRows) {
+          for (const row of settingsRows) {
+            settings[row.key] = row.value;
+          }
+          await redis.set('settings:system', settings, 300); // 5 min cache
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load system settings, using defaults:", e);
+    }
+
+    const FREE_DAILY_LIMIT = Number(settings.token_limit_free) || DEFAULT_FREE_LIMIT;
+    const PAID_DAILY_LIMIT = Number(settings.token_limit_paid) || DEFAULT_PAID_LIMIT;
+    const rateLimitPerMinute = Number(settings.rate_limit_per_minute) || 20;
+    const maxRagChunks = Number(settings.max_rag_chunks) || 8;
+
+    // --- Rate Limiting ---
     const rateLimitKey = `ratelimit:${userId}:${Math.floor(Date.now() / 60000)}`;
     const requests = await redis.get(rateLimitKey) || 0;
-    if (requests >= 20) {
+    if (requests >= rateLimitPerMinute) {
       return new Response(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
         status: 429,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -302,10 +254,8 @@ serve(async (req) => {
     }
     await redis.set(rateLimitKey, requests + 1, 90);
 
-    // --- Cached: Check paid status + token usage ---
+    // --- Cached: Profile + enrolled units (10 min) ---
     const today = new Date().toISOString().split('T')[0];
-
-    // Profile + enrolled units cache (10 min)
     const profileCacheKey = `profile:${userId}`;
     let profileCache = await redis.get(profileCacheKey);
     let profileData: any = null;
@@ -335,7 +285,7 @@ serve(async (req) => {
     const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
     const isAdmin = roleData?.role === "admin";
 
-    // Token usage cache (60 sec)
+    // --- Token usage cache (60s) ---
     const tokenCacheKey = `tokens:${userId}:${today}`;
     let dailyUserUsage = await redis.get(tokenCacheKey);
     if (dailyUserUsage === null) {
@@ -358,7 +308,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "System is at capacity today. Come back tomorrow! 🎓" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Enrolled units context
+    // --- Enrolled units context ---
     let enrolledUnitsContext = "";
     if (studentUnits && studentUnits.length > 0) {
       enrolledUnitsContext = "\n\nStudent's Enrolled Units:\n" + studentUnits.map((su: any) => {
@@ -367,7 +317,7 @@ serve(async (req) => {
       }).filter(Boolean).join("\n");
     }
 
-    // Get unit info if unit-specific chat
+    // --- Unit context ---
     let unitContext = "";
     let unitCode = "";
     if (unitId) {
@@ -378,8 +328,8 @@ serve(async (req) => {
       }
     }
 
-    // Calendar cache (1 hour)
-    const calendarCacheKey = 'calendar:upcoming';
+    // --- Calendar cache (1 hour) ---
+    const calendarCacheKey = `calendar:upcoming:${today}`;
     let calendarEvents = await redis.get(calendarCacheKey);
     if (!calendarEvents) {
       const { data } = await supabaseAdmin.from("academic_calendar").select("event_name, start_date, end_date, category, trimester, description").gte("start_date", today).order("start_date").limit(15);
@@ -393,7 +343,7 @@ serve(async (req) => {
       }).join("\n");
     }
 
-    // RAG: Get relevant context from embeddings (with cache)
+    // --- RAG with cache (5 min) ---
     let ragContext = "";
     const lastUserMessage = (() => {
       const last = messages[messages.length - 1];
@@ -408,7 +358,6 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY && shouldRunRag) {
       try {
-        // RAG cache (5 min)
         const queryHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lastUserMessage))
           .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16));
         const ragCacheKey = `rag:${userId}:${queryHash}`;
@@ -429,7 +378,7 @@ serve(async (req) => {
               const { data: docs } = await supabaseAdmin.rpc("match_documents", {
                 query_embedding: JSON.stringify(queryEmbedding),
                 match_threshold: 0.5,
-                match_count: isAdmin ? 10 : 8,
+                match_count: isAdmin ? maxRagChunks + 2 : maxRagChunks,
               });
               ragResults = docs || [];
               await redis.set(ragCacheKey, ragResults, 300);
@@ -471,7 +420,11 @@ serve(async (req) => {
       }
     }
 
-    // Build student context
+    // --- Math detection: upgrade model ---
+    const mathPatterns = /(\b(calculus|integral|derivative|equation|matrix|algebra|theorem|proof|polynomial|trigonometry|logarithm|differential|eigenvalue|laplace|fourier)\b|[∫∑∏√±≈≠≤≥∞∂∇]|\\frac|\\sqrt|\d+\s*[\+\-\*\/\^]\s*\d+)/i;
+    const hasMathContent = mathPatterns.test(lastUserMessage);
+
+    // --- Build student context ---
     const studentContext = profileData
       ? `\nStudent Profile:\n- Name: ${profileData.name}\n- Program: ${profileData.program || 'N/A'}\n- Course: ${profileData.course_name || 'N/A'}\n- Year: ${profileData.year || 'N/A'}, Semester: ${profileData.semester || 'N/A'}`
       : "";
@@ -479,9 +432,9 @@ serve(async (req) => {
     const adminExtra = isAdmin ? `\n\nYou are talking to an ADMIN user. They have full access to query about any unit, course, or system data. Provide comprehensive answers about the entire system.` : "";
 
     const isGeneralChat = !unitId;
-    const generalChatNote = isGeneralChat ? `\n\nThis is a GENERAL chat. The student can ask about ANYTHING — academic topics, general knowledge, world events, coding, life advice, etc. You are NOT restricted to CUEA content only. Be helpful, knowledgeable, and conversational. If course materials are relevant, use them, but also freely answer general questions.` : "";
+    const generalChatNote = isGeneralChat ? `\n\nThis is a GENERAL chat. The student can ask about ANYTHING — academic topics, general knowledge, world events, coding, life advice, etc. You are NOT restricted to CUEA content only.` : "";
 
-    // Build the final system prompt
+    // --- Build the final system prompt ---
     const systemPrompt = `${SEKANI_SYSTEM_PROMPT}
 
 ${CUEA_KNOWLEDGE}
@@ -496,13 +449,27 @@ ${ragContext ? `Course Material Context:\n${ragContext}` : "No specific course m
 
 Answer the student's question helpfully, comprehensively, and naturally.`;
 
-    // Call OpenAI API - use vision model if multimodal content detected
+    // --- Call OpenAI API ---
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
     const hasImageContent = messages.some((m: any) =>
       Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url")
     );
-    const model = hasImageContent ? "gpt-4o" : "gpt-4o-mini";
+    
+    // Model selection: vision > math > default
+    let model: string;
+    if (hasImageContent) {
+      model = "gpt-4o";
+    } else if (hasMathContent) {
+      model = "gpt-4o"; // Math needs stronger model
+    } else {
+      const defaultModel = typeof settings.default_model_general === 'string' 
+        ? settings.default_model_general.replace(/"/g, '') 
+        : "gpt-4o-mini";
+      model = unitId 
+        ? (typeof settings.default_model_unit === 'string' ? settings.default_model_unit.replace(/"/g, '') : defaultModel)
+        : defaultModel;
+    }
 
     const response = await withTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
