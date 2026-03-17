@@ -124,7 +124,7 @@ const ChatPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading: authLoading } = useAuth();
   const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, renameChat, loadChats } =
   useChat();
-  const { viewerOpen, addArtifact } = useArtifacts();
+  const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
   const { nickname, getChatBg } = usePersonalization();
   const navigate = useNavigate();
   const [input, setInput] = useState("");
