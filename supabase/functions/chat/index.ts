@@ -343,6 +343,65 @@ serve(async (req) => {
       }).join("\n");
     }
 
+    // --- Student Memory (recent cross-chat history for personalization) ---
+    let memoryContext = "";
+    try {
+      const memoryCacheKey = `memory:${userId}`;
+      let memoryData = await redis.get(memoryCacheKey);
+      if (!memoryData) {
+        // Load recent messages from OTHER chats (not current) for memory context
+        const { data: recentMsgs } = await supabaseAdmin
+          .from("chat_messages")
+          .select("content, role, created_at, chat_id")
+          .eq("user_id", userId)
+          .neq("chat_id", chatId || "")
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        // Load explicit student memories
+        const { data: memories } = await supabaseAdmin
+          .from("student_memory")
+          .select("memory_type, subject, content, strength_level")
+          .eq("user_id", userId)
+          .order("updated_at", { ascending: false })
+          .limit(15);
+
+        memoryData = { recentMsgs: recentMsgs || [], memories: memories || [] };
+        await redis.set(memoryCacheKey, memoryData, 300); // 5 min cache
+      }
+
+      const parts: string[] = [];
+      if (memoryData.memories && memoryData.memories.length > 0) {
+        const weakTopics = memoryData.memories.filter((m: any) => m.memory_type === 'weak_topic');
+        const strengths = memoryData.memories.filter((m: any) => m.memory_type === 'strength');
+        if (weakTopics.length > 0) {
+          parts.push("Topics the student struggles with: " + weakTopics.map((m: any) => `${m.content}${m.subject ? ` (${m.subject})` : ''}`).join(", "));
+        }
+        if (strengths.length > 0) {
+          parts.push("Topics the student is strong in: " + strengths.map((m: any) => m.content).join(", "));
+        }
+      }
+      if (memoryData.recentMsgs && memoryData.recentMsgs.length > 0) {
+        const recentTopics = memoryData.recentMsgs
+          .filter((m: any) => m.role === 'user')
+          .slice(0, 8)
+          .map((m: any) => {
+            const text = typeof m.content === 'string' ? m.content : '';
+            return text.length > 80 ? text.slice(0, 80) + '...' : text;
+          })
+          .filter(Boolean);
+        if (recentTopics.length > 0) {
+          parts.push("Recent topics the student asked about: " + recentTopics.join(" | "));
+        }
+      }
+      if (parts.length > 0) {
+        memoryContext = "\n\n## Student Learning Memory\n" + parts.join("\n") +
+          "\n\nUse this memory to personalize your responses. Reference past struggles when relevant (e.g., 'Last time you found X challenging — here's a clearer explanation'). Build on their strengths.";
+      }
+    } catch (e) {
+      console.warn("Failed to load student memory:", e);
+    }
+
     // --- RAG with cache (5 min) ---
     let ragContext = "";
     const lastUserMessage = (() => {
