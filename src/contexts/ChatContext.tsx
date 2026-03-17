@@ -170,7 +170,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       content: m.text,
     }));
 
-    // Build the current user message with potential image content
+    // Build the current user message with potential image/file content
     let currentUserContent: any;
     if (files && files.length > 0) {
       const contentParts: any[] = [];
@@ -184,39 +184,45 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             image_url: { url: base64 },
           });
         } else {
-          // For non-image files, read as text and embed into knowledge base
+          // For non-image files, try to read as text and send inline for AI analysis
           try {
-            const fileText = await file.text();
+            let fileText = "";
+            if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md") || file.name.endsWith(".csv") || file.type === "text/csv") {
+              fileText = await file.text();
+            } else if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
+              try {
+                const mammoth = await import("mammoth");
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                fileText = result.value || "";
+              } catch {
+                fileText = `[Word document: ${file.name} — content extraction unavailable in browser]`;
+              }
+            } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("spreadsheetml")) {
+              try {
+                const XLSX = await import("xlsx");
+                const arrayBuffer = await file.arrayBuffer();
+                const wb = XLSX.read(arrayBuffer, { type: "array" });
+                const parts: string[] = [];
+                for (const sheetName of wb.SheetNames) {
+                  const ws = wb.Sheets[sheetName];
+                  parts.push(`Sheet: ${sheetName}\n${XLSX.utils.sheet_to_csv(ws)}`);
+                }
+                fileText = parts.join("\n\n");
+              } catch {
+                fileText = `[Excel file: ${file.name}]`;
+              }
+            } else if (file.type === "application/pdf") {
+              fileText = `[PDF document: ${file.name} (${(file.size / 1024).toFixed(1)}KB). PDF text extraction is limited in the browser. For best results, copy and paste key text sections directly.]`;
+            } else {
+              fileText = await file.text().catch(() => `[File: ${file.name} (${file.type})]`);
+            }
+
+            const truncated = fileText.length > 15000 ? fileText.slice(0, 15000) + "\n...[truncated for length]" : fileText;
             contentParts.push({
               type: "text",
-              text: `[Attached file: ${file.name}]\n${fileText.slice(0, 10000)}`,
+              text: `[Attached file: ${file.name}]\n\`\`\`\n${truncated}\n\`\`\``,
             });
-
-            // Embed document into knowledge base in background
-            if (fileText.trim().length >= 20) {
-              const { data: sessionData } = await supabase.auth.getSession();
-              const token = sessionData.session?.access_token;
-              if (token) {
-                fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({
-                    content: fileText.slice(0, 50000),
-                    title: file.name,
-                    fileName: file.name,
-                    unitId: currentChat?.unit_id || null,
-                  }),
-                }).then(res => {
-                  if (res.ok) {
-                    toast.success(`📚 "${file.name}" added to knowledge base`);
-                  }
-                }).catch(() => {});
-              }
-            }
           } catch {
             contentParts.push({
               type: "text",
@@ -226,9 +232,51 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       if (contentParts.length === 0) contentParts.push({ type: "text", text: text || "Analyze this" });
-      currentUserContent = contentParts;
+      
+      // If only one text part, send as plain string
+      const allText = contentParts.every((p: any) => p.type === "text");
+      if (allText && contentParts.length === 1) {
+        currentUserContent = contentParts[0].text;
+      } else {
+        currentUserContent = contentParts;
+      }
     } else {
       currentUserContent = text;
+    }
+
+    // ONLY embed if this is a UNIT chat AND files have extractable text
+    if (currentChat?.chat_type === "unit" && currentChat?.unit_id && files && files.length > 0) {
+      // Fire and forget — don't await, don't block
+      (async () => {
+        try {
+          const { data: sd } = await supabase.auth.getSession();
+          const token = sd.session?.access_token;
+          if (!token) return;
+          for (const file of files) {
+            if (file.type.startsWith("image/")) continue;
+            let fileText = "";
+            try { fileText = await file.text(); } catch { continue; }
+            if (fileText.trim().length < 20) continue;
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/embed-document`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                content: fileText.slice(0, 50000),
+                title: file.name,
+                fileName: file.name,
+                unitId: currentChat.unit_id,
+              }),
+            });
+          }
+          toast.success(`📚 Files added to unit knowledge base`);
+        } catch (err) {
+          console.error("Background embedding failed:", err);
+        }
+      })();
     }
 
     const aiMessages = [

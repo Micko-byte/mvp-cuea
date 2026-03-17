@@ -953,25 +953,28 @@ const ChatPage = () => {
 
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
+            <button className="relative flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
               <Paperclip className="w-4 h-4" />
+              {mainTab === "units" && selectedUnitId && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" title="Files will be added to unit knowledge base" />
+              )}
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-48 p-1.5">
+          <PopoverContent side="top" align="start" className="w-56 p-1.5">
             <button
             onClick={() => cameraInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-              <Camera className="w-4 h-4 text-muted-foreground" /> Camera
+              <Camera className="w-4 h-4 text-muted-foreground" /> {mainTab === "units" && selectedUnitId ? "Camera" : "Take Photo — AI analyzes it"}
             </button>
             <button
             onClick={() => photoInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Photo
+              <ImageIcon className="w-4 h-4 text-muted-foreground" /> {mainTab === "units" && selectedUnitId ? "Upload Image" : "Upload Image — AI analyzes it"}
             </button>
             <button
             onClick={() => docInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-              <FileText className="w-4 h-4 text-muted-foreground" /> Files
+              <FileText className="w-4 h-4 text-muted-foreground" /> {mainTab === "units" && selectedUnitId ? "Files — AI reads + saves to KB" : "Files — AI reads instantly"}
             </button>
             <button
             onClick={() => {
@@ -1280,6 +1283,22 @@ const ChatPage = () => {
                                             </div>);
                                         }
                                         return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
+                                      },
+                                      img({ src, alt, ...props }) {
+                                        return (
+                                          <div className="my-3">
+                                            <img
+                                              src={src}
+                                              alt={alt || "Generated image"}
+                                              className="max-w-full rounded-xl border border-border shadow-md cursor-pointer hover:opacity-90 transition-opacity"
+                                              loading="lazy"
+                                              onClick={() => window.open(src, "_blank")}
+                                            />
+                                            {alt && (
+                                              <p className="text-xs text-muted-foreground mt-1.5 text-center italic">{alt}</p>
+                                            )}
+                                          </div>
+                                        );
                                       }
                                     }}>
                                     
