@@ -1303,6 +1303,8 @@ const ChatPage = () => {
                                       {msg.sender === "bot" ?
                                 <div className="prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
                                           <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
                                     components={{
                                       a({ href, children, ...props }) {
                                         if (href?.startsWith("download:")) {

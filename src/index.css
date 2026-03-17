@@ -162,3 +162,20 @@
     animation: pulse-ring 1.2s ease-out infinite;
   }
 }
+
+/* KaTeX math rendering */
+.katex {
+  font-size: 1.05em;
+}
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+}
+.dark .katex,
+.dark .katex * {
+  color: inherit;
+}
+.katex-display > .katex {
+  white-space: normal;
+}
