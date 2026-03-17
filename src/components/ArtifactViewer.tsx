@@ -303,13 +303,13 @@ const ArtifactViewer = () => {
 
         {/* Content */}
         <div className="flex-1 overflow-auto flex flex-col">
-          {viewMode === "preview" && showPreviewTab ? (
+          {viewMode === "preview" && showPreviewTab && previewContent ? (
             <iframe
               key={iframeKey}
-              ref={iframeRef}
               title="Artifact Preview"
+              srcDoc={previewContent}
               className="w-full flex-1 border-0 bg-white"
-              sandbox="allow-scripts allow-modals"
+              sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
               style={{ minHeight: "400px", resize: "vertical" }}
             />
           ) : isPython ? (
