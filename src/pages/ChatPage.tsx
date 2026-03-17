@@ -50,7 +50,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   RotateCcw,
-  Pen } from
+  Pen,
+  Play } from
 "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
