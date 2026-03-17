@@ -949,9 +949,7 @@ const ChatPage = () => {
           onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
         <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.pptx,.ppt,.md" multiple className="hidden"
           onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
-          }
-        }} />
-      
+
         <Popover>
           <PopoverTrigger asChild>
             <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
@@ -960,33 +958,18 @@ const ChatPage = () => {
           </PopoverTrigger>
           <PopoverContent side="top" align="start" className="w-48 p-1.5">
             <button
-            onClick={() => {
-              fileInputRef.current?.setAttribute("accept", "image/*");
-              fileInputRef.current?.setAttribute("capture", "environment");
-              fileInputRef.current?.click();
-            }}
+            onClick={() => cameraInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <Camera className="w-4 h-4 text-muted-foreground" /> Camera
             </button>
             <button
-            onClick={() => {
-              fileInputRef.current?.setAttribute("accept", "image/*");
-              fileInputRef.current?.removeAttribute("capture");
-              fileInputRef.current?.click();
-            }}
+            onClick={() => photoInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <ImageIcon className="w-4 h-4 text-muted-foreground" /> Photo
             </button>
             <button
-            onClick={() => {
-              fileInputRef.current?.setAttribute("accept", ".pdf,.doc,.docx,.txt,.csv,.pptx,.xlsx");
-              fileInputRef.current?.removeAttribute("capture");
-              fileInputRef.current?.click();
-            }}
+            onClick={() => docInputRef.current?.click()}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <FileText className="w-4 h-4 text-muted-foreground" /> Files
             </button>
             <button
@@ -996,7 +979,6 @@ const ChatPage = () => {
               );
             }}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
-            
               <FileQuestion className="w-4 h-4 text-muted-foreground" /> Quizzes
             </button>
           </PopoverContent>
