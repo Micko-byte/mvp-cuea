@@ -1318,7 +1318,8 @@ const ChatPage = () => {
                                           const icons: Record<string, string> = { pdf: "📄", docx: "📝", pptx: "📊", xlsx: "📈" };
                                           return (
                                             <button
-                                              onClick={() => generators[format]?.()}
+                                              type="button"
+                                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); generators[format]?.(); }}
                                               className="inline-flex items-center gap-2 px-4 py-2.5 my-1 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
                                               style={{
                                                 background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))",
