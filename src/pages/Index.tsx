@@ -392,8 +392,34 @@ export default function Index() {
           <motion.p {...fadeUp(0.15)} style={{ fontSize: 16, color: "var(--muted)", marginBottom: "3rem", maxWidth: 520 }}>
             We're rolling out across universities in Kenya. Find your chapter and get started — ama be the first to bring Sekani to your campus!
           </motion.p>
-          <div id="chapters-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
-            {CHAPTERS.map((ch, i) => <ChapterCard key={ch.name} chapter={ch} delay={i * 0.1} />)}
+          <div id="chapters-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <ChapterCard chapter={CHAPTERS[0]} delay={0} />
+            <motion.div {...fadeUp(0.1)} style={{
+              background: "linear-gradient(135deg, rgba(255,199,0,0.08), rgba(77,191,179,0.05))",
+              border: "1.5px dashed rgba(77,191,179,0.35)",
+              borderRadius: 20, padding: "2.5rem 2rem", display: "flex", flexDirection: "column",
+              justifyContent: "center", alignItems: "flex-start", gap: 16, transition: "all 0.3s",
+            }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(77,191,179,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon d={ICONS.users} size={26} stroke="var(--teal-dark)" />
+              </div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", lineHeight: 1.3 }}>
+                We're Onboarding New Universities
+              </h3>
+              <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.7 }}>
+                Want to bring Sekani to your campus? We're partnering with universities across Kenya. Let's talk.
+              </p>
+              <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" style={{
+                display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
+                background: "var(--teal-dark)", color: "white",
+                fontWeight: 600, fontSize: 14, padding: "10px 24px",
+                borderRadius: 30, transition: "all 0.3s",
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "var(--teal-deep)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "var(--teal-dark)"; }}>
+                Talk To Us <Icon d={ICONS.arrow} size={14} stroke="white" />
+              </a>
+            </motion.div>
           </div>
         </div>
       </section>
