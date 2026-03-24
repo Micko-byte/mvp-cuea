@@ -181,7 +181,7 @@ export default function Index() {
         }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => scrollTo("hero")}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 64 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 80 }} />
           </div>
 
           <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 32 }}>
@@ -255,11 +255,11 @@ export default function Index() {
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7 }}>
             <h1 style={{
               fontSize: "clamp(2.5rem, 5vw, 4.2rem)", fontWeight: 700,
-              lineHeight: 1.1, color: "var(--ink)", marginBottom: "1.5rem", letterSpacing: "-0.02em",
+              lineHeight: 1.1, color: "#1C2838", marginBottom: "1.5rem", letterSpacing: "-0.02em",
             }}>
-              <span style={{ color: "var(--yellow)" }}>S</span><span style={{ color: "#1C2838" }}>o</span><span style={{ color: "var(--yellow)" }}>m</span><span style={{ color: "#1C2838" }}>a</span>{" "}
-              <span style={{ color: "#1C2838" }}>na</span>{" "}
-              <span style={{ color: "var(--yellow)" }}>S</span><span style={{ color: "#1C2838" }}>e</span><span style={{ color: "var(--yellow)" }}>k</span><span style={{ color: "#1C2838" }}>a</span><span style={{ color: "var(--yellow)" }}>n</span><span style={{ color: "#1C2838" }}>i</span><span style={{ color: "var(--yellow)" }}>!</span>
+              <span style={{ color: "var(--yellow)" }}>S</span>oma{" "}
+              <span style={{ color: "var(--yellow)" }}>n</span>a{" "}
+              Sekani!
             </h1>
 
             <p style={{ fontSize: 19, lineHeight: 1.7, color: "var(--muted)", maxWidth: 480, marginBottom: "2.5rem" }}>
@@ -267,7 +267,7 @@ export default function Index() {
               Smart, personalized academic support for every university student across Kenya. Study smarter, ace your exams.
             </p>
 
-            <div id="hero-btns" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            <div id="hero-btns" style={{ display: "flex", gap: 14, flexWrap: "wrap", position: "relative", zIndex: 5 }}>
               <a href="/login" style={{
                 display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
                 background: "linear-gradient(135deg, var(--yellow), var(--yellow-dk))", color: "var(--ink)",
@@ -367,9 +367,9 @@ export default function Index() {
             <div id="demo-layout" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2.5rem", alignItems: "center" }}>
               <ChatDemo />
               {/* Student image - larger to match demo */}
-              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "stretch", height: "100%" }}>
                 <img src={studentTablet} alt="Student using Soma na Sekani" style={{
-                  width: "100%", maxWidth: 520, height: "auto",
+                  width: "100%", maxWidth: 520, height: "100%", objectFit: "cover",
                   filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.3))",
                   borderRadius: 8,
                 }} />
@@ -470,7 +470,7 @@ export default function Index() {
       <footer style={{ background: "var(--ink)", padding: "3rem 1.5rem", borderTop: "1px solid rgba(255,199,0,0.1)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 58 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 72 }} />
           </div>
           <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
             {["Features", "Chapters", "Demo", "About"].map((l) => (
@@ -705,7 +705,7 @@ function ChatDemo() {
       }}>
         <img src={snsCharacter} alt="Sekani" style={{ width: 38, height: 38, borderRadius: 12, objectFit: "cover" }} />
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "white" }}>Soma na Sekani</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "white" }}>SEKANI</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Online</span>
