@@ -367,9 +367,9 @@ export default function Index() {
             <div id="demo-layout" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2.5rem", alignItems: "center" }}>
               <ChatDemo />
               {/* Student image - larger to match demo */}
-              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "stretch", height: "100%" }}>
                 <img src={studentTablet} alt="Student using Soma na Sekani" style={{
-                  width: "100%", maxWidth: 520, height: "auto",
+                  width: "100%", maxWidth: 520, height: "100%", objectFit: "cover",
                   filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.3))",
                   borderRadius: 8,
                 }} />
