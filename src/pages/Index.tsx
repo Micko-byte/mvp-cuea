@@ -259,7 +259,7 @@ export default function Index() {
             }}>
               <span style={{ color: "var(--yellow)" }}>S</span>oma{" "}
               <span style={{ color: "var(--yellow)" }}>n</span>a{" "}
-              Sekani!
+              <span style={{ color: "var(--yellow)" }}>S</span>ekani<span style={{ color: "var(--yellow)" }}>!</span>
             </h1>
 
             <p style={{ fontSize: 19, lineHeight: 1.7, color: "var(--muted)", maxWidth: 480, marginBottom: "2.5rem" }}>
