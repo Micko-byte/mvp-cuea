@@ -181,7 +181,7 @@ export default function Index() {
         }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => scrollTo("hero")}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 42 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 64 }} />
           </div>
 
           <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 32 }}>
@@ -470,7 +470,7 @@ export default function Index() {
       <footer style={{ background: "var(--ink)", padding: "3rem 1.5rem", borderTop: "1px solid rgba(255,199,0,0.1)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 36 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 58 }} />
           </div>
           <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
             {["Features", "Chapters", "Demo", "About"].map((l) => (
