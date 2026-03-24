@@ -81,7 +81,7 @@ const CHAPTERS = [
 /* ── Testimonials ── */
 const TESTIMONIALS = [
   { quote: "I used to spend hours searching for past papers and notes. Soma na Sekani finds everything in seconds na hata explains concepts I missed in class.", name: "Aisha M.", prog: "BSc Computer Science, Year 3" },
-  { quote: "The exam prep feature is genuinely impressive. It generates questions that mirror the actual exam style for my specific units.", name: "Kevin O.", prog: "Bachelor of Commerce, Year 2" },
+  { quote: "Maze this thing ni kitu mob! Hadi nikipata notes last minute before exam Sekani ananisort proper. Best tool imetokea campus wallahi.", name: "Kevin O.", prog: "Bachelor of Commerce, Year 2" },
   { quote: "As someone who works part-time, having a 24/7 academic assistant has been life-changing for keeping up with coursework.", name: "Grace W.", prog: "BA Communications, Year 4" },
 ];
 
@@ -135,34 +135,37 @@ export default function Index() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,100..900;1,100..900&display=swap');
         :root {
           --teal: #4DBFB3;
           --teal-dark: #2A9D8F;
           --teal-deep: #1A7A6F;
-          --yellow: #F6CA02;
-          --yellow-lt: #FBE14D;
-          --yellow-dk: #D4AD00;
+          --yellow: #FFC700;
+          --yellow-lt: #FFD740;
+          --yellow-dk: #E0AF00;
           --yellow-warm: #F5A623;
           --cream: #FFF9F0;
           --cream-yellow: #FFFDE8;
           --white: #FFFFFF;
-          --ink: #1A2332;
+          --ink: #1C2838;
           --ink-lt: #3D4F63;
           --muted: #6B7B8D;
           --border-sns: rgba(77,191,179,0.15);
           --card: #FFFFFF;
         }
+        * { font-family: 'Noto Serif', serif !important; }
         html { scroll-behavior: smooth; }
-        ::selection { background: rgba(246,202,2,0.25); }
+        ::selection { background: rgba(255,199,0,0.25); }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--teal); border-radius: 4px; }
         @media(max-width:900px){.desktop-nav{display:none!important}.mobile-menu-btn{display:flex!important}}
-        @media(max-width:900px){#hero-grid{grid-template-columns:1fr!important;text-align:center}#hero-btns{justify-content:center!important}#hero-character{justify-content:center!important}}
+        @media(max-width:900px){#hero-grid{grid-template-columns:1fr!important;text-align:center}#hero-btns{justify-content:center!important;flex-direction:column;align-items:center}#hero-character{justify-content:center!important}}
         @media(max-width:900px){#feat-grid{grid-template-columns:repeat(2,1fr)!important}}
         @media(max-width:580px){#feat-grid{grid-template-columns:1fr!important}}
         @media(max-width:860px){#chapters-grid{grid-template-columns:1fr!important}}
         @media(max-width:860px){#testimonials-grid{grid-template-columns:1fr!important}}
         @media(max-width:960px){#demo-layout{grid-template-columns:1fr!important}#demo-student{display:none!important}}
+        @media(max-width:900px){.speech-bubble-wrap{top:auto!important;bottom:0%!important;right:50%!important;transform:translateX(50%)!important}}
       `}</style>
 
       {/* ── NAVBAR ── */}
@@ -184,7 +187,7 @@ export default function Index() {
           <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 32 }}>
             {NAV_LINKS.map((link) => (
               <button key={link} onClick={() => scrollTo(link.toLowerCase().replace(/\s+/g, "-"))}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "var(--ink-lt)", fontFamily: "'DM Sans', sans-serif", transition: "color 0.2s" }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 500, color: "var(--ink-lt)", transition: "color 0.2s" }}
                 onMouseEnter={(e) => e.target.style.color = "var(--teal-dark)"}
                 onMouseLeave={(e) => e.target.style.color = "var(--ink-lt)"}>
                 {link}
@@ -194,7 +197,7 @@ export default function Index() {
               display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none",
               background: "var(--yellow)", color: "var(--ink)", fontWeight: 700, fontSize: 14,
               padding: "10px 22px", borderRadius: 30, transition: "all 0.2s",
-              boxShadow: "0 4px 16px rgba(246,202,2,0.3)",
+              boxShadow: "0 4px 16px rgba(255,199,0,0.3)",
             }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--yellow-dk)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "var(--yellow)"; e.currentTarget.style.transform = "translateY(0)"; }}>
@@ -214,7 +217,7 @@ export default function Index() {
               style={{ background: "rgba(255,255,255,0.98)", backdropFilter: "blur(16px)", borderTop: "1px solid var(--border-sns)", padding: "12px 1.5rem 20px", overflow: "hidden" }}>
               {NAV_LINKS.map((link) => (
                 <button key={link} onClick={() => scrollTo(link.toLowerCase().replace(/\s+/g, "-"))}
-                  style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "14px 0", fontSize: 17, fontWeight: 500, color: "var(--ink-lt)", borderBottom: "1px solid var(--border-sns)", fontFamily: "'DM Sans', sans-serif" }}>
+                  style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: "14px 0", fontSize: 17, fontWeight: 500, color: "var(--ink-lt)", borderBottom: "1px solid var(--border-sns)" }}>
                   {link}
                 </button>
               ))}
@@ -241,7 +244,7 @@ export default function Index() {
 
         {/* Floating accents */}
         <motion.div animate={{ y: [0, -20, 0], x: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-          style={{ position: "absolute", top: "12%", right: "8%", width: 200, height: 200, borderRadius: "50%", background: "rgba(246,202,2,0.1)", pointerEvents: "none" }} />
+          style={{ position: "absolute", top: "12%", right: "8%", width: 200, height: 200, borderRadius: "50%", background: "rgba(255,199,0,0.1)", pointerEvents: "none" }} />
         <motion.div animate={{ y: [0, 15, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
           style={{ position: "absolute", bottom: "18%", left: "5%", width: 140, height: 140, borderRadius: "50%", background: "rgba(77,191,179,0.08)", pointerEvents: "none" }} />
 
@@ -250,20 +253,13 @@ export default function Index() {
         }}>
           {/* Left - Text */}
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7 }}>
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(246,202,2,0.15)", border: "1px solid rgba(246,202,2,0.3)", borderRadius: 100, padding: "6px 16px", marginBottom: "1.5rem" }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", letterSpacing: "0.04em" }}>AI-Powered Campus Companion</span>
-            </motion.div>
-
             <h1 style={{
-              fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(2.5rem, 5vw, 4.2rem)", fontWeight: 700,
+              fontSize: "clamp(2.5rem, 5vw, 4.2rem)", fontWeight: 700,
               lineHeight: 1.1, color: "var(--ink)", marginBottom: "1.5rem", letterSpacing: "-0.02em",
             }}>
-              Soma na{" "}
-              <span style={{
-                background: "linear-gradient(135deg, var(--teal-dark), var(--teal))",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              }}>Sekani!</span>
+              <span style={{ color: "var(--yellow)" }}>S</span>oma na{" "}
+              <span style={{ color: "var(--teal-dark)" }}>S</span>ekani
+              <span style={{ color: "var(--yellow)" }}>!</span>
             </h1>
 
             <p style={{ fontSize: 19, lineHeight: 1.7, color: "var(--muted)", maxWidth: 480, marginBottom: "2.5rem" }}>
@@ -276,16 +272,16 @@ export default function Index() {
                 display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
                 background: "linear-gradient(135deg, var(--yellow), var(--yellow-dk))", color: "var(--ink)",
                 fontWeight: 700, fontSize: 16, padding: "15px 32px", borderRadius: 30,
-                boxShadow: "0 8px 32px rgba(246,202,2,0.35)", transition: "all 0.3s",
+                boxShadow: "0 8px 32px rgba(255,199,0,0.35)", transition: "all 0.3s",
               }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(246,202,2,0.45)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(246,202,2,0.35)"; }}>
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(255,199,0,0.45)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(255,199,0,0.35)"; }}>
                 Get Started Free <Icon d={ICONS.arrow} size={16} stroke="var(--ink)" />
               </a>
               <button onClick={() => scrollTo("demo")} style={{
                 display: "inline-flex", alignItems: "center", gap: 8, background: "white",
                 border: "2px solid var(--teal)", color: "var(--teal-dark)", fontWeight: 600, fontSize: 16,
-                padding: "14px 28px", borderRadius: 30, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                padding: "14px 28px", borderRadius: 30, cursor: "pointer",
                 transition: "all 0.3s",
               }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--teal)"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "translateY(-2px)"; }}
@@ -302,9 +298,9 @@ export default function Index() {
             style={{ display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
             <motion.img src={snsCharacter} alt="Sekani - your campus AI buddy"
               animate={{ y: [0, -12, 0] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              style={{ width: "clamp(320px, 95%, 480px)", height: "auto", filter: "drop-shadow(0 24px 48px rgba(77,191,179,0.25))" }} />
+              style={{ width: "clamp(340px, 100%, 520px)", height: "auto", filter: "drop-shadow(0 24px 48px rgba(77,191,179,0.25))" }} />
 
-            {/* Speech bubble with typing animation */}
+            {/* Speech bubble with typing animation - top right, wavy */}
             <SpeechBubble />
           </motion.div>
         </div>
@@ -318,7 +314,7 @@ export default function Index() {
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="What Sekani Can Do" />
           <motion.h2 {...fadeUp(0.1)} style={{
-            fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700,
+            fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700,
             color: "var(--ink)", letterSpacing: "-0.02em", marginBottom: "1rem",
           }}>
             Everything a student needs,<br />
@@ -359,7 +355,7 @@ export default function Index() {
           <div style={{ maxWidth: 1180, margin: "0 auto" }}>
             <SectionLabel text="See It In Action" light />
             <motion.h2 {...fadeUp(0.1)} style={{
-              fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(2rem, 3.5vw, 2.8rem)", fontWeight: 700,
+              fontSize: "clamp(2rem, 3.5vw, 2.8rem)", fontWeight: 700,
               color: "white", letterSpacing: "-0.02em", marginBottom: "1rem",
             }}>
               Sekani <span style={{ color: "var(--yellow)", fontStyle: "italic" }}>in action.</span>
@@ -368,12 +364,12 @@ export default function Index() {
               Watch how students interact with Sekani to get instant academic help. It's this easy.
             </motion.p>
 
-            <div id="demo-layout" style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "2.5rem", alignItems: "center" }}>
+            <div id="demo-layout" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2.5rem", alignItems: "center" }}>
               <ChatDemo />
-              {/* Student image */}
-              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "flex-end" }}>
+              {/* Student image - larger to match demo */}
+              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                 <img src={studentTablet} alt="Student using Soma na Sekani" style={{
-                  width: "100%", maxWidth: 340, height: "auto",
+                  width: "100%", maxWidth: 520, height: "auto",
                   filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.3))",
                   borderRadius: 8,
                 }} />
@@ -388,7 +384,7 @@ export default function Index() {
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Chapters" />
           <motion.h2 {...fadeUp(0.1)} style={{
-            fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700,
+            fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700,
             color: "var(--ink)", letterSpacing: "-0.02em", marginBottom: "1rem",
           }}>
             Join your campus <span style={{ color: "var(--teal-dark)", fontStyle: "italic" }}>chapter.</span>
@@ -404,12 +400,12 @@ export default function Index() {
 
       {/* ═══════ ABOUT ═══════ */}
       <section id="about" style={{ padding: "6rem 1.5rem", background: "var(--ink)", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "30%", right: "-10%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(246,202,2,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: "30%", right: "-10%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,199,0,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: "20%", left: "-5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(77,191,179,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ maxWidth: 800, margin: "0 auto", position: "relative" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", position: "relative" }}>
           <SectionLabel text="About The Mission" light />
           <motion.h2 {...fadeUp(0.1)} style={{
-            fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700,
+            fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700,
             color: "white", letterSpacing: "-0.02em", marginBottom: "1.5rem",
           }}>
             Built to scale across <span style={{ color: "var(--yellow)", fontStyle: "italic" }}>every campus in Kenya.</span>
@@ -418,7 +414,7 @@ export default function Index() {
             Soma na Sekani gives every university student access to AI-powered academic support. We are onboarding partner institutions and offering early access to administrators. Our mission? To make quality academic AI accessible to every student, regardless of their institution.
           </motion.p>
           <motion.p {...fadeUp(0.22)} style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", marginBottom: "2.5rem", maxWidth: 520 }}>
-            Built by students, for students. Powered by{" "}
+            Powered by{" "}
             <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Notify AI</a>.
           </motion.p>
           <motion.div {...fadeUp(0.28)} style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
@@ -426,7 +422,7 @@ export default function Index() {
               display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
               background: "linear-gradient(135deg, var(--yellow), var(--yellow-dk))", color: "var(--ink)",
               fontWeight: 700, fontSize: 16, padding: "15px 32px", borderRadius: 30,
-              boxShadow: "0 8px 24px rgba(246,202,2,0.25)", transition: "all 0.3s",
+              boxShadow: "0 8px 24px rgba(255,199,0,0.25)", transition: "all 0.3s",
             }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}>
@@ -441,7 +437,7 @@ export default function Index() {
         <div style={{ maxWidth: 1180, margin: "0 auto" }}>
           <SectionLabel text="Student Stories" />
           <motion.h2 {...fadeUp(0.1)} style={{
-            fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(2rem, 3.5vw, 2.8rem)", fontWeight: 700,
+            fontSize: "clamp(2rem, 3.5vw, 2.8rem)", fontWeight: 700,
             color: "var(--ink)", letterSpacing: "-0.02em", marginBottom: "3rem",
           }}>
             Heard from students <span style={{ color: "var(--teal-dark)", fontStyle: "italic" }}>who use it daily.</span>
@@ -450,12 +446,12 @@ export default function Index() {
             {TESTIMONIALS.map((t, i) => (
               <motion.div key={i} {...fadeUp(0.1 + i * 0.1)} style={{
                 background: "white", borderRadius: 20, padding: "2rem",
-                border: `1px solid ${i === 1 ? "rgba(246,202,2,0.3)" : "var(--border-sns)"}`,
-                boxShadow: i === 1 ? "0 4px 24px rgba(246,202,2,0.08)" : "0 4px 24px rgba(77,191,179,0.06)",
+                border: `1px solid ${i === 1 ? "rgba(255,199,0,0.3)" : "var(--border-sns)"}`,
+                boxShadow: i === 1 ? "0 4px 24px rgba(255,199,0,0.08)" : "0 4px 24px rgba(77,191,179,0.06)",
                 transition: "all 0.3s",
               }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(77,191,179,0.12)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = i === 1 ? "0 4px 24px rgba(246,202,2,0.08)" : "0 4px 24px rgba(77,191,179,0.06)"; }}>
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = i === 1 ? "0 4px 24px rgba(255,199,0,0.08)" : "0 4px 24px rgba(77,191,179,0.06)"; }}>
                 <div style={{ display: "flex", gap: 3, marginBottom: 16 }}>
                   {[...Array(5)].map((_, si) => <Icon key={si} d={ICONS.star} size={14} stroke="var(--yellow)" fill="var(--yellow)" strokeWidth={0} />)}
                 </div>
@@ -471,7 +467,7 @@ export default function Index() {
       </section>
 
       {/* ═══════ FOOTER ═══════ */}
-      <footer style={{ background: "var(--ink)", padding: "3rem 1.5rem", borderTop: "1px solid rgba(246,202,2,0.1)" }}>
+      <footer style={{ background: "var(--ink)", padding: "3rem 1.5rem", borderTop: "1px solid rgba(255,199,0,0.1)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img src={logoSns} alt="Soma na Sekani" style={{ height: 36 }} />
@@ -479,7 +475,7 @@ export default function Index() {
           <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
             {["Features", "Chapters", "Demo", "About"].map((l) => (
               <button key={l} onClick={() => scrollTo(l.toLowerCase().replace(/\s+/g, "-"))}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans', sans-serif", transition: "color 0.2s" }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "rgba(255,255,255,0.4)", transition: "color 0.2s" }}
                 onMouseEnter={(e) => e.target.style.color = "white"}
                 onMouseLeave={(e) => e.target.style.color = "rgba(255,255,255,0.4)"}>
                 {l}
@@ -492,11 +488,8 @@ export default function Index() {
               Powered by{" "}
               <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Notify AI</a>
             </p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", maxWidth: 520 }}>
-              This is an independent student initiative. Soma na Sekani is not officially affiliated with or endorsed by any university.
-            </p>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.15)" }}>
-              © {new Date().getFullYear()} Soma na Sekani. Built by students, for students.
+              &copy; {new Date().getFullYear()} Soma na Sekani.
             </p>
           </div>
         </div>
@@ -512,30 +505,28 @@ function SpeechBubble() {
   const displayed = useTypingEffect(text, 55, 1800);
   return (
     <motion.div
+      className="speech-bubble-wrap"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 1.5, duration: 0.4, type: "spring" }}
       style={{
-        position: "absolute", bottom: "8%", right: "-5%",
-        background: "var(--yellow)", color: "var(--ink)",
-        borderRadius: "20px 20px 20px 6px",
-        padding: "14px 20px", maxWidth: 260,
-        boxShadow: "0 8px 32px rgba(246,202,2,0.3)",
-        fontSize: 14, fontWeight: 600, lineHeight: 1.45,
-        fontFamily: "'DM Sans', sans-serif",
+        position: "absolute", top: "-5%", right: "-10%",
+        maxWidth: 260, zIndex: 10,
       }}>
-      {displayed}
-      <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}
-        style={{ display: "inline-block", marginLeft: 2, fontWeight: 700 }}>|</motion.span>
-      {/* Speech bubble tail */}
+      {/* Wavy SVG speech bubble */}
+      <svg viewBox="0 0 280 120" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} preserveAspectRatio="none">
+        <path d="M20,10 Q30,2 50,8 Q80,0 110,6 Q140,2 170,8 Q200,0 230,6 Q250,2 265,10 Q278,18 272,35 Q278,55 272,72 Q278,88 268,98 Q258,108 240,105 Q220,112 200,106 Q170,112 140,106 Q110,112 80,106 Q60,112 45,106 L35,115 L38,98 Q18,105 12,95 Q2,85 6,70 Q2,50 6,35 Q2,18 20,10 Z"
+          fill="#1C2838" stroke="rgba(42,157,143,0.3)" strokeWidth="1" />
+      </svg>
       <div style={{
-        position: "absolute", bottom: -8, left: 16,
-        width: 0, height: 0,
-        borderLeft: "10px solid var(--yellow)",
-        borderRight: "10px solid transparent",
-        borderTop: "10px solid var(--yellow)",
-        borderBottom: "10px solid transparent",
-      }} />
+        position: "relative", padding: "18px 22px 20px",
+        color: "#2A9D8F",
+        fontSize: 14, fontWeight: 600, lineHeight: 1.45,
+      }}>
+        {displayed}
+        <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}
+          style={{ display: "inline-block", marginLeft: 2, fontWeight: 700 }}>|</motion.span>
+      </div>
     </motion.div>
   );
 }
@@ -568,7 +559,7 @@ function StatsSection() {
         <div id="stats-g" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2rem" }}>
           {STATS.map((s, i) => (
             <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={isInView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.1, duration: 0.5 }} style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "2.8rem", fontWeight: 700, color: s.color, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 6 }}>{s.value}</div>
+              <div style={{ fontSize: "2.8rem", fontWeight: 700, color: s.color, lineHeight: 1, letterSpacing: "-0.03em", marginBottom: 6 }}>{s.value}</div>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>{s.label}</div>
             </motion.div>
           ))}
@@ -583,21 +574,29 @@ function FeatureCard({ feature: f, delay }: { feature: any; delay: number }) {
   return (
     <motion.div {...fadeUp(delay)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        background: hov ? "white" : "rgba(255,255,255,0.7)", border: `1.5px solid ${hov ? "rgba(246,202,2,0.35)" : "var(--border-sns)"}`,
+        background: hov ? "#1C2838" : "rgba(255,255,255,0.7)",
+        border: `1.5px solid ${hov ? "rgba(255,199,0,0.35)" : "var(--border-sns)"}`,
         borderRadius: 20, padding: "2rem", transition: "all 0.3s", transform: hov ? "translateY(-6px)" : "none",
-        boxShadow: hov ? "0 16px 48px rgba(77,191,179,0.12)" : "none", cursor: "default",
+        boxShadow: hov ? "0 16px 48px rgba(28,40,56,0.25)" : "none", cursor: "default",
       }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18 }}>
         <div style={{
-          width: 48, height: 48, borderRadius: 14, background: hov ? "rgba(246,202,2,0.12)" : "rgba(77,191,179,0.08)",
+          width: 48, height: 48, borderRadius: 14, background: hov ? "rgba(255,199,0,0.15)" : "rgba(77,191,179,0.08)",
           display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.3s",
         }}>
-          <Icon d={ICONS[f.icon]} size={22} stroke={hov ? "var(--yellow-dk)" : "var(--teal-dark)"} />
+          <Icon d={ICONS[f.icon]} size={22} stroke={hov ? "var(--yellow)" : "var(--teal-dark)"} />
         </div>
-        <span style={{ fontSize: 10, fontWeight: 600, color: "var(--teal-dark)", letterSpacing: "0.08em", background: "rgba(77,191,179,0.08)", padding: "4px 10px", borderRadius: 100, border: "1px solid rgba(77,191,179,0.15)", textTransform: "uppercase" }}>{f.tag}</span>
+        <span style={{
+          fontSize: 10, fontWeight: 600, letterSpacing: "0.08em",
+          color: hov ? "var(--yellow)" : "var(--teal-dark)",
+          background: hov ? "rgba(255,199,0,0.12)" : "rgba(77,191,179,0.08)",
+          padding: "4px 10px", borderRadius: 100,
+          border: `1px solid ${hov ? "rgba(255,199,0,0.25)" : "rgba(77,191,179,0.15)"}`,
+          textTransform: "uppercase", transition: "all 0.3s",
+        }}>{f.tag}</span>
       </div>
-      <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>{f.title}</h3>
-      <p style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.7 }}>{f.desc}</p>
+      <h3 style={{ fontSize: 17, fontWeight: 700, color: hov ? "white" : "var(--ink)", marginBottom: 8, transition: "color 0.3s" }}>{f.title}</h3>
+      <p style={{ fontSize: 13.5, color: hov ? "rgba(255,255,255,0.6)" : "var(--muted)", lineHeight: 1.7, transition: "color 0.3s" }}>{f.desc}</p>
     </motion.div>
   );
 }
@@ -608,38 +607,40 @@ function ChapterCard({ chapter: ch, delay }: { chapter: any; delay: number }) {
   return (
     <motion.div {...fadeUp(delay)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        background: isActive
-          ? "linear-gradient(135deg, rgba(77,191,179,0.08), rgba(246,202,2,0.05))"
-          : "rgba(0,0,0,0.02)",
-        border: `1.5px solid ${isActive ? "rgba(77,191,179,0.25)" : "var(--border-sns)"}`,
+        background: hov
+          ? "#1C2838"
+          : isActive
+            ? "linear-gradient(135deg, rgba(77,191,179,0.08), rgba(255,199,0,0.05))"
+            : "rgba(0,0,0,0.02)",
+        border: `1.5px solid ${hov ? "rgba(255,199,0,0.35)" : isActive ? "rgba(77,191,179,0.25)" : "var(--border-sns)"}`,
         borderRadius: 20, padding: "2.5rem 2rem", transition: "all 0.3s", position: "relative", overflow: "hidden",
         transform: hov ? "translateY(-4px)" : "none",
-        boxShadow: hov && isActive ? "0 16px 48px rgba(77,191,179,0.12)" : "none",
+        boxShadow: hov ? "0 16px 48px rgba(28,40,56,0.25)" : "none",
       }}>
       {isActive && (
         <div style={{ position: "absolute", top: 16, right: 16, background: "var(--yellow)", color: "var(--ink)", fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 100 }}>
           LIVE
         </div>
       )}
-      <div style={{ width: 56, height: 56, borderRadius: 16, background: isActive ? "rgba(246,202,2,0.12)" : "rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-        <Icon d={ICONS.globe} size={26} stroke={isActive ? "var(--teal-dark)" : "var(--muted)"} />
+      <div style={{ width: 56, height: 56, borderRadius: 16, background: hov ? "rgba(255,199,0,0.15)" : isActive ? "rgba(255,199,0,0.12)" : "rgba(0,0,0,0.04)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, transition: "background 0.3s" }}>
+        <Icon d={ICONS.globe} size={26} stroke={hov ? "var(--yellow)" : isActive ? "var(--teal-dark)" : "var(--muted)"} />
       </div>
-      <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>{ch.name}</h3>
-      <p style={{ fontSize: 14, color: "var(--muted)", marginBottom: 20 }}>{ch.university}</p>
-      {isActive && <p style={{ fontSize: 13, color: "var(--teal-dark)", fontWeight: 600, marginBottom: 20 }}>{ch.students} students active</p>}
+      <h3 style={{ fontSize: 20, fontWeight: 700, color: hov ? "white" : "var(--ink)", marginBottom: 6, transition: "color 0.3s" }}>{ch.name}</h3>
+      <p style={{ fontSize: 14, color: hov ? "rgba(255,255,255,0.6)" : "var(--muted)", marginBottom: 20, transition: "color 0.3s" }}>{ch.university}</p>
+      {isActive && <p style={{ fontSize: 13, color: hov ? "var(--yellow)" : "var(--teal-dark)", fontWeight: 600, marginBottom: 20, transition: "color 0.3s" }}>{ch.students} students active</p>}
 
       {isActive ? (
         <a href={ch.link}
           style={{
             display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
-            background: hov ? "var(--yellow)" : "transparent", color: hov ? "var(--ink)" : "var(--teal-dark)",
-            border: `1.5px solid ${hov ? "var(--yellow)" : "var(--teal)"}`, fontWeight: 600, fontSize: 14, padding: "10px 24px",
+            background: "var(--yellow)", color: "var(--ink)",
+            border: "1.5px solid var(--yellow)", fontWeight: 600, fontSize: 14, padding: "10px 24px",
             borderRadius: 30, transition: "all 0.3s",
           }}>
-          Join Chapter <Icon d={ICONS.arrow} size={14} stroke={hov ? "var(--ink)" : "var(--teal-dark)"} />
+          Join Chapter <Icon d={ICONS.arrow} size={14} stroke="var(--ink)" />
         </a>
       ) : (
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--muted)", fontWeight: 600, fontSize: 14, padding: "10px 24px", borderRadius: 30, border: "1.5px solid var(--border-sns)" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: hov ? "rgba(255,255,255,0.5)" : "var(--muted)", fontWeight: 600, fontSize: 14, padding: "10px 24px", borderRadius: 30, border: `1.5px solid ${hov ? "rgba(255,255,255,0.2)" : "var(--border-sns)"}`, transition: "all 0.3s" }}>
           Coming Soon
         </div>
       )}
@@ -700,7 +701,7 @@ function ChatDemo() {
       <div style={{
         display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
-        background: "linear-gradient(135deg, rgba(77,191,179,0.15), rgba(246,202,2,0.08))",
+        background: "linear-gradient(135deg, rgba(77,191,179,0.15), rgba(255,199,0,0.08))",
       }}>
         <img src={snsCharacter} alt="Sekani" style={{ width: 38, height: 38, borderRadius: 12, objectFit: "cover" }} />
         <div>
@@ -740,7 +741,7 @@ function ChatDemo() {
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = "var(--yellow)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(246,202,2,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(255,199,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <Icon d={ICONS.file} size={16} stroke="var(--yellow)" />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
