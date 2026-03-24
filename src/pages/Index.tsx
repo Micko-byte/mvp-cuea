@@ -705,7 +705,7 @@ function ChatDemo() {
       }}>
         <img src={snsCharacter} alt="Sekani" style={{ width: 38, height: 38, borderRadius: 12, objectFit: "cover" }} />
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "white" }}>Soma na Sekani</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "white" }}>SEKANI</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Online</span>
