@@ -149,7 +149,7 @@ export default function Index() {
           --white: #FFFFFF;
           --ink: #1C2838;
           --ink-lt: #3D4F63;
-          --muted: #6B7B8D;
+          --muted: #4A5568;
           --border-sns: rgba(77,191,179,0.15);
           --card: #FFFFFF;
         }
