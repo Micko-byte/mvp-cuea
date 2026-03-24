@@ -163,6 +163,8 @@ export default function Index() {
         @media(max-width:900px){#feat-grid{grid-template-columns:repeat(2,1fr)!important}}
         @media(max-width:580px){#feat-grid{grid-template-columns:1fr!important}}
         @media(max-width:860px){#chapters-grid{grid-template-columns:1fr!important}}
+        html, body { color-scheme: light !important; }
+        html.dark, body.dark, .dark { background-color: #FFFFFF !important; color: #1C2838 !important; }
         @media(max-width:860px){#testimonials-grid{grid-template-columns:1fr!important}}
         @media(max-width:960px){#demo-layout{grid-template-columns:1fr!important}#demo-student{display:none!important}}
         @media(max-width:900px){.speech-bubble-wrap{top:auto!important;bottom:0%!important;right:50%!important;transform:translateX(50%)!important}}
@@ -181,7 +183,7 @@ export default function Index() {
         }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => scrollTo("hero")}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 80 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 90 }} />
           </div>
 
           <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 32 }}>
@@ -259,7 +261,7 @@ export default function Index() {
             }}>
               <span style={{ color: "var(--yellow)" }}>S</span>oma{" "}
               <span style={{ color: "var(--yellow)" }}>n</span>a{" "}
-              Sekani!
+              <span style={{ color: "var(--yellow)" }}>S</span>ekani<span style={{ color: "var(--yellow)" }}>!</span>
             </h1>
 
             <p style={{ fontSize: 19, lineHeight: 1.7, color: "var(--muted)", maxWidth: 480, marginBottom: "2.5rem" }}>
@@ -367,9 +369,9 @@ export default function Index() {
             <div id="demo-layout" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2.5rem", alignItems: "center" }}>
               <ChatDemo />
               {/* Student image - larger to match demo */}
-              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "stretch", height: "100%" }}>
+              <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                 <img src={studentTablet} alt="Student using Soma na Sekani" style={{
-                  width: "100%", maxWidth: 520, height: "100%", objectFit: "cover",
+                  width: "100%", maxWidth: 480, height: 520, objectFit: "cover",
                   filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.3))",
                   borderRadius: 8,
                 }} />
@@ -392,8 +394,34 @@ export default function Index() {
           <motion.p {...fadeUp(0.15)} style={{ fontSize: 16, color: "var(--muted)", marginBottom: "3rem", maxWidth: 520 }}>
             We're rolling out across universities in Kenya. Find your chapter and get started — ama be the first to bring Sekani to your campus!
           </motion.p>
-          <div id="chapters-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
-            {CHAPTERS.map((ch, i) => <ChapterCard key={ch.name} chapter={ch} delay={i * 0.1} />)}
+          <div id="chapters-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+            <ChapterCard chapter={CHAPTERS[0]} delay={0} />
+            <motion.div {...fadeUp(0.1)} style={{
+              background: "linear-gradient(135deg, rgba(255,199,0,0.08), rgba(77,191,179,0.05))",
+              border: "1.5px dashed rgba(77,191,179,0.35)",
+              borderRadius: 20, padding: "2.5rem 2rem", display: "flex", flexDirection: "column",
+              justifyContent: "center", alignItems: "flex-start", gap: 16, transition: "all 0.3s",
+            }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(77,191,179,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon d={ICONS.users} size={26} stroke="var(--teal-dark)" />
+              </div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", lineHeight: 1.3 }}>
+                We're Onboarding New Universities
+              </h3>
+              <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.7 }}>
+                Want to bring Sekani to your campus? We're partnering with universities across Kenya. Let's talk.
+              </p>
+              <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" style={{
+                display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
+                background: "var(--teal-dark)", color: "white",
+                fontWeight: 600, fontSize: 14, padding: "10px 24px",
+                borderRadius: 30, transition: "all 0.3s",
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "var(--teal-deep)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "var(--teal-dark)"; }}>
+                Talk To Us <Icon d={ICONS.arrow} size={14} stroke="white" />
+              </a>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -470,7 +498,7 @@ export default function Index() {
       <footer style={{ background: "var(--ink)", padding: "3rem 1.5rem", borderTop: "1px solid rgba(255,199,0,0.1)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 72 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 85 }} />
           </div>
           <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
             {["Features", "Chapters", "Demo", "About"].map((l) => (
