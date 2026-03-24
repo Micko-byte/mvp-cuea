@@ -257,9 +257,9 @@ export default function Index() {
               fontSize: "clamp(2.5rem, 5vw, 4.2rem)", fontWeight: 700,
               lineHeight: 1.1, color: "var(--ink)", marginBottom: "1.5rem", letterSpacing: "-0.02em",
             }}>
-              <span style={{ color: "var(--yellow)" }}>S</span>oma na{" "}
-              <span style={{ color: "var(--teal-dark)" }}>S</span>ekani
-              <span style={{ color: "var(--yellow)" }}>!</span>
+              <span style={{ color: "var(--yellow)" }}>S</span><span style={{ color: "#1C2838" }}>o</span><span style={{ color: "var(--yellow)" }}>m</span><span style={{ color: "#1C2838" }}>a</span>{" "}
+              <span style={{ color: "#1C2838" }}>na</span>{" "}
+              <span style={{ color: "var(--yellow)" }}>S</span><span style={{ color: "#1C2838" }}>e</span><span style={{ color: "var(--yellow)" }}>k</span><span style={{ color: "#1C2838" }}>a</span><span style={{ color: "var(--yellow)" }}>n</span><span style={{ color: "#1C2838" }}>i</span><span style={{ color: "var(--yellow)" }}>!</span>
             </h1>
 
             <p style={{ fontSize: 19, lineHeight: 1.7, color: "var(--muted)", maxWidth: 480, marginBottom: "2.5rem" }}>
