@@ -255,11 +255,11 @@ export default function Index() {
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7 }}>
             <h1 style={{
               fontSize: "clamp(2.5rem, 5vw, 4.2rem)", fontWeight: 700,
-              lineHeight: 1.1, color: "var(--ink)", marginBottom: "1.5rem", letterSpacing: "-0.02em",
+              lineHeight: 1.1, color: "#1C2838", marginBottom: "1.5rem", letterSpacing: "-0.02em",
             }}>
-              <span style={{ color: "var(--yellow)" }}>S</span><span style={{ color: "#1C2838" }}>o</span><span style={{ color: "var(--yellow)" }}>m</span><span style={{ color: "#1C2838" }}>a</span>{" "}
-              <span style={{ color: "#1C2838" }}>na</span>{" "}
-              <span style={{ color: "var(--yellow)" }}>S</span><span style={{ color: "#1C2838" }}>e</span><span style={{ color: "var(--yellow)" }}>k</span><span style={{ color: "#1C2838" }}>a</span><span style={{ color: "var(--yellow)" }}>n</span><span style={{ color: "#1C2838" }}>i</span><span style={{ color: "var(--yellow)" }}>!</span>
+              <span style={{ color: "var(--yellow)" }}>S</span>oma{" "}
+              <span style={{ color: "#1C2838" }}>n</span><span style={{ color: "var(--yellow)" }}>a</span>{" "}
+              Sekani!
             </h1>
 
             <p style={{ fontSize: 19, lineHeight: 1.7, color: "var(--muted)", maxWidth: 480, marginBottom: "2.5rem" }}>
