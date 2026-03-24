@@ -163,6 +163,8 @@ export default function Index() {
         @media(max-width:900px){#feat-grid{grid-template-columns:repeat(2,1fr)!important}}
         @media(max-width:580px){#feat-grid{grid-template-columns:1fr!important}}
         @media(max-width:860px){#chapters-grid{grid-template-columns:1fr!important}}
+        html, body { color-scheme: light !important; }
+        html.dark, body.dark, .dark { background-color: #FFFFFF !important; color: #1C2838 !important; }
         @media(max-width:860px){#testimonials-grid{grid-template-columns:1fr!important}}
         @media(max-width:960px){#demo-layout{grid-template-columns:1fr!important}#demo-student{display:none!important}}
         @media(max-width:900px){.speech-bubble-wrap{top:auto!important;bottom:0%!important;right:50%!important;transform:translateX(50%)!important}}
