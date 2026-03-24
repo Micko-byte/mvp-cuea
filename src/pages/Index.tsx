@@ -267,7 +267,7 @@ export default function Index() {
               Smart, personalized academic support for every university student across Kenya. Study smarter, ace your exams.
             </p>
 
-            <div id="hero-btns" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            <div id="hero-btns" style={{ display: "flex", gap: 14, flexWrap: "wrap", position: "relative", zIndex: 5 }}>
               <a href="/login" style={{
                 display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
                 background: "linear-gradient(135deg, var(--yellow), var(--yellow-dk))", color: "var(--ink)",
