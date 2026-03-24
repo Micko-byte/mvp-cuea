@@ -258,7 +258,7 @@ export default function Index() {
               lineHeight: 1.1, color: "#1C2838", marginBottom: "1.5rem", letterSpacing: "-0.02em",
             }}>
               <span style={{ color: "var(--yellow)" }}>S</span>oma{" "}
-              <span style={{ color: "#1C2838" }}>n</span><span style={{ color: "var(--yellow)" }}>a</span>{" "}
+              <span style={{ color: "var(--yellow)" }}>n</span>a{" "}
               Sekani!
             </h1>
 
