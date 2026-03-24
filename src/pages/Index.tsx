@@ -498,7 +498,7 @@ export default function Index() {
       <footer style={{ background: "var(--ink)", padding: "3rem 1.5rem", borderTop: "1px solid rgba(255,199,0,0.1)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", textAlign: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 72 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 85 }} />
           </div>
           <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
             {["Features", "Chapters", "Demo", "About"].map((l) => (
