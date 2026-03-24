@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import logoSns from "@/assets/logo-sns.png";
+import logoSns from "@/assets/sns-logo.png";
 import snsCharacter from "@/assets/sns-character.png";
 import studentTablet from "@/assets/student-tablet.png";
 
