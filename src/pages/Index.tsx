@@ -181,7 +181,7 @@ export default function Index() {
         }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => scrollTo("hero")}>
-            <img src={logoSns} alt="Soma na Sekani" style={{ height: 42 }} />
+            <img src={logoSns} alt="Soma na Sekani" style={{ height: 64 }} />
           </div>
 
           <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 32 }}>
