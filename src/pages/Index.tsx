@@ -197,16 +197,16 @@ export default function Index() {
                 {link}
               </button>
             ))}
-            <a href="/login" style={{
-              display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none",
+            <button onClick={() => scrollTo("chapters")} style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
               background: "var(--yellow)", color: "var(--ink)", fontWeight: 700, fontSize: 14,
               padding: "10px 22px", borderRadius: 30, transition: "all 0.2s",
-              boxShadow: "0 4px 16px rgba(255,199,0,0.3)",
+              boxShadow: "0 4px 16px rgba(255,199,0,0.3)", border: "none", cursor: "pointer",
             }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--yellow-dk)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "var(--yellow)"; e.currentTarget.style.transform = "translateY(0)"; }}>
               Get Started
-            </a>
+            </button>
           </div>
 
           <button className="mobile-menu-btn" onClick={() => setMenuOpen(!menuOpen)}
@@ -225,9 +225,9 @@ export default function Index() {
                   {link}
                 </button>
               ))}
-              <a href="/login" style={{ display: "block", textAlign: "center", background: "var(--yellow)", color: "var(--ink)", fontWeight: 700, fontSize: 15, padding: "12px", borderRadius: 12, marginTop: 12, textDecoration: "none" }}>
+              <button onClick={() => scrollTo("chapters")} style={{ display: "block", width: "100%", textAlign: "center", background: "var(--yellow)", color: "var(--ink)", fontWeight: 700, fontSize: 15, padding: "12px", borderRadius: 12, marginTop: 12, border: "none", cursor: "pointer" }}>
                 Get Started
-              </a>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
