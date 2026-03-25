@@ -151,7 +151,7 @@ export default function Index() {
           --white: #FFFFFF;
           --ink: #1C2838;
           --ink-lt: #3D4F63;
-          --muted: #374151;
+          --muted: #2D3748;
           --border-sns: rgba(77,191,179,0.15);
           --card: #FFFFFF;
         }
@@ -272,16 +272,17 @@ export default function Index() {
             </p>
 
             <div id="hero-btns" style={{ display: "flex", gap: 14, flexWrap: "wrap", position: "relative", zIndex: 5 }}>
-              <a href="/login" style={{
-                display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
+              <button onClick={() => scrollTo("chapters")} style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
                 background: "linear-gradient(135deg, var(--yellow), var(--yellow-dk))", color: "var(--ink)",
                 fontWeight: 700, fontSize: 16, padding: "15px 32px", borderRadius: 30,
                 boxShadow: "0 8px 32px rgba(255,199,0,0.35)", transition: "all 0.3s",
+                border: "none", cursor: "pointer",
               }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(255,199,0,0.45)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(255,199,0,0.35)"; }}>
                 Get Started <Icon d={ICONS.arrow} size={16} stroke="var(--ink)" />
-              </a>
+              </button>
               <button onClick={() => scrollTo("demo")} style={{
                 display: "inline-flex", alignItems: "center", gap: 8, background: "white",
                 border: "2px solid var(--teal)", color: "var(--teal-dark)", fontWeight: 600, fontSize: 16,
@@ -364,7 +365,7 @@ export default function Index() {
             }}>
               Sekani <span style={{ color: "var(--yellow)", fontStyle: "italic" }}>in action.</span>
             </motion.h2>
-            <motion.p {...fadeUp(0.15)} style={{ fontSize: 16, color: "rgba(255,255,255,0.65)", marginBottom: "2.5rem", maxWidth: 560 }}>
+            <motion.p {...fadeUp(0.15)} style={{ fontSize: 16, color: "rgba(255,255,255,0.8)", marginBottom: "2.5rem", maxWidth: 560 }}>
               Watch how students interact with Sekani to get instant academic help. It's this easy.
             </motion.p>
 
@@ -399,8 +400,8 @@ export default function Index() {
           <div id="chapters-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
             <ChapterCard chapter={CHAPTERS[0]} delay={0} />
             <motion.div {...fadeUp(0.1)} style={{
-              background: "linear-gradient(135deg, #1C2838 0%, #243447 100%)",
-              border: "1.5px solid rgba(255,199,0,0.25)",
+              background: "linear-gradient(135deg, #2A9D8F 0%, #1A7A6F 100%)",
+              border: "1.5px solid rgba(255,199,0,0.35)",
               borderRadius: 20, padding: "2.5rem 2rem", display: "flex", flexDirection: "column",
               justifyContent: "center", alignItems: "flex-start", gap: 16, transition: "all 0.3s",
             }}>
@@ -410,7 +411,7 @@ export default function Index() {
               <h3 style={{ fontSize: 20, fontWeight: 700, color: "white", lineHeight: 1.3 }}>
                 We're Onboarding New Universities
               </h3>
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", lineHeight: 1.7 }}>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
                 Want to bring Sekani to your campus? We're partnering with universities across Kenya. Let's talk.
               </p>
               <button onClick={() => setTalkModalOpen(true)} style={{
@@ -440,10 +441,10 @@ export default function Index() {
           }}>
             Built to scale across <span style={{ color: "var(--yellow)", fontStyle: "italic" }}>every campus in Kenya.</span>
           </motion.h2>
-          <motion.p {...fadeUp(0.18)} style={{ fontSize: 17, lineHeight: 1.85, color: "rgba(255,255,255,0.75)", marginBottom: "2rem", maxWidth: 640 }}>
+          <motion.p {...fadeUp(0.18)} style={{ fontSize: 17, lineHeight: 1.85, color: "rgba(255,255,255,0.85)", marginBottom: "2rem", maxWidth: 640 }}>
             Soma na Sekani gives every university student access to AI-powered academic support. We are onboarding partner institutions and offering early access to administrators. Our mission? To make quality academic AI accessible to every student, regardless of their institution.
           </motion.p>
-          <motion.p {...fadeUp(0.22)} style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", marginBottom: "2.5rem", maxWidth: 520 }}>
+          <motion.p {...fadeUp(0.22)} style={{ fontSize: 15, color: "rgba(255,255,255,0.75)", marginBottom: "2.5rem", maxWidth: 520 }}>
             Powered by{" "}
             <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Notify AI</a>.
           </motion.p>
@@ -629,7 +630,7 @@ function FeatureCard({ feature: f, delay }: { feature: any; delay: number }) {
         }}>{f.tag}</span>
       </div>
       <h3 style={{ fontSize: 17, fontWeight: 700, color: hov ? "white" : "var(--ink)", marginBottom: 8, transition: "color 0.3s" }}>{f.title}</h3>
-      <p style={{ fontSize: 13.5, color: hov ? "rgba(255,255,255,0.6)" : "var(--muted)", lineHeight: 1.7, transition: "color 0.3s" }}>{f.desc}</p>
+      <p style={{ fontSize: 13.5, color: hov ? "rgba(255,255,255,0.75)" : "var(--muted)", lineHeight: 1.7, transition: "color 0.3s" }}>{f.desc}</p>
     </motion.div>
   );
 }
@@ -659,7 +660,7 @@ function ChapterCard({ chapter: ch, delay }: { chapter: any; delay: number }) {
         <Icon d={ICONS.globe} size={26} stroke={hov ? "var(--yellow)" : isActive ? "var(--teal-dark)" : "var(--muted)"} />
       </div>
       <h3 style={{ fontSize: 20, fontWeight: 700, color: hov ? "white" : "var(--ink)", marginBottom: 6, transition: "color 0.3s" }}>{ch.name}</h3>
-      <p style={{ fontSize: 14, color: hov ? "rgba(255,255,255,0.6)" : "var(--muted)", marginBottom: 20, transition: "color 0.3s" }}>{ch.university}</p>
+      <p style={{ fontSize: 14, color: hov ? "rgba(255,255,255,0.75)" : "var(--muted)", marginBottom: 20, transition: "color 0.3s" }}>{ch.university}</p>
       {isActive && <p style={{ fontSize: 13, color: hov ? "var(--yellow)" : "var(--teal-dark)", fontWeight: 600, marginBottom: 20, transition: "color 0.3s" }}>{ch.students} students active</p>}
 
       {isActive ? (
