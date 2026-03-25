@@ -59,16 +59,41 @@ serve(async (req) => {
         .update({ status: "success", paid_at: new Date().toISOString() })
         .eq("paystack_reference", reference);
 
-      // Get user profile for name
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("name")
-        .eq("user_id", userId)
-        .single();
-
-      const studentName = profile?.name || "Student";
-
       console.log(`Payment successful for user ${userId}, reference: ${reference}`);
+
+      // Handle group plan: activate group members
+      const planType = metadata?.plan || "individual";
+      const groupEmails: string[] = metadata?.group_emails || [];
+
+      if (planType === "group" && groupEmails.length > 0) {
+        console.log(`Group payment: activating ${groupEmails.length} members`);
+        for (const memberEmail of groupEmails) {
+          // Look up user by email in profiles
+          const { data: memberProfile } = await supabaseAdmin
+            .from("profiles")
+            .select("user_id")
+            .eq("email", memberEmail)
+            .single();
+
+          if (memberProfile) {
+            // Create a payment record for each group member
+            await supabaseAdmin.from("payments").insert({
+              user_id: memberProfile.user_id,
+              amount: 0,
+              currency: "KES",
+              status: "success",
+              paid_at: new Date().toISOString(),
+              email: memberEmail,
+              plan_type: "group_member",
+              group_emails: [],
+              paystack_reference: `${reference}_group_${memberEmail}`,
+            });
+            console.log(`Activated group member: ${memberEmail}`);
+          } else {
+            console.log(`Group member not found (not yet registered): ${memberEmail}`);
+          }
+        }
+      }
     }
 
     return new Response("OK", { status: 200, headers: corsHeaders });
