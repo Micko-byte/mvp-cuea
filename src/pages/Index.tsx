@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import logoSns from "@/assets/sns-logo.png";
 import snsCharacter from "@/assets/sns-character.png";
-import studentTablet from "@/assets/student-tablet.png";
+import studentsStairs from "@/assets/students-stairs.jpg";
+import TalkToUsModal from "@/components/TalkToUsModal";
 
 /* ── Inline SVG Icon helper ── */
 const Icon = ({ d, size = 20, stroke = "currentColor", strokeWidth = 1.8, fill = "none" }) => (
@@ -110,6 +111,7 @@ export default function Index() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navVisible, setNavVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [talkModalOpen, setTalkModalOpen] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
@@ -149,7 +151,7 @@ export default function Index() {
           --white: #FFFFFF;
           --ink: #1C2838;
           --ink-lt: #3D4F63;
-          --muted: #4A5568;
+          --muted: #374151;
           --border-sns: rgba(77,191,179,0.15);
           --card: #FFFFFF;
         }
@@ -195,16 +197,16 @@ export default function Index() {
                 {link}
               </button>
             ))}
-            <a href="/login" style={{
-              display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none",
+            <button onClick={() => scrollTo("chapters")} style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
               background: "var(--yellow)", color: "var(--ink)", fontWeight: 700, fontSize: 14,
               padding: "10px 22px", borderRadius: 30, transition: "all 0.2s",
-              boxShadow: "0 4px 16px rgba(255,199,0,0.3)",
+              boxShadow: "0 4px 16px rgba(255,199,0,0.3)", border: "none", cursor: "pointer",
             }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "var(--yellow-dk)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "var(--yellow)"; e.currentTarget.style.transform = "translateY(0)"; }}>
               Get Started
-            </a>
+            </button>
           </div>
 
           <button className="mobile-menu-btn" onClick={() => setMenuOpen(!menuOpen)}
@@ -223,9 +225,9 @@ export default function Index() {
                   {link}
                 </button>
               ))}
-              <a href="/login" style={{ display: "block", textAlign: "center", background: "var(--yellow)", color: "var(--ink)", fontWeight: 700, fontSize: 15, padding: "12px", borderRadius: 12, marginTop: 12, textDecoration: "none" }}>
+              <button onClick={() => scrollTo("chapters")} style={{ display: "block", width: "100%", textAlign: "center", background: "var(--yellow)", color: "var(--ink)", fontWeight: 700, fontSize: 15, padding: "12px", borderRadius: 12, marginTop: 12, border: "none", cursor: "pointer" }}>
                 Get Started
-              </a>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -278,7 +280,7 @@ export default function Index() {
               }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(255,199,0,0.45)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(255,199,0,0.35)"; }}>
-                Get Started Free <Icon d={ICONS.arrow} size={16} stroke="var(--ink)" />
+                Get Started <Icon d={ICONS.arrow} size={16} stroke="var(--ink)" />
               </a>
               <button onClick={() => scrollTo("demo")} style={{
                 display: "inline-flex", alignItems: "center", gap: 8, background: "white",
@@ -362,7 +364,7 @@ export default function Index() {
             }}>
               Sekani <span style={{ color: "var(--yellow)", fontStyle: "italic" }}>in action.</span>
             </motion.h2>
-            <motion.p {...fadeUp(0.15)} style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", marginBottom: "2.5rem", maxWidth: 560 }}>
+            <motion.p {...fadeUp(0.15)} style={{ fontSize: 16, color: "rgba(255,255,255,0.65)", marginBottom: "2.5rem", maxWidth: 560 }}>
               Watch how students interact with Sekani to get instant academic help. It's this easy.
             </motion.p>
 
@@ -370,10 +372,10 @@ export default function Index() {
               <ChatDemo />
               {/* Student image - larger to match demo */}
               <motion.div id="demo-student" {...fadeUp(0.3)} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <img src={studentTablet} alt="Student using Soma na Sekani" style={{
-                  width: "100%", maxWidth: 480, height: 520, objectFit: "cover",
+                <img src={studentsStairs} alt="Students using Soma na Sekani" style={{
+                  width: 480, height: 520, objectFit: "cover",
                   filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.3))",
-                  borderRadius: 8,
+                  borderRadius: 16, flexShrink: 0,
                 }} />
               </motion.div>
             </div>
@@ -397,30 +399,30 @@ export default function Index() {
           <div id="chapters-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
             <ChapterCard chapter={CHAPTERS[0]} delay={0} />
             <motion.div {...fadeUp(0.1)} style={{
-              background: "linear-gradient(135deg, rgba(255,199,0,0.08), rgba(77,191,179,0.05))",
-              border: "1.5px dashed rgba(77,191,179,0.35)",
+              background: "linear-gradient(135deg, #1C2838 0%, #243447 100%)",
+              border: "1.5px solid rgba(255,199,0,0.25)",
               borderRadius: 20, padding: "2.5rem 2rem", display: "flex", flexDirection: "column",
               justifyContent: "center", alignItems: "flex-start", gap: 16, transition: "all 0.3s",
             }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(77,191,179,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon d={ICONS.users} size={26} stroke="var(--teal-dark)" />
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,199,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon d={ICONS.users} size={26} stroke="var(--yellow)" />
               </div>
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", lineHeight: 1.3 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "white", lineHeight: 1.3 }}>
                 We're Onboarding New Universities
               </h3>
-              <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.7 }}>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.65)", lineHeight: 1.7 }}>
                 Want to bring Sekani to your campus? We're partnering with universities across Kenya. Let's talk.
               </p>
-              <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" style={{
-                display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
-                background: "var(--teal-dark)", color: "white",
+              <button onClick={() => setTalkModalOpen(true)} style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                background: "var(--yellow)", color: "var(--ink)",
                 fontWeight: 600, fontSize: 14, padding: "10px 24px",
-                borderRadius: 30, transition: "all 0.3s",
+                borderRadius: 30, transition: "all 0.3s", border: "none", cursor: "pointer",
               }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "var(--teal-deep)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "var(--teal-dark)"; }}>
-                Talk To Us <Icon d={ICONS.arrow} size={14} stroke="white" />
-              </a>
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.background = "var(--yellow-dk)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "var(--yellow)"; }}>
+                Talk To Us <Icon d={ICONS.arrow} size={14} stroke="var(--ink)" />
+              </button>
             </motion.div>
           </div>
         </div>
@@ -438,24 +440,25 @@ export default function Index() {
           }}>
             Built to scale across <span style={{ color: "var(--yellow)", fontStyle: "italic" }}>every campus in Kenya.</span>
           </motion.h2>
-          <motion.p {...fadeUp(0.18)} style={{ fontSize: 17, lineHeight: 1.85, color: "rgba(255,255,255,0.6)", marginBottom: "2rem", maxWidth: 640 }}>
+          <motion.p {...fadeUp(0.18)} style={{ fontSize: 17, lineHeight: 1.85, color: "rgba(255,255,255,0.75)", marginBottom: "2rem", maxWidth: 640 }}>
             Soma na Sekani gives every university student access to AI-powered academic support. We are onboarding partner institutions and offering early access to administrators. Our mission? To make quality academic AI accessible to every student, regardless of their institution.
           </motion.p>
-          <motion.p {...fadeUp(0.22)} style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", marginBottom: "2.5rem", maxWidth: 520 }}>
+          <motion.p {...fadeUp(0.22)} style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", marginBottom: "2.5rem", maxWidth: 520 }}>
             Powered by{" "}
             <a href="https://notifyai.org/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Notify AI</a>.
           </motion.p>
           <motion.div {...fadeUp(0.28)} style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <a href="/login" style={{
-              display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
+            <button onClick={() => scrollTo("chapters")} style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
               background: "linear-gradient(135deg, var(--yellow), var(--yellow-dk))", color: "var(--ink)",
               fontWeight: 700, fontSize: 16, padding: "15px 32px", borderRadius: 30,
               boxShadow: "0 8px 24px rgba(255,199,0,0.25)", transition: "all 0.3s",
+              border: "none", cursor: "pointer",
             }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}>
-              Get Free Access <Icon d={ICONS.arrow} size={16} stroke="var(--ink)" />
-            </a>
+              Get Started <Icon d={ICONS.arrow} size={16} stroke="var(--ink)" />
+            </button>
           </motion.div>
         </div>
       </section>
@@ -522,6 +525,8 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+      <TalkToUsModal open={talkModalOpen} onOpenChange={setTalkModalOpen} />
     </>
   );
 }
