@@ -194,6 +194,51 @@ export type Database = {
           },
         ]
       }
+      document_hashes: {
+        Row: {
+          content_hash: string
+          created_at: string | null
+          file_name: string
+          id: string
+          material_id: string | null
+          unit_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string | null
+          file_name: string
+          id?: string
+          material_id?: string | null
+          unit_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string | null
+          file_name?: string
+          id?: string
+          material_id?: string | null
+          unit_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_hashes_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_hashes_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           chunk_count: number | null
@@ -256,10 +301,12 @@ export type Database = {
           created_at: string
           currency: string
           email: string | null
+          group_emails: Json | null
           id: string
           paid_at: string | null
           paystack_access_code: string | null
           paystack_reference: string | null
+          plan_type: string
           status: string
           user_id: string
         }
@@ -268,10 +315,12 @@ export type Database = {
           created_at?: string
           currency?: string
           email?: string | null
+          group_emails?: Json | null
           id?: string
           paid_at?: string | null
           paystack_access_code?: string | null
           paystack_reference?: string | null
+          plan_type?: string
           status?: string
           user_id: string
         }
@@ -280,10 +329,12 @@ export type Database = {
           created_at?: string
           currency?: string
           email?: string | null
+          group_emails?: Json | null
           id?: string
           paid_at?: string | null
           paystack_access_code?: string | null
           paystack_reference?: string | null
+          plan_type?: string
           status?: string
           user_id?: string
         }
