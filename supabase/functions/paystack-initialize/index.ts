@@ -38,10 +38,38 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { phone: rawPhone, method } = body;
+    const { phone: rawPhone, method, plan, groupEmails } = body;
 
     const email = user.email;
-    const amount = 20000; // 200 KES in kobo/cents
+
+    // Determine amount based on plan
+    let amount: number;
+    let planType: string;
+
+    if (plan === "group") {
+      amount = 49900; // 499 KES in kobo/cents
+      planType = "group";
+
+      // Validate group emails
+      if (!groupEmails || !Array.isArray(groupEmails) || groupEmails.length !== 5) {
+        return new Response(JSON.stringify({ error: "Group plan requires exactly 5 email addresses" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Validate email formats
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      for (const ge of groupEmails) {
+        if (!emailRegex.test(ge)) {
+          return new Response(JSON.stringify({ error: `Invalid email: ${ge}` }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    } else {
+      amount = 12900; // 129 KES in kobo/cents
+      planType = "individual";
+    }
 
     // ── CARD PAYMENT (redirect flow) ──
     if (method === "card") {
@@ -57,7 +85,7 @@ serve(async (req) => {
           amount,
           currency: "KES",
           callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/paystack-callback`,
-          metadata: { user_id: user.id, plan: "paid" },
+          metadata: { user_id: user.id, plan: planType, group_emails: planType === "group" ? groupEmails : [] },
         }),
       });
       const paystackData = await paystackResp.json();
@@ -67,8 +95,15 @@ serve(async (req) => {
       }
       const reference = paystackData.data.reference;
       await supabaseAdmin.from("payments").insert({
-        user_id: user.id, amount: 200, currency: "KES", status: "pending",
-        paystack_reference: reference, paystack_access_code: paystackData.data.access_code, email,
+        user_id: user.id,
+        amount: planType === "group" ? 499 : 129,
+        currency: "KES",
+        status: "pending",
+        paystack_reference: reference,
+        paystack_access_code: paystackData.data.access_code,
+        email,
+        plan_type: planType,
+        group_emails: planType === "group" ? groupEmails : [],
       });
       return new Response(JSON.stringify({ authorization_url: paystackData.data.authorization_url, reference }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -98,7 +133,7 @@ serve(async (req) => {
       body: JSON.stringify({
         email, amount, currency: "KES",
         mobile_money: { phone, provider: "mpesa" },
-        metadata: { user_id: user.id, plan: "paid" },
+        metadata: { user_id: user.id, plan: planType, group_emails: planType === "group" ? groupEmails : [] },
       }),
     });
 
@@ -112,8 +147,14 @@ serve(async (req) => {
     const reference = paystackData.data.reference;
 
     await supabaseAdmin.from("payments").insert({
-      user_id: user.id, amount: 200, currency: "KES", status: "pending",
-      paystack_reference: reference, email,
+      user_id: user.id,
+      amount: planType === "group" ? 499 : 129,
+      currency: "KES",
+      status: "pending",
+      paystack_reference: reference,
+      email,
+      plan_type: planType,
+      group_emails: planType === "group" ? groupEmails : [],
     });
 
     return new Response(JSON.stringify({ reference }), {
