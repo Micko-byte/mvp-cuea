@@ -57,8 +57,8 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [showOtp, setShowOtp] = useState(false);
   const [otpEmail, setOtpEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
