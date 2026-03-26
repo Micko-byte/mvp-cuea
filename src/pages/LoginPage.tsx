@@ -395,51 +395,53 @@ const LoginPage = () => {
 
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
           <AnimatePresence mode="wait">
-            {/* OTP Popup */}
-            {showOtp ? (
-              <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+            {/* Awaiting Email Confirmation */}
+            {awaitingConfirmation ? (
+              <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
                 <div className="text-center mb-6">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-                    <ShieldCheck className="w-6 h-6 text-primary" />
+                    <MailCheck className="w-6 h-6 text-primary" />
                   </div>
-                  <h2 className="text-xl font-display font-semibold text-foreground">Verify Your Email</h2>
+                  <h2 className="text-xl font-display font-semibold text-foreground">Check Your Email</h2>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Enter the 6-digit code sent to<br />
+                    We sent a confirmation link to<br />
                     <span className="font-semibold text-foreground">{otpEmail}</span>
                   </p>
                 </div>
 
-                {error && (
-                  <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>
-                )}
+                <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground space-y-2">
+                  <p>1. Open your email inbox</p>
+                  <p>2. Click the confirmation link</p>
+                  <p>3. Come back here — we'll detect it automatically</p>
+                </div>
 
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
-                    <InputOTPGroup>
-                      {[0, 1, 2, 3, 4, 5].map(i => <InputOTPSlot key={i} index={i} />)}
-                    </InputOTPGroup>
-                  </InputOTP>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Waiting for confirmation...</span>
                 </div>
 
                 <Button
-                  onClick={handleVerifyOtp}
-                  className="w-full bg-gradient-maroon hover:opacity-90"
-                  disabled={loading || otpCode.length !== 6}
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    setLoading(true);
+                    const { error: resendError } = await supabase.auth.resend({ type: "signup", email: otpEmail });
+                    setLoading(false);
+                    if (resendError) toast.error(resendError.message);
+                    else toast.success("Confirmation email resent!");
+                  }}
+                  disabled={loading}
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Verify <ArrowRight className="ml-2 w-4 h-4" />
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
+                  Resend Email
                 </Button>
 
-                <div className="text-center space-y-2">
-                  <button type="button" onClick={handleResendOtp} disabled={loading} className="text-sm text-primary hover:underline font-medium">
-                    Resend code
+                <p className="text-center text-sm text-muted-foreground">
+                  <button type="button" onClick={() => { setAwaitingConfirmation(false); setIsLogin(true); setError(""); }} className="text-primary font-semibold hover:underline">
+                    Back to Sign In
                   </button>
-                  <p className="text-sm text-muted-foreground">
-                    <button type="button" onClick={() => { setShowOtp(false); setIsLogin(true); setError(""); }} className="text-primary font-semibold hover:underline">
-                      Back to Sign In
-                    </button>
-                  </p>
-                </div>
+                </p>
               </motion.div>
             ) : isLogin ? (
               /* LOGIN FORM */
