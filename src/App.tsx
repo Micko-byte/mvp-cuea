@@ -8,7 +8,7 @@ import { ChatProvider } from "@/contexts/ChatContext";
 import { ArtifactProvider } from "@/contexts/ArtifactContext";
 import { PersonalizationProvider } from "@/contexts/PersonalizationContext";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
-import Index from "./pages/Index";
+
 import LoginPage from "./pages/LoginPage";
 import ChatPage from "./pages/ChatPage";
 import AdminPage from "./pages/AdminPage";
