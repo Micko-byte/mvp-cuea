@@ -351,7 +351,7 @@ const LoginPage = () => {
 
   // Total steps: 0 (details+verify), 1 (course), 2 (units), 3 (upload)
   const totalSteps = 4;
-  const currentStepDisplay = emailVerified ? signupStep + 1 : 1;
+  const currentStepDisplay = signupStep + 1;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
@@ -371,55 +371,7 @@ const LoginPage = () => {
 
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
           <AnimatePresence mode="wait">
-            {/* Awaiting Email Confirmation */}
-            {awaitingConfirmation ? (
-              <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-                    <MailCheck className="w-6 h-6 text-primary" />
-                  </div>
-                  <h2 className="text-xl font-display font-semibold text-foreground">Check Your Email</h2>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    We sent a confirmation link to<br />
-                    <span className="font-semibold text-foreground">{otpEmail}</span>
-                  </p>
-                </div>
-
-                <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground space-y-2">
-                  <p>1. Open your email inbox</p>
-                  <p>2. Click the confirmation link</p>
-                  <p>3. Come back here — we'll detect it automatically</p>
-                </div>
-
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Waiting for confirmation...</span>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    setLoading(true);
-                    const { error: resendError } = await supabase.auth.resend({ type: "signup", email: otpEmail });
-                    setLoading(false);
-                    if (resendError) toast.error(resendError.message);
-                    else toast.success("Confirmation email resent!");
-                  }}
-                  disabled={loading}
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-                  Resend Email
-                </Button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  <button type="button" onClick={() => { setAwaitingConfirmation(false); setIsLogin(true); setError(""); }} className="text-primary font-semibold hover:underline">
-                    Back to Sign In
-                  </button>
-                </p>
-              </motion.div>
-            ) : isLogin ? (
+            {isLogin ? (
               /* LOGIN FORM */
               <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
                 <div className="text-center mb-6">
@@ -493,7 +445,7 @@ const LoginPage = () => {
 
                 <AnimatePresence mode="wait">
                   {/* STEP 0: Name, Email, Password, T&C */}
-                  {signupStep === 0 && !emailVerified && (
+                  {signupStep === 0 && (
                     <motion.div key="s0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                       <div className="space-y-2">
                         <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Full Name</Label>
@@ -742,7 +694,7 @@ const LoginPage = () => {
                   )}
                 </AnimatePresence>
 
-                {signupStep === 0 && !emailVerified && (
+                {signupStep === 0 && (
                   <p className="text-center text-sm text-muted-foreground">
                     Already have an account?{" "}
                     <button type="button" onClick={() => { setIsLogin(true); setSignupStep(0); setError(""); }} className="text-primary font-semibold hover:underline">Sign In</button>
