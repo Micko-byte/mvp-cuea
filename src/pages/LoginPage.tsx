@@ -499,7 +499,7 @@ const LoginPage = () => {
                         disabled={loading || !canProceedStep0}
                       >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                        Verify <ShieldCheck className="ml-2 w-4 h-4" />
+                        Create Account <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </motion.div>
                   )}
