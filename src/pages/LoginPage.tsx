@@ -128,7 +128,7 @@ const LoginPage = () => {
   const canProceedStep0 = name && signupEmail && signupPassword.length >= 6 && termsAccepted;
   const canProceedStep1 = selectedCourseId && year && semester;
 
-  // Step 0: Validate and send OTP
+  // Step 0: Validate and create account (sends confirmation email)
   const handleStep0Verify = async () => {
     if (!canProceedStep0) {
       setError("Fill all fields, accept terms, and use a password with min 6 characters");
@@ -145,7 +145,7 @@ const LoginPage = () => {
     setLoading(true);
     setError("");
 
-    // Create the account (this sends OTP email since auto-confirm is off)
+    // Create the account (sends confirmation email since auto-confirm is off)
     const result = await signup(signupEmail, signupPassword, {
       name,
       program: "",
@@ -162,45 +162,27 @@ const LoginPage = () => {
     }
 
     setOtpEmail(signupEmail);
-    setShowOtp(true);
-    setOtpCode("");
-    toast.success("Verification code sent to your email!");
+    setAwaitingConfirmation(true);
+    toast.success("Confirmation email sent! Check your inbox and click the link.");
   };
 
-  const handleVerifyOtp = async () => {
-    if (otpCode.length !== 6) { setError("Enter the 6-digit code"); return; }
-    setLoading(true);
-    setError("");
-    const { error: otpError } = await supabase.auth.verifyOtp({
-      email: otpEmail,
-      token: otpCode,
-      type: "signup",
-    });
-    setLoading(false);
-    if (otpError) {
-      setError(otpError.message);
-      return;
-    }
-    toast.success("Email verified! Continue setting up your account.");
-    setShowOtp(false);
-    setEmailVerified(true);
-    setSignupStep(1); // Move to step 2 (course selection)
-  };
+  // Listen for auth state change (user clicked confirmation link)
+  useEffect(() => {
+    if (!awaitingConfirmation) return;
+    
+    const checkInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email_confirmed_at) {
+        clearInterval(checkInterval);
+        setAwaitingConfirmation(false);
+        setEmailVerified(true);
+        setSignupStep(1);
+        toast.success("Email verified! Continue setting up your account.");
+      }
+    }, 3000);
 
-  const handleResendOtp = async () => {
-    setLoading(true);
-    setError("");
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email: otpEmail,
-    });
-    setLoading(false);
-    if (resendError) {
-      setError(resendError.message);
-      return;
-    }
-    toast.success("New verification code sent!");
-  };
+    return () => clearInterval(checkInterval);
+  }, [awaitingConfirmation]);
 
   // Step 1 → Step 2: Save course info and proceed
   const handleStep1Next = async () => {
