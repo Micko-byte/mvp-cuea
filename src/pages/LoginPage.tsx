@@ -3,13 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraduationCap, Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, ShieldCheck, Upload, FileText, AlertCircle, X } from "lucide-react";
+import { GraduationCap, Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, ShieldCheck, Upload, FileText, AlertCircle, X, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 
 interface DbCourse {
@@ -56,10 +55,10 @@ const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showOtp, setShowOtp] = useState(false);
+  
   const [otpEmail, setOtpEmail] = useState("");
-  const [otpCode, setOtpCode] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -129,7 +128,7 @@ const LoginPage = () => {
   const canProceedStep0 = name && signupEmail && signupPassword.length >= 6 && termsAccepted;
   const canProceedStep1 = selectedCourseId && year && semester;
 
-  // Step 0: Validate and send OTP
+  // Step 0: Validate and create account (sends confirmation email)
   const handleStep0Verify = async () => {
     if (!canProceedStep0) {
       setError("Fill all fields, accept terms, and use a password with min 6 characters");
@@ -146,7 +145,7 @@ const LoginPage = () => {
     setLoading(true);
     setError("");
 
-    // Create the account (this sends OTP email since auto-confirm is off)
+    // Create the account (sends confirmation email since auto-confirm is off)
     const result = await signup(signupEmail, signupPassword, {
       name,
       program: "",
@@ -163,45 +162,27 @@ const LoginPage = () => {
     }
 
     setOtpEmail(signupEmail);
-    setShowOtp(true);
-    setOtpCode("");
-    toast.success("Verification code sent to your email!");
+    setAwaitingConfirmation(true);
+    toast.success("Confirmation email sent! Check your inbox and click the link.");
   };
 
-  const handleVerifyOtp = async () => {
-    if (otpCode.length !== 6) { setError("Enter the 6-digit code"); return; }
-    setLoading(true);
-    setError("");
-    const { error: otpError } = await supabase.auth.verifyOtp({
-      email: otpEmail,
-      token: otpCode,
-      type: "signup",
-    });
-    setLoading(false);
-    if (otpError) {
-      setError(otpError.message);
-      return;
-    }
-    toast.success("Email verified! Continue setting up your account.");
-    setShowOtp(false);
-    setEmailVerified(true);
-    setSignupStep(1); // Move to step 2 (course selection)
-  };
+  // Listen for auth state change (user clicked confirmation link)
+  useEffect(() => {
+    if (!awaitingConfirmation) return;
+    
+    const checkInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email_confirmed_at) {
+        clearInterval(checkInterval);
+        setAwaitingConfirmation(false);
+        setEmailVerified(true);
+        setSignupStep(1);
+        toast.success("Email verified! Continue setting up your account.");
+      }
+    }, 3000);
 
-  const handleResendOtp = async () => {
-    setLoading(true);
-    setError("");
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email: otpEmail,
-    });
-    setLoading(false);
-    if (resendError) {
-      setError(resendError.message);
-      return;
-    }
-    toast.success("New verification code sent!");
-  };
+    return () => clearInterval(checkInterval);
+  }, [awaitingConfirmation]);
 
   // Step 1 → Step 2: Save course info and proceed
   const handleStep1Next = async () => {
@@ -414,51 +395,53 @@ const LoginPage = () => {
 
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
           <AnimatePresence mode="wait">
-            {/* OTP Popup */}
-            {showOtp ? (
-              <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
+            {/* Awaiting Email Confirmation */}
+            {awaitingConfirmation ? (
+              <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
                 <div className="text-center mb-6">
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-                    <ShieldCheck className="w-6 h-6 text-primary" />
+                    <MailCheck className="w-6 h-6 text-primary" />
                   </div>
-                  <h2 className="text-xl font-display font-semibold text-foreground">Verify Your Email</h2>
+                  <h2 className="text-xl font-display font-semibold text-foreground">Check Your Email</h2>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Enter the 6-digit code sent to<br />
+                    We sent a confirmation link to<br />
                     <span className="font-semibold text-foreground">{otpEmail}</span>
                   </p>
                 </div>
 
-                {error && (
-                  <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>
-                )}
+                <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground space-y-2">
+                  <p>1. Open your email inbox</p>
+                  <p>2. Click the confirmation link</p>
+                  <p>3. Come back here — we'll detect it automatically</p>
+                </div>
 
-                <div className="flex justify-center">
-                  <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
-                    <InputOTPGroup>
-                      {[0, 1, 2, 3, 4, 5].map(i => <InputOTPSlot key={i} index={i} />)}
-                    </InputOTPGroup>
-                  </InputOTP>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Waiting for confirmation...</span>
                 </div>
 
                 <Button
-                  onClick={handleVerifyOtp}
-                  className="w-full bg-gradient-maroon hover:opacity-90"
-                  disabled={loading || otpCode.length !== 6}
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    setLoading(true);
+                    const { error: resendError } = await supabase.auth.resend({ type: "signup", email: otpEmail });
+                    setLoading(false);
+                    if (resendError) toast.error(resendError.message);
+                    else toast.success("Confirmation email resent!");
+                  }}
+                  disabled={loading}
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Verify <ArrowRight className="ml-2 w-4 h-4" />
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
+                  Resend Email
                 </Button>
 
-                <div className="text-center space-y-2">
-                  <button type="button" onClick={handleResendOtp} disabled={loading} className="text-sm text-primary hover:underline font-medium">
-                    Resend code
+                <p className="text-center text-sm text-muted-foreground">
+                  <button type="button" onClick={() => { setAwaitingConfirmation(false); setIsLogin(true); setError(""); }} className="text-primary font-semibold hover:underline">
+                    Back to Sign In
                   </button>
-                  <p className="text-sm text-muted-foreground">
-                    <button type="button" onClick={() => { setShowOtp(false); setIsLogin(true); setError(""); }} className="text-primary font-semibold hover:underline">
-                      Back to Sign In
-                    </button>
-                  </p>
-                </div>
+                </p>
               </motion.div>
             ) : isLogin ? (
               /* LOGIN FORM */
