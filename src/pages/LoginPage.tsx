@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraduationCap, Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X } from "lucide-react";
+import { GraduationCap, Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X, Search, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,9 +69,11 @@ const LoginPage = () => {
   const [year, setYear] = useState("");
   const [semester, setSemester] = useState("");
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
+  const [unitSearch, setUnitSearch] = useState("");
 
-  // Doc upload state (step 3)
-  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  // Doc upload state (step 3) - per unit
+  const [activeUploadUnitId, setActiveUploadUnitId] = useState<string | null>(null);
+  const [uploadFilesByUnit, setUploadFilesByUnit] = useState<Record<string, File[]>>({});
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,13 +104,32 @@ const LoginPage = () => {
     }
   }, [isLogin, signupStep]);
 
-  // Filter units by selected course AND year (from code first digit)
+  // Filter units by selected course, year, and search
   const filteredUnits = dbUnits.filter(u => {
     if (u.course_id !== selectedCourseId) return false;
-    if (!year) return true;
-    const unitYear = getYearFromCode(u.code);
-    return unitYear === parseInt(year);
+    if (year) {
+      const unitYear = getYearFromCode(u.code);
+      if (unitYear !== parseInt(year)) return false;
+    }
+    if (unitSearch.trim()) {
+      const q = unitSearch.toLowerCase();
+      return u.code.toLowerCase().includes(q) || u.name.toLowerCase().includes(q);
+    }
+    return true;
   });
+
+  // All units for current course (for search across all years)
+  const allCourseUnits = dbUnits.filter(u => {
+    if (u.course_id !== selectedCourseId) return false;
+    if (unitSearch.trim()) {
+      const q = unitSearch.toLowerCase();
+      return u.code.toLowerCase().includes(q) || u.name.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  // Show all course units when searching, filtered units otherwise
+  const displayUnits = unitSearch.trim() ? allCourseUnits : filteredUnits;
 
   const selectedCourse = dbCourses.find(c => c.id === selectedCourseId);
 
@@ -124,80 +145,56 @@ const LoginPage = () => {
   const canProceedStep0 = name && signupEmail && signupPassword.length >= 6 && termsAccepted;
   const canProceedStep1 = selectedCourseId && year && semester;
 
-  // Step 0: Create account and proceed to step 1
   const handleStep0Verify = async () => {
     if (!canProceedStep0) {
       setError("Fill all fields, accept terms, and use a password with min 6 characters");
       return;
     }
-
-    // Reject .edu emails
     const emailLower = signupEmail.toLowerCase();
     if (emailLower.includes(".edu")) {
       setError("Please input your normal email. Institutional .edu emails are not allowed.");
       return;
     }
-
     setLoading(true);
     setError("");
-
     const result = await signup(signupEmail, signupPassword, {
-      name,
-      program: "",
-      course: "",
-      course_name: "",
-      year: "",
-      semester: "",
+      name, program: "", course: "", course_name: "", year: "", semester: "",
     });
-
     setLoading(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-
+    if (result.error) { setError(result.error); return; }
     toast.success("Account created! Continue setting up your profile.");
     setSignupStep(1);
   };
 
-  // Step 1 → Step 2: Save course info and proceed
   const handleStep1Next = async () => {
     if (!canProceedStep1) { setError("Select course, year, and semester"); return; }
     setError("");
-
-    // Update profile with course info
     if (user) {
       await supabase.from("profiles").update({
         program: selectedCourse?.faculty || "",
         course: selectedCourse?.code || "",
         course_name: selectedCourse?.name || "",
-        year,
-        semester,
+        year, semester,
       }).eq("user_id", user.id);
     }
-
     setSignupStep(2);
   };
 
-  // Step 2 → Step 3: Enroll units and proceed
   const handleStep2Next = async () => {
-    if (selectedUnitIds.length === 0) {
-      setError("Select at least one unit");
-      return;
-    }
+    if (selectedUnitIds.length === 0) { setError("Select at least one unit"); return; }
     setError("");
-
-    // Enroll units
     if (user) {
       const rows = selectedUnitIds.map(unit_id => ({ user_id: user.id, unit_id }));
       await supabase.from("student_units").upsert(rows, { onConflict: "user_id,unit_id", ignoreDuplicates: true });
     }
-
+    // Set first unit as active upload target
+    setActiveUploadUnitId(selectedUnitIds[0]);
     setSignupStep(3);
   };
 
   // File upload handlers
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!activeUploadUnitId) return;
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(f => {
       if (!ACCEPTED_FILE_TYPES.includes(f.type) && !f.name.match(/\.(pdf|doc|docx|pptx|txt|csv|md)$/i)) {
@@ -210,12 +207,18 @@ const LoginPage = () => {
       }
       return true;
     });
-    setUploadFiles(prev => [...prev, ...validFiles]);
+    setUploadFilesByUnit(prev => ({
+      ...prev,
+      [activeUploadUnitId]: [...(prev[activeUploadUnitId] || []), ...validFiles],
+    }));
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removeFile = (idx: number) => {
-    setUploadFiles(prev => prev.filter((_, i) => i !== idx));
+  const removeFile = (unitId: string, idx: number) => {
+    setUploadFilesByUnit(prev => ({
+      ...prev,
+      [unitId]: (prev[unitId] || []).filter((_, i) => i !== idx),
+    }));
   };
 
   const computeFileHash = async (file: File): Promise<string> => {
@@ -225,11 +228,12 @@ const LoginPage = () => {
     return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
   };
 
+  const totalFilesCount = Object.values(uploadFilesByUnit).reduce((sum, files) => sum + files.length, 0);
+
   const handleUploadAndFinish = async () => {
     if (!user) return;
 
-    if (uploadFiles.length === 0) {
-      // Skip upload, go to chat
+    if (totalFilesCount === 0) {
       navigate("/chat", { replace: true });
       return;
     }
@@ -237,110 +241,99 @@ const LoginPage = () => {
     setUploading(true);
     const progress: Record<string, string> = {};
 
-    for (const file of uploadFiles) {
-      progress[file.name] = "Checking for duplicates...";
-      setUploadProgress({ ...progress });
+    for (const [unitId, files] of Object.entries(uploadFilesByUnit)) {
+      const unit = dbUnits.find(u => u.id === unitId);
+      const unitCode = unit?.code || "";
 
-      try {
-        // Compute hash
-        const hash = await computeFileHash(file);
-
-        // Check if hash exists
-        const { data: existing } = await supabase
-          .from("document_hashes")
-          .select("id")
-          .eq("content_hash", hash)
-          .maybeSingle();
-
-        if (existing) {
-          progress[file.name] = "⚠️ Duplicate document - skipped";
-          setUploadProgress({ ...progress });
-          continue;
-        }
-
-        progress[file.name] = "Uploading...";
+      for (const file of files) {
+        const key = `${unitCode}:${file.name}`;
+        progress[key] = "Checking for duplicates...";
         setUploadProgress({ ...progress });
 
-        // Upload to storage
-        const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from("materials")
-          .upload(storagePath, file);
+        try {
+          const hash = await computeFileHash(file);
+          const { data: existing } = await supabase
+            .from("document_hashes")
+            .select("id")
+            .eq("content_hash", hash)
+            .maybeSingle();
 
-        if (uploadError) {
-          progress[file.name] = `❌ Upload failed: ${uploadError.message}`;
-          setUploadProgress({ ...progress });
-          continue;
-        }
-
-        // Determine which unit to associate with (first selected unit)
-        const unitId = selectedUnitIds[0] || null;
-        const unitCode = unitId ? dbUnits.find(u => u.id === unitId)?.code || "" : "";
-
-        // Create material record
-        const { data: material, error: matError } = await supabase
-          .from("materials")
-          .insert({
-            title: file.name.replace(/\.[^.]+$/, ""),
-            file_name: file.name,
-            file_type: file.type || "application/octet-stream",
-            file_size: file.size,
-            unit_id: unitId || selectedUnitIds[0],
-            uploaded_by: user.id,
-            storage_path: storagePath,
-            embedding_status: "processing",
-          })
-          .select("id")
-          .single();
-
-        if (matError) {
-          progress[file.name] = `❌ Error: ${matError.message}`;
-          setUploadProgress({ ...progress });
-          continue;
-        }
-
-        // Insert hash record
-        await supabase.from("document_hashes").insert({
-          content_hash: hash,
-          file_name: file.name,
-          unit_id: unitId,
-          uploaded_by: user.id,
-          material_id: material?.id,
-        });
-
-        progress[file.name] = "Processing & embedding...";
-        setUploadProgress({ ...progress });
-
-        // Trigger embedding (don't await - let it process in background)
-        supabase.functions.invoke("process-document", {
-          body: {
-            materialId: material?.id,
-            title: file.name,
-            unitCode,
-            storagePath,
-            fileType: file.type,
-          },
-        }).then(({ error: embedError }) => {
-          if (embedError) {
-            console.error("Embedding error:", embedError);
+          if (existing) {
+            progress[key] = "⚠️ Duplicate - skipped";
+            setUploadProgress({ ...progress });
+            continue;
           }
-        });
 
-        progress[file.name] = "✅ Uploaded successfully";
-        setUploadProgress({ ...progress });
+          progress[key] = "Uploading...";
+          setUploadProgress({ ...progress });
 
-      } catch (err) {
-        progress[file.name] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
-        setUploadProgress({ ...progress });
+          const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from("materials")
+            .upload(storagePath, file);
+
+          if (uploadError) {
+            progress[key] = `❌ Upload failed: ${uploadError.message}`;
+            setUploadProgress({ ...progress });
+            continue;
+          }
+
+          const { data: material, error: matError } = await supabase
+            .from("materials")
+            .insert({
+              title: file.name.replace(/\.[^.]+$/, ""),
+              file_name: file.name,
+              file_type: file.type || "application/octet-stream",
+              file_size: file.size,
+              unit_id: unitId,
+              uploaded_by: user.id,
+              storage_path: storagePath,
+              embedding_status: "processing",
+            })
+            .select("id")
+            .single();
+
+          if (matError) {
+            progress[key] = `❌ Error: ${matError.message}`;
+            setUploadProgress({ ...progress });
+            continue;
+          }
+
+          await supabase.from("document_hashes").insert({
+            content_hash: hash,
+            file_name: file.name,
+            unit_id: unitId,
+            uploaded_by: user.id,
+            material_id: material?.id,
+          });
+
+          progress[key] = "Processing & embedding...";
+          setUploadProgress({ ...progress });
+
+          supabase.functions.invoke("process-document", {
+            body: {
+              materialId: material?.id,
+              title: file.name,
+              unitCode,
+              storagePath,
+              fileType: file.type,
+            },
+          }).then(({ error: embedError }) => {
+            if (embedError) console.error("Embedding error:", embedError);
+          });
+
+          progress[key] = "✅ Uploaded successfully";
+          setUploadProgress({ ...progress });
+        } catch (err) {
+          progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+          setUploadProgress({ ...progress });
+        }
       }
     }
 
     setUploading(false);
-    toast.success("Setup complete! Welcome to Sekani AI.");
-
-    setTimeout(() => {
-      navigate("/chat", { replace: true });
-    }, 1500);
+    toast.success("Setup complete! Welcome to CUEA AI.");
+    setTimeout(() => navigate("/chat", { replace: true }), 1500);
   };
 
   const toggleUnit = (unitId: string) => {
@@ -349,9 +342,10 @@ const LoginPage = () => {
     );
   };
 
-  // Total steps: 0 (details+verify), 1 (course), 2 (units), 3 (upload)
   const totalSteps = 4;
   const currentStepDisplay = signupStep + 1;
+
+  const selectedUnitsData = dbUnits.filter(u => selectedUnitIds.includes(u.id));
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
@@ -372,17 +366,12 @@ const LoginPage = () => {
         <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
           <AnimatePresence mode="wait">
             {isLogin ? (
-              /* LOGIN FORM */
               <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-display font-semibold text-foreground">Welcome Back</h2>
                   <p className="text-muted-foreground text-sm mt-1">Sign in to continue</p>
                 </div>
-
-                {error && (
-                  <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>
-                )}
-
+                {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>}
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Email</Label>
                   <div className="relative">
@@ -390,7 +379,6 @@ const LoginPage = () => {
                     <Input type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10" required />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Password</Label>
                   <div className="relative">
@@ -398,12 +386,10 @@ const LoginPage = () => {
                     <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" required />
                   </div>
                 </div>
-
                 <Button type="submit" className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading}>
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Sign In <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
-
                 <button
                   type="button"
                   onClick={async () => {
@@ -420,14 +406,12 @@ const LoginPage = () => {
                 >
                   Forgot password?
                 </button>
-
                 <p className="text-center text-sm text-muted-foreground">
                   Don't have an account?{" "}
                   <button type="button" onClick={() => { setIsLogin(false); setError(""); }} className="text-primary font-semibold hover:underline">Sign Up</button>
                 </p>
               </motion.form>
             ) : (
-              /* SIGNUP FORM - 4 STEPS */
               <motion.div key="signup" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
                 <div className="text-center mb-6">
                   <h2 className="text-xl font-display font-semibold text-foreground">Create Account</h2>
@@ -438,10 +422,7 @@ const LoginPage = () => {
                     ))}
                   </div>
                 </div>
-
-                {error && (
-                  <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>
-                )}
+                {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>}
 
                 <AnimatePresence mode="wait">
                   {/* STEP 0: Name, Email, Password, T&C */}
@@ -469,35 +450,18 @@ const LoginPage = () => {
                           <Input type="password" placeholder="Min 6 characters" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pl-10" required minLength={6} />
                         </div>
                       </div>
-
-                      {/* Terms & Conditions */}
                       <div className="space-y-3 pt-2">
                         <div className="flex items-start gap-3">
-                          <Checkbox
-                            id="terms"
-                            checked={termsAccepted}
-                            onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                            className="mt-0.5"
-                          />
+                          <Checkbox id="terms" checked={termsAccepted} onCheckedChange={(checked) => setTermsAccepted(checked === true)} className="mt-0.5" />
                           <label htmlFor="terms" className="text-sm text-muted-foreground leading-tight">
                             I agree to the{" "}
-                            <Link to="/terms" target="_blank" className="text-primary font-semibold hover:underline">
-                              Terms & Conditions
-                            </Link>{" "}
+                            <Link to="/terms" target="_blank" className="text-primary font-semibold hover:underline">Terms & Conditions</Link>{" "}
                             and{" "}
-                            <Link to="/terms" target="_blank" className="text-primary font-semibold hover:underline">
-                              Privacy Policy
-                            </Link>
+                            <Link to="/terms" target="_blank" className="text-primary font-semibold hover:underline">Privacy Policy</Link>
                           </label>
                         </div>
                       </div>
-
-                      <Button
-                        type="button"
-                        onClick={handleStep0Verify}
-                        className="w-full bg-gradient-maroon hover:opacity-90"
-                        disabled={loading || !canProceedStep0}
-                      >
+                      <Button type="button" onClick={handleStep0Verify} className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading || !canProceedStep0}>
                         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                         Create Account <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -517,27 +481,21 @@ const LoginPage = () => {
                           <p className="text-sm text-muted-foreground py-2">No courses available yet. Contact admin.</p>
                         ) : (
                           <Select value={selectedCourseId} onValueChange={(v) => { setSelectedCourseId(v); setSelectedUnitIds([]); }}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select your course" />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="Select your course" /></SelectTrigger>
                             <SelectContent>
                               {dbCourses.map(c => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.code} — {c.name}
-                                </SelectItem>
+                                <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         )}
                       </div>
-
                       {selectedCourse && (
                         <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
                           <span className="font-semibold text-foreground">{selectedCourse.name}</span>
                           <br />Faculty: {selectedCourse.faculty}
                         </div>
                       )}
-
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Year</Label>
@@ -554,7 +512,6 @@ const LoginPage = () => {
                           </Select>
                         </div>
                       </div>
-
                       <div className="flex gap-3">
                         <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" disabled={!canProceedStep1} onClick={handleStep1Next}>
                           Next <ArrowRight className="ml-2 w-4 h-4" />
@@ -563,23 +520,40 @@ const LoginPage = () => {
                     </motion.div>
                   )}
 
-                  {/* STEP 2: Select Units (filtered by year from code) */}
+                  {/* STEP 2: Select Units with search */}
                   {signupStep === 2 && (
                     <motion.div key="s2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <BookOpen className="w-4 h-4" />
-                        <span>Select your units for <span className="font-semibold text-foreground">Year {year}</span></span>
+                        <span>Select your units for <span className="font-semibold text-foreground">{selectedCourse?.code} — Year {year}</span></span>
                       </div>
 
-                      {filteredUnits.length === 0 ? (
+                      {/* Search input */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search units by name or code..."
+                          value={unitSearch}
+                          onChange={(e) => setUnitSearch(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+
+                      {unitSearch.trim() && (
+                        <p className="text-xs text-muted-foreground">
+                          Searching across all years • {allCourseUnits.length} result{allCourseUnits.length !== 1 ? "s" : ""}
+                        </p>
+                      )}
+
+                      {displayUnits.length === 0 ? (
                         <div className="text-center py-6 text-muted-foreground text-sm">
                           <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                          <p>No units available for this course & year.</p>
-                          <p className="text-xs mt-1">You can enroll in units later or contact admin.</p>
+                          <p>{unitSearch.trim() ? "No units match your search." : "No units available for this course & year."}</p>
+                          <p className="text-xs mt-1">Try searching by unit code or name above.</p>
                         </div>
                       ) : (
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                          {filteredUnits.map(unit => (
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                          {displayUnits.map(unit => (
                             <label
                               key={unit.id}
                               className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -596,6 +570,9 @@ const LoginPage = () => {
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-foreground">{unit.code}</p>
                                 <p className="text-xs text-muted-foreground truncate">{unit.name}</p>
+                                {unitSearch.trim() && (
+                                  <p className="text-xs text-muted-foreground/60">Year {unit.year} • Sem {unit.semester}</p>
+                                )}
                               </div>
                             </label>
                           ))}
@@ -610,7 +587,7 @@ const LoginPage = () => {
                       )}
 
                       <div className="flex gap-3">
-                        <Button type="button" variant="outline" onClick={() => setSignupStep(1)} className="flex-1">
+                        <Button type="button" variant="outline" onClick={() => { setSignupStep(1); setUnitSearch(""); }} className="flex-1">
                           <ArrowLeft className="mr-2 w-4 h-4" /> Back
                         </Button>
                         <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" onClick={handleStep2Next} disabled={selectedUnitIds.length === 0}>
@@ -620,61 +597,103 @@ const LoginPage = () => {
                     </motion.div>
                   )}
 
-                  {/* STEP 3: Upload Documents */}
+                  {/* STEP 3: Train AI - Upload Documents per Unit */}
                   {signupStep === 3 && (
                     <motion.div key="s3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Upload className="w-4 h-4" />
-                        <span>Upload your notes & past papers</span>
+                      <div className="flex items-center gap-2 text-sm text-foreground font-medium">
+                        <Brain className="w-4 h-4 text-primary" />
+                        <span>Now let's train your AI by uploading notes</span>
                       </div>
 
                       <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
                         <p className="font-semibold text-foreground flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5" /> Guidelines
+                          <AlertCircle className="w-3.5 h-3.5" /> How it works
                         </p>
-                        <p>• Only academic materials (notes, past papers)</p>
-                        <p>• Supported: PDF, DOCX, PPTX, TXT</p>
-                        <p>• Duplicate documents will be automatically detected</p>
-                        <p>• Uploading does not use your chat credits</p>
+                        <p>• Upload notes for each of your units below</p>
+                        <p>• Your AI will remember this context permanently</p>
+                        <p>• Other students in the same unit also benefit from uploads</p>
+                        <p>• Supported: PDF, DOCX, PPTX, TXT • Max 20MB each</p>
+                        <p>• Uploading does <strong>not</strong> use your chat credits</p>
                       </div>
 
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept=".pdf,.doc,.docx,.pptx,.txt,.csv,.md"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
+                      {/* Unit tabs */}
+                      <div className="space-y-3">
+                        {selectedUnitsData.map(unit => {
+                          const unitFiles = uploadFilesByUnit[unit.id] || [];
+                          const isActive = activeUploadUnitId === unit.id;
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full border-dashed border-2"
-                        disabled={uploading}
-                      >
-                        <FileText className="mr-2 w-4 h-4" />
-                        Select Files
-                      </Button>
+                          return (
+                            <div key={unit.id} className={`rounded-lg border transition-colors ${isActive ? "border-primary bg-primary/5" : "border-border"}`}>
+                              <button
+                                type="button"
+                                onClick={() => setActiveUploadUnitId(isActive ? null : unit.id)}
+                                className="w-full flex items-center justify-between p-3 text-left"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <BookOpen className="w-4 h-4 text-primary shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-foreground">{unit.code}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{unit.name}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {unitFiles.length > 0 && (
+                                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                                      {unitFiles.length} file{unitFiles.length !== 1 ? "s" : ""}
+                                    </span>
+                                  )}
+                                  <Upload className={`w-4 h-4 transition-transform ${isActive ? "text-primary rotate-180" : "text-muted-foreground"}`} />
+                                </div>
+                              </button>
 
-                      {uploadFiles.length > 0 && (
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {uploadFiles.map((file, idx) => (
-                            <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 text-sm">
-                              <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                              <span className="flex-1 truncate text-foreground">{file.name}</span>
-                              {uploadProgress[file.name] ? (
-                                <span className="text-xs text-muted-foreground shrink-0">{uploadProgress[file.name]}</span>
-                              ) : (
-                                <button type="button" onClick={() => removeFile(idx)} className="text-muted-foreground hover:text-destructive">
-                                  <X className="w-4 h-4" />
-                                </button>
+                              {isActive && (
+                                <div className="px-3 pb-3 space-y-2">
+                                  <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    accept=".pdf,.doc,.docx,.pptx,.txt,.csv,.md"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full border-dashed border-2"
+                                    disabled={uploading}
+                                  >
+                                    <FileText className="mr-2 w-4 h-4" />
+                                    Add Files for {unit.code}
+                                  </Button>
+
+                                  {unitFiles.length > 0 && (
+                                    <div className="space-y-1">
+                                      {unitFiles.map((file, idx) => {
+                                        const progressKey = `${unit.code}:${file.name}`;
+                                        return (
+                                          <div key={idx} className="flex items-center gap-2 p-2 rounded bg-muted/50 text-sm">
+                                            <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                            <span className="flex-1 truncate text-foreground text-xs">{file.name}</span>
+                                            {uploadProgress[progressKey] ? (
+                                              <span className="text-xs text-muted-foreground shrink-0">{uploadProgress[progressKey]}</span>
+                                            ) : (
+                                              <button type="button" onClick={() => removeFile(unit.id, idx)} className="text-muted-foreground hover:text-destructive">
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          );
+                        })}
+                      </div>
 
                       <div className="flex gap-3">
                         <Button type="button" variant="outline" onClick={() => setSignupStep(2)} className="flex-1" disabled={uploading}>
@@ -687,7 +706,7 @@ const LoginPage = () => {
                           disabled={uploading}
                         >
                           {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                          {uploadFiles.length === 0 ? "Skip & Finish" : "Upload & Finish"} <ArrowRight className="ml-2 w-4 h-4" />
+                          {totalFilesCount === 0 ? "Skip & Finish" : `Upload ${totalFilesCount} & Finish`} <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                       </div>
                     </motion.div>
