@@ -17,6 +17,42 @@ const withTimeout = async (url: string, init: RequestInit, timeoutMs: number) =>
   }
 };
 
+const STOP_WORDS = new Set([
+  "about", "after", "again", "against", "all", "also", "and", "any", "are", "because", "been", "before", "being", "between", "both", "but", "can", "could", "does", "each", "from", "have", "into", "just", "more", "most", "much", "must", "only", "other", "over", "same", "should", "some", "than", "that", "their", "them", "then", "there", "these", "they", "this", "those", "through", "under", "very", "what", "when", "where", "which", "while", "will", "with", "would", "your", "explain", "define", "tell", "give", "list", "topic", "notes", "uploaded", "please", "using", "unit", "course", "answer"
+]);
+
+function normalizeText(text: string): string {
+  return text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+}
+
+function extractKeywords(text: string): string[] {
+  const normalized = normalizeText(text);
+  const unique = new Set(
+    normalized
+      .split(" ")
+      .filter((word) => word.length >= 3 && !STOP_WORDS.has(word))
+  );
+
+  return Array.from(unique).slice(0, 12);
+}
+
+function computeKeywordOverlap(keywords: string[], content: string): number {
+  if (keywords.length === 0) return 0;
+  const normalizedContent = normalizeText(content);
+  const matched = keywords.filter((keyword) => normalizedContent.includes(keyword)).length;
+  return matched / keywords.length;
+}
+
+function dedupeDocuments<T extends { content?: string; metadata?: Record<string, any> | null }>(docs: T[]): T[] {
+  const seen = new Set<string>();
+  return docs.filter((doc) => {
+    const key = `${doc.metadata?.title || ""}::${(doc.content || "").slice(0, 220)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 // --- Redis helper (Upstash REST API) ---
 const createRedis = () => ({
   async get(key: string) {
@@ -442,74 +478,77 @@ serve(async (req) => {
       return '';
     })();
     const shouldRunRag = lastUserMessage.length >= 12;
+    const queryKeywords = extractKeywords(lastUserMessage);
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY && shouldRunRag) {
       try {
-        const queryHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lastUserMessage))
-          .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16));
-        const ragCacheKey = `rag:${userId}:${queryHash}`;
-        let ragResults = await redis.get(ragCacheKey);
+        const embResponse = await withTimeout("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
+          body: JSON.stringify({ model: "text-embedding-3-large", input: lastUserMessage, dimensions: 768 }),
+        }, 8000);
 
-        if (!ragResults) {
-          const embResponse = await withTimeout("https://api.openai.com/v1/embeddings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_API_KEY}` },
-            body: JSON.stringify({ model: "text-embedding-3-large", input: lastUserMessage, dimensions: 768 }),
-          }, 8000);
+        if (embResponse.ok) {
+          const embData = await embResponse.json();
+          const queryEmbedding = embData.data?.[0]?.embedding;
 
-          if (embResponse.ok) {
-            const embData = await embResponse.json();
-            const queryEmbedding = embData.data?.[0]?.embedding;
+          if (queryEmbedding) {
+            const allowedUnitIds = unitId
+              ? [unitId]
+              : (studentUnits?.map((su: any) => su.unit_id).filter(Boolean) || []);
 
-            if (queryEmbedding) {
-              const allowedUnitIds = unitId
-                ? [unitId]
-                : (studentUnits?.map((su: any) => su.unit_id).filter(Boolean) || []);
+            if (allowedUnitIds.length > 0 || isAdmin) {
+              const { data: docs } = await supabaseAdmin.rpc(
+                allowedUnitIds.length > 0 ? "match_documents_for_units" : "match_documents",
+                allowedUnitIds.length > 0
+                  ? {
+                      query_embedding: JSON.stringify(queryEmbedding),
+                      allowed_unit_ids: allowedUnitIds,
+                      match_threshold: 0.35,
+                      match_count: Math.max(isAdmin ? maxRagChunks + 6 : maxRagChunks + 4, 10),
+                    }
+                  : {
+                      query_embedding: JSON.stringify(queryEmbedding),
+                      match_threshold: 0.4,
+                      match_count: Math.max(isAdmin ? maxRagChunks + 6 : maxRagChunks + 4, 10),
+                    }
+              );
 
-              if (allowedUnitIds.length > 0 || isAdmin) {
-                const { data: docs } = await supabaseAdmin.rpc(
-                  allowedUnitIds.length > 0 ? "match_documents_for_units" : "match_documents",
-                  allowedUnitIds.length > 0
-                    ? {
-                        query_embedding: JSON.stringify(queryEmbedding),
-                        allowed_unit_ids: allowedUnitIds,
-                        match_threshold: 0.45,
-                        match_count: isAdmin ? maxRagChunks + 2 : maxRagChunks,
-                      }
-                    : {
-                        query_embedding: JSON.stringify(queryEmbedding),
-                        match_threshold: 0.5,
-                        match_count: isAdmin ? maxRagChunks + 2 : maxRagChunks,
-                      }
-                );
+              const ragResults = dedupeDocuments(docs || []);
+              let filteredDocs = ragResults;
 
-                ragResults = docs || [];
-                await redis.set(ragCacheKey, ragResults, 300);
-              } else {
-                ragResults = [];
+              if (unitId) {
+                filteredDocs = ragResults.filter((d: any) => d.unit_id === unitId || d.metadata?.unit_id === unitId);
+              } else if (!isAdmin) {
+                const enrolledUnitIds = new Set(studentUnits?.map((su: any) => su.unit_id).filter(Boolean) || []);
+                if (enrolledUnitIds.size > 0) {
+                  filteredDocs = ragResults.filter((d: any) => enrolledUnitIds.has(d.unit_id) || enrolledUnitIds.has(d.metadata?.unit_id));
+                }
+              }
+
+              const rerankedDocs = filteredDocs
+                .map((doc: any) => {
+                  const meta = doc.metadata || {};
+                  const keywordOverlap = computeKeywordOverlap(queryKeywords, `${meta.title || ""} ${meta.unit_code || ""} ${doc.content || ""}`);
+                  const similarity = Number(doc.similarity || 0);
+                  const score = similarity * 0.8 + keywordOverlap * 0.2;
+                  return { ...doc, keywordOverlap, score };
+                })
+                .filter((doc: any) => {
+                  if (queryKeywords.length === 0) return doc.similarity >= 0.58;
+                  return doc.keywordOverlap > 0 || doc.similarity >= 0.72;
+                })
+                .sort((a: any, b: any) => b.score - a.score)
+                .slice(0, Math.min(Math.max(maxRagChunks, 4), 6));
+
+              if (rerankedDocs.length > 0) {
+                ragContext = "\n\n## Relevant Course Materials (from uploaded documents):\n" + rerankedDocs.map((d: any) => {
+                  const meta = d.metadata || {};
+                  return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'} | Similarity: ${((d.similarity || 0) * 100).toFixed(1)}% | Keyword Match: ${Math.round((d.keywordOverlap || 0) * 100)}%]\n${d.content}`;
+                }).join("\n---\n");
               }
             }
-          }
-        }
-
-        if (ragResults && ragResults.length > 0) {
-          let filteredDocs = ragResults;
-
-          if (unitId) {
-            filteredDocs = ragResults.filter((d: any) => d.unit_id === unitId || d.metadata?.unit_id === unitId);
-          } else if (!isAdmin) {
-            const enrolledUnitIds = new Set(studentUnits?.map((su: any) => su.unit_id).filter(Boolean) || []);
-            if (enrolledUnitIds.size > 0) {
-              filteredDocs = ragResults.filter((d: any) => enrolledUnitIds.has(d.unit_id) || enrolledUnitIds.has(d.metadata?.unit_id));
-            }
-          }
-
-          if (filteredDocs.length > 0) {
-            ragContext = "\n\n## Relevant Course Materials (from uploaded documents):\n" + filteredDocs.map((d: any) => {
-              const meta = d.metadata || {};
-              return `[Source: ${meta.title || 'Document'} | Unit: ${meta.unit_code || 'N/A'} | Similarity: ${((d.similarity || 0) * 100).toFixed(1)}%]\n${d.content}`;
-            }).join("\n---\n");
           }
         }
       } catch (e) {
@@ -538,6 +577,12 @@ serve(async (req) => {
 
     // --- Build the final system prompt ---
     const systemPrompt = `${SEKANI_SYSTEM_PROMPT}
+
+## ACADEMIC GROUNDING ENFORCEMENT
+- For coursework, lecture-note, exam-prep, theory, definition, process, or concept questions, use ONLY the Course Material Context below.
+- Do not use general world knowledge to fill gaps in academic answers.
+- If the Course Material Context is missing, weak, or incomplete, say: "The uploaded notes do not contain enough information for me to answer that accurately." Then ask for the relevant notes.
+- When notes are available, answer as closely as possible to the wording in the notes before adding any short clarification.
 
 ## SMART FOLLOW-UP BEHAVIOR
 At the end of your responses (especially for longer ones), naturally suggest 1-2 follow-up directions the student might want. Frame them as questions or actions. Examples:
