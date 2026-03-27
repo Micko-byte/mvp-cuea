@@ -592,6 +592,22 @@ export type Database = {
           similarity: number
         }[]
       }
+      match_documents_for_units: {
+        Args: {
+          allowed_unit_ids: string[]
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          material_id: string
+          metadata: Json
+          similarity: number
+          unit_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "student" | "lecturer"
