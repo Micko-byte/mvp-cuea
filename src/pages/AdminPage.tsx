@@ -79,6 +79,11 @@ const AdminPage = () => {
 
   const [newCourse, setNewCourse] = useState({ name: "", code: "", faculty: "", description: "" });
   const [newUnit, setNewUnit] = useState({ name: "", code: "", course_id: "", semester: "1", year: "1", lecturer: "" });
+  const [bulkUnitsText, setBulkUnitsText] = useState("");
+  const [bulkUnitsCourseId, setBulkUnitsCourseId] = useState("");
+  const [bulkUnitsYear, setBulkUnitsYear] = useState("1");
+  const [bulkUnitsSemester, setBulkUnitsSemester] = useState("1");
+  const [addBulkUnitsOpen, setAddBulkUnitsOpen] = useState(false);
   const [uploadUnitId, setUploadUnitId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
