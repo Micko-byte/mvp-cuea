@@ -440,6 +440,7 @@ const AdminPage = () => {
                 <p className="text-sm text-muted-foreground">{courses.length} courses, {units.length} units</p>
               </div>
               <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setAddBulkUnitsOpen(true)}><Plus className="w-4 h-4 mr-1" /> Bulk Add Units</Button>
                 <Button size="sm" variant="outline" onClick={() => setAddUnitOpen(true)}><Plus className="w-4 h-4 mr-1" /> Add Unit</Button>
                 <Button size="sm" className="bg-gradient-maroon hover:opacity-90" onClick={() => setAddCourseOpen(true)}><Plus className="w-4 h-4 mr-1" /> Add Course</Button>
               </div>
