@@ -156,14 +156,31 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
     const { materialId, title, unitCode, storagePath, fileType, content: directContent } = await req.json();
     if (!materialId) {
       return new Response(JSON.stringify({ error: "materialId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    const { data: materialRecord, error: materialLookupError } = await supabaseAdmin
+      .from("materials")
+      .select("id, uploaded_by, unit_id")
+      .eq("id", materialId)
+      .single();
+
+    if (materialLookupError || !materialRecord) {
+      return new Response(JSON.stringify({ error: "Material not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const ownsMaterial = materialRecord.uploaded_by === user.id;
+    if (!isAdmin && !ownsMaterial) {
+      return new Response(JSON.stringify({ error: "You can only process your own uploaded notes" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     let content = directContent || "";
@@ -267,6 +284,14 @@ serve(async (req) => {
 
       processedCount += batch.length;
     }
+
+    await supabaseAdmin
+      .from("materials")
+      .update({
+        embedding_status: "completed",
+        chunk_count: processedCount,
+      })
+      .eq("id", materialId);
 
     return new Response(JSON.stringify({ success: true, chunksProcessed: processedCount, textLength: content.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

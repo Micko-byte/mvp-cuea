@@ -310,7 +310,7 @@ const LoginPage = () => {
           progress[key] = "Processing & embedding...";
           setUploadProgress({ ...progress });
 
-          supabase.functions.invoke("process-document", {
+          const { error: embedError } = await supabase.functions.invoke("process-document", {
             body: {
               materialId: material?.id,
               title: file.name,
@@ -318,11 +318,21 @@ const LoginPage = () => {
               storagePath,
               fileType: file.type,
             },
-          }).then(({ error: embedError }) => {
-            if (embedError) console.error("Embedding error:", embedError);
           });
 
-          progress[key] = "✅ Uploaded successfully";
+          if (embedError) {
+            progress[key] = `❌ Embedding failed: ${embedError.message}`;
+            setUploadProgress({ ...progress });
+
+            await supabase
+              .from("materials")
+              .update({ embedding_status: "failed" })
+              .eq("id", material?.id);
+
+            continue;
+          }
+
+          progress[key] = "✅ Uploaded and embedded";
           setUploadProgress({ ...progress });
         } catch (err) {
           progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
