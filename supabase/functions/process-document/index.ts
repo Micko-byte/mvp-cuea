@@ -378,6 +378,27 @@ serve(async (req) => {
       })
       .eq("id", materialId);
 
+    // Award 10,000 bonus tokens if this is the first material for this unit
+    try {
+      const { count } = await supabaseAdmin
+        .from("materials")
+        .select("id", { count: "exact", head: true })
+        .eq("unit_id", materialRecord.unit_id)
+        .eq("embedding_status", "completed");
+
+      if (count === 1) {
+        // This is the first completed material for this unit — reward the uploader
+        await supabaseAdmin.from("token_usage").insert({
+          user_id: materialRecord.uploaded_by,
+          tokens_used: -10000, // negative = bonus tokens
+          model: "training_reward",
+        });
+        console.log(`Awarded 10,000 bonus tokens to user ${materialRecord.uploaded_by} for first unit training on unit ${materialRecord.unit_id}`);
+      }
+    } catch (rewardErr) {
+      console.warn("Failed to award training bonus:", rewardErr);
+    }
+
     return new Response(JSON.stringify({ success: true, chunksProcessed: processedCount, textLength: content.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

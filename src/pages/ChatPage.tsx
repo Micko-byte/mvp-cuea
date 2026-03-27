@@ -53,7 +53,8 @@ import {
   ThumbsDown,
   RotateCcw,
   Pen,
-  Play } from
+  Play,
+  Upload } from
 "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,10 @@ const ChatPage = () => {
   const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
   const [paymentPlan, setPaymentPlan] = useState<"individual" | "group">("individual");
   const [groupEmails, setGroupEmails] = useState<string[]>(["", "", "", "", ""]);
+  const [showUnitUpload, setShowUnitUpload] = useState(false);
+  const [unitUploadFiles, setUnitUploadFiles] = useState<File[]>([]);
+  const [unitUploading, setUnitUploading] = useState(false);
+  const [unitUploadProgress, setUnitUploadProgress] = useState<Record<string, string>>({});
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
@@ -157,6 +162,7 @@ const ChatPage = () => {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const recognitionRef = useRef<any>(null);
+  const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
@@ -404,6 +410,85 @@ const ChatPage = () => {
     await sendMessage(text, chat.id, filesToSend);
   };
 
+  // Unit training upload handler
+  const handleUnitTrainUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedUnitId || !user) return;
+    const selectedUnitData = enrolledUnits.find(u => u.unit_id === selectedUnitId);
+    if (!selectedUnitData) return;
+
+    setUnitUploading(true);
+    const progress: Record<string, string> = {};
+
+    for (const file of Array.from(files)) {
+      const key = `${selectedUnitId}_${file.name}`;
+      progress[key] = "Uploading...";
+      setUnitUploadProgress({ ...progress });
+
+      try {
+        const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("materials")
+          .upload(storagePath, file);
+
+        if (uploadError) {
+          progress[key] = `❌ Upload failed: ${uploadError.message}`;
+          setUnitUploadProgress({ ...progress });
+          continue;
+        }
+
+        const { data: material, error: matError } = await supabase
+          .from("materials")
+          .insert({
+            title: file.name.replace(/\.[^.]+$/, ""),
+            file_name: file.name,
+            file_type: file.type || "application/octet-stream",
+            file_size: file.size,
+            unit_id: selectedUnitId,
+            uploaded_by: user.id,
+            storage_path: storagePath,
+            embedding_status: "processing",
+          })
+          .select("id")
+          .single();
+
+        if (matError) {
+          progress[key] = `❌ Error: ${matError.message}`;
+          setUnitUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "🧠 Training AI...";
+        setUnitUploadProgress({ ...progress });
+
+        const { error: embedError } = await supabase.functions.invoke("process-document", {
+          body: {
+            materialId: material?.id,
+            title: file.name,
+            unitCode: selectedUnitData.unit_code,
+            storagePath,
+            fileType: file.type,
+          },
+        });
+
+        if (embedError) {
+          progress[key] = `❌ Training failed: ${embedError.message}`;
+          setUnitUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "✅ Trained";
+        setUnitUploadProgress({ ...progress });
+      } catch (err) {
+        progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+        setUnitUploadProgress({ ...progress });
+      }
+    }
+
+    setUnitUploading(false);
+    setUnitUploadProgress({});
+    toast.success("Training complete! Your AI is now smarter. 🧠");
+  };
+
   const speechSupported =
   typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
@@ -477,7 +562,7 @@ const ChatPage = () => {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${accessToken}`
           },
-          body: JSON.stringify({ method: "card", plan: paymentPlan, groupEmails: paymentPlan === "group" ? groupEmails : undefined })
+          body: JSON.stringify({ method: "card", plan: paymentPlan, groupEmails: paymentPlan === "group" ? [profile?.email || "", ...groupEmails.slice(1)] : undefined })
         });
         const data = await resp.json();
         if (data.authorization_url) {
@@ -511,7 +596,7 @@ const ChatPage = () => {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken}`
         },
-        body: JSON.stringify({ phone, plan: paymentPlan, groupEmails: paymentPlan === "group" ? groupEmails : undefined })
+        body: JSON.stringify({ phone, plan: paymentPlan, groupEmails: paymentPlan === "group" ? [profile?.email || "", ...groupEmails.slice(1)] : undefined })
       });
       const data = await resp.json();
       if (data.reference) {
@@ -835,9 +920,39 @@ const ChatPage = () => {
                 </button>
         }
               {selectedUnit &&
-        <div className="mb-3 p-2 rounded-lg bg-sidebar-accent/30">
-                  <p className="text-xs font-bold text-primary">{selectedUnit.unit_code}</p>
-                  <p className="text-sm font-medium text-sidebar-foreground truncate">{selectedUnit.unit_name}</p>
+        <div className="mb-3 space-y-2">
+                  <div className="p-2 rounded-lg bg-sidebar-accent/30">
+                    <p className="text-xs font-bold text-primary">{selectedUnit.unit_code}</p>
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">{selectedUnit.unit_name}</p>
+                  </div>
+                  <input
+                    ref={unitUploadInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.pptx,.txt,.csv,.md"
+                    className="hidden"
+                    onChange={(e) => { handleUnitTrainUpload(e.target.files); e.target.value = ""; }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed border-2 text-xs"
+                    disabled={unitUploading}
+                    onClick={() => unitUploadInputRef.current?.click()}
+                  >
+                    {unitUploading ? (
+                      <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Training...</>
+                    ) : (
+                      <><Upload className="w-3 h-3 mr-1" /> Train AI with Notes</>
+                    )}
+                  </Button>
+                  {Object.entries(unitUploadProgress).length > 0 && (
+                    <div className="space-y-1">
+                      {Object.entries(unitUploadProgress).map(([key, status]) => (
+                        <p key={key} className="text-xs text-muted-foreground truncate">{status}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
         }
               {filteredChats.length === 0 ?
@@ -1734,18 +1849,19 @@ const ChatPage = () => {
                 {paymentPlan === "group" && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Group Member Emails (5 required)</Label>
-                    {groupEmails.map((email, i) => (
+                    {groupEmails.map((ge, i) => (
                       <Input
                         key={i}
                         type="email"
-                        placeholder={`Member ${i + 1} email`}
-                        value={email}
+                        placeholder={i === 0 ? "Your email (auto-filled)" : `Member ${i + 1} email`}
+                        value={i === 0 ? (profile?.email || ge) : ge}
+                        disabled={i === 0}
                         onChange={(e) => {
                           const updated = [...groupEmails];
                           updated[i] = e.target.value;
                           setGroupEmails(updated);
                         }}
-                        className="text-sm"
+                        className={`text-sm ${i === 0 ? "bg-muted/50" : ""}`}
                       />
                     ))}
                   </div>
