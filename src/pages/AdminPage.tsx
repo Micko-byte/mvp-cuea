@@ -784,7 +784,8 @@ const AdminPage = () => {
                   ["Paid Daily Limit", `${Number(systemSettings.token_limit_paid || 200000).toLocaleString()} tokens`],
                   ["Global Daily Limit", "500,000 tokens"],
                   ["RAG Model", "text-embedding-3-large (768d)"],
-                  ["Premium Price", "KES 200 (one-time)"],
+                   ["Individual Price", "KES 129"],
+                   ["Group Price (5 users)", "KES 499"],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between py-2 border-b border-border last:border-0">
                     <span className="text-sm text-muted-foreground">{label}</span>

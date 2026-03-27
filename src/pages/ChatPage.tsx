@@ -147,6 +147,8 @@ const ChatPage = () => {
   const [paymentPhone, setPaymentPhone] = useState("");
   const [paymentVerifying, setPaymentVerifying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
+  const [paymentPlan, setPaymentPlan] = useState<"individual" | "group">("individual");
+  const [groupEmails, setGroupEmails] = useState<string[]>(["", "", "", "", ""]);
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
@@ -475,7 +477,7 @@ const ChatPage = () => {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${accessToken}`
           },
-          body: JSON.stringify({ method: "card" })
+          body: JSON.stringify({ method: "card", plan: paymentPlan, groupEmails: paymentPlan === "group" ? groupEmails : undefined })
         });
         const data = await resp.json();
         if (data.authorization_url) {
@@ -509,7 +511,7 @@ const ChatPage = () => {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken}`
         },
-        body: JSON.stringify({ phone })
+        body: JSON.stringify({ phone, plan: paymentPlan, groupEmails: paymentPlan === "group" ? groupEmails : undefined })
       });
       const data = await resp.json();
       if (data.reference) {
