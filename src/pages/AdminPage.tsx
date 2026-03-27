@@ -948,6 +948,51 @@ const AdminPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={addBulkUnitsOpen} onOpenChange={setAddBulkUnitsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle className="font-display">Bulk Add Units</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Course *</Label>
+              <Select value={bulkUnitsCourseId} onValueChange={v => setBulkUnitsCourseId(v)}>
+                <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Year</Label>
+                <Select value={bulkUnitsYear} onValueChange={v => setBulkUnitsYear(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{["1","2","3","4","5"].map(y => <SelectItem key={y} value={y}>Year {y}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Semester</Label>
+                <Select value={bulkUnitsSemester} onValueChange={v => setBulkUnitsSemester(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{["1","2","3"].map(s => <SelectItem key={s} value={s}>Sem {s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Units (one per line: CODE - Unit Name)</Label>
+              <Textarea
+                value={bulkUnitsText}
+                onChange={e => setBulkUnitsText(e.target.value)}
+                placeholder={"CMT 100 - Introduction to Computing\nCMT 101 - Programming Fundamentals\nCMT 102 - Discrete Mathematics"}
+                rows={8}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">Format: <code>CODE - Unit Name</code>, one unit per line</p>
+            </div>
+            <Button onClick={handleBulkAddUnits} className="w-full bg-gradient-maroon hover:opacity-90">
+              Add {bulkUnitsText.trim().split("\n").filter(l => l.trim()).length} Units
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
