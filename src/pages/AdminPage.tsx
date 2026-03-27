@@ -79,6 +79,11 @@ const AdminPage = () => {
 
   const [newCourse, setNewCourse] = useState({ name: "", code: "", faculty: "", description: "" });
   const [newUnit, setNewUnit] = useState({ name: "", code: "", course_id: "", semester: "1", year: "1", lecturer: "" });
+  const [bulkUnitsText, setBulkUnitsText] = useState("");
+  const [bulkUnitsCourseId, setBulkUnitsCourseId] = useState("");
+  const [bulkUnitsYear, setBulkUnitsYear] = useState("1");
+  const [bulkUnitsSemester, setBulkUnitsSemester] = useState("1");
+  const [addBulkUnitsOpen, setAddBulkUnitsOpen] = useState(false);
   const [uploadUnitId, setUploadUnitId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -190,6 +195,40 @@ const AdminPage = () => {
     toast.success("Unit added");
     setNewUnit({ name: "", code: "", course_id: "", semester: "1", year: "1", lecturer: "" });
     setAddUnitOpen(false);
+    fetchData();
+  };
+
+  const handleBulkAddUnits = async () => {
+    if (!bulkUnitsCourseId || !bulkUnitsText.trim()) {
+      toast.error("Select a course and enter unit lines");
+      return;
+    }
+    const lines = bulkUnitsText.trim().split("\n").filter(l => l.trim());
+    const unitsToInsert: { name: string; code: string; course_id: string; semester: number; year: number }[] = [];
+
+    for (const line of lines) {
+      // Format: CODE - Unit Name  OR  CODE, Unit Name  OR  CODE Unit Name
+      const match = line.match(/^([A-Za-z]+\s*\d+)\s*[-,]?\s*(.+)$/);
+      if (match) {
+        unitsToInsert.push({
+          code: match[1].trim(),
+          name: match[2].trim(),
+          course_id: bulkUnitsCourseId,
+          year: parseInt(bulkUnitsYear),
+          semester: parseInt(bulkUnitsSemester),
+        });
+      } else {
+        toast.error(`Could not parse line: "${line.slice(0, 40)}"`);
+      }
+    }
+
+    if (unitsToInsert.length === 0) { toast.error("No valid units found"); return; }
+
+    const { error } = await supabase.from("units").insert(unitsToInsert);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${unitsToInsert.length} units added!`);
+    setBulkUnitsText("");
+    setAddBulkUnitsOpen(false);
     fetchData();
   };
 
@@ -401,6 +440,7 @@ const AdminPage = () => {
                 <p className="text-sm text-muted-foreground">{courses.length} courses, {units.length} units</p>
               </div>
               <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setAddBulkUnitsOpen(true)}><Plus className="w-4 h-4 mr-1" /> Bulk Add Units</Button>
                 <Button size="sm" variant="outline" onClick={() => setAddUnitOpen(true)}><Plus className="w-4 h-4 mr-1" /> Add Unit</Button>
                 <Button size="sm" className="bg-gradient-maroon hover:opacity-90" onClick={() => setAddCourseOpen(true)}><Plus className="w-4 h-4 mr-1" /> Add Course</Button>
               </div>
@@ -905,6 +945,51 @@ const AdminPage = () => {
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addBulkUnitsOpen} onOpenChange={setAddBulkUnitsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle className="font-display">Bulk Add Units</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Course *</Label>
+              <Select value={bulkUnitsCourseId} onValueChange={v => setBulkUnitsCourseId(v)}>
+                <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Year</Label>
+                <Select value={bulkUnitsYear} onValueChange={v => setBulkUnitsYear(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{["1","2","3","4","5"].map(y => <SelectItem key={y} value={y}>Year {y}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Semester</Label>
+                <Select value={bulkUnitsSemester} onValueChange={v => setBulkUnitsSemester(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{["1","2","3"].map(s => <SelectItem key={s} value={s}>Sem {s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Units (one per line: CODE - Unit Name)</Label>
+              <Textarea
+                value={bulkUnitsText}
+                onChange={e => setBulkUnitsText(e.target.value)}
+                placeholder={"CMT 100 - Introduction to Computing\nCMT 101 - Programming Fundamentals\nCMT 102 - Discrete Mathematics"}
+                rows={8}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">Format: <code>CODE - Unit Name</code>, one unit per line</p>
+            </div>
+            <Button onClick={handleBulkAddUnits} className="w-full bg-gradient-maroon hover:opacity-90">
+              Add {bulkUnitsText.trim().split("\n").filter(l => l.trim()).length} Units
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
