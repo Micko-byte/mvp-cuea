@@ -1705,22 +1705,51 @@ const ChatPage = () => {
                 <p className="text-sm text-muted-foreground text-center">
                   You've reached your free daily limit. Upgrade to keep learning!
                 </p>
+
+                {/* Plan Selection */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="border border-border rounded-xl p-4 text-center">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">Free Plan</p>
-                    <p className="text-2xl font-bold mt-1">50K</p>
-                    <p className="text-xs text-muted-foreground">tokens/day</p>
-                  </div>
-                  <div className="border-2 border-primary rounded-xl p-4 text-center bg-primary/5">
-                    <p className="text-xs font-semibold text-primary uppercase">Premium</p>
-                    <p className="text-2xl font-bold mt-1">200K</p>
-                    <p className="text-xs text-muted-foreground">tokens/day</p>
-                  </div>
+                  <button
+                    onClick={() => setPaymentPlan("individual")}
+                    className={`border rounded-xl p-4 text-center transition-all ${paymentPlan === "individual" ? "border-2 border-primary bg-primary/5" : "border-border"}`}
+                  >
+                    <p className="text-xs font-semibold uppercase" style={{ color: paymentPlan === "individual" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" }}>Individual</p>
+                    <p className="text-2xl font-bold mt-1">KES 129</p>
+                    <p className="text-xs text-muted-foreground">1 user</p>
+                  </button>
+                  <button
+                    onClick={() => setPaymentPlan("group")}
+                    className={`border rounded-xl p-4 text-center transition-all ${paymentPlan === "group" ? "border-2 border-primary bg-primary/5" : "border-border"}`}
+                  >
+                    <p className="text-xs font-semibold uppercase" style={{ color: paymentPlan === "group" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" }}>Group</p>
+                    <p className="text-2xl font-bold mt-1">KES 499</p>
+                    <p className="text-xs text-muted-foreground">5 users</p>
+                  </button>
                 </div>
+
                 <div className="text-center">
-                  <p className="text-lg font-bold">KES 200</p>
-                  <p className="text-xs text-muted-foreground">One-time payment</p>
+                  <p className="text-xs text-muted-foreground">200K tokens/day • One-time payment</p>
                 </div>
+
+                {/* Group Emails */}
+                {paymentPlan === "group" && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Group Member Emails (5 required)</Label>
+                    {groupEmails.map((email, i) => (
+                      <Input
+                        key={i}
+                        type="email"
+                        placeholder={`Member ${i + 1} email`}
+                        value={email}
+                        onChange={(e) => {
+                          const updated = [...groupEmails];
+                          updated[i] = e.target.value;
+                          setGroupEmails(updated);
+                        }}
+                        className="text-sm"
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {/* Payment Method Tabs */}
                 <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
@@ -1760,16 +1789,16 @@ const ChatPage = () => {
 
                 <Button
                   onClick={handlePayment}
-                  disabled={paymentLoading || (paymentMethod === "mpesa" && !paymentPhone.trim())}
+                  disabled={paymentLoading || (paymentMethod === "mpesa" && !paymentPhone.trim()) || (paymentPlan === "group" && groupEmails.some(e => !e.trim()))}
                   className="w-full text-white font-semibold py-3"
                   style={{ backgroundColor: "#800000" }}
                 >
                   {paymentLoading ? (
                     <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...</>
                   ) : paymentMethod === "mpesa" ? (
-                    "Pay KES 200 via M-Pesa"
+                    `Pay KES ${paymentPlan === "group" ? "499" : "129"} via M-Pesa`
                   ) : (
-                    "Pay KES 200 via Card"
+                    `Pay KES ${paymentPlan === "group" ? "499" : "129"} via Card`
                   )}
                 </Button>
               </div>
