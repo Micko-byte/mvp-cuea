@@ -307,7 +307,7 @@ const LoginPage = () => {
             material_id: material?.id,
           });
 
-          progress[key] = "Processing & embedding...";
+          progress[key] = "🧠 Training AI...";
           setUploadProgress({ ...progress });
 
           const { error: embedError } = await supabase.functions.invoke("process-document", {
@@ -321,7 +321,7 @@ const LoginPage = () => {
           });
 
           if (embedError) {
-            progress[key] = `❌ Embedding failed: ${embedError.message}`;
+            progress[key] = `❌ Training failed: ${embedError.message}`;
             setUploadProgress({ ...progress });
 
             await supabase
@@ -332,7 +332,7 @@ const LoginPage = () => {
             continue;
           }
 
-          progress[key] = "✅ Uploaded and embedded";
+          progress[key] = "✅ Uploaded & trained";
           setUploadProgress({ ...progress });
         } catch (err) {
           progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;

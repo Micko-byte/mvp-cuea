@@ -149,6 +149,10 @@ const ChatPage = () => {
   const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
   const [paymentPlan, setPaymentPlan] = useState<"individual" | "group">("individual");
   const [groupEmails, setGroupEmails] = useState<string[]>(["", "", "", "", ""]);
+  const [showUnitUpload, setShowUnitUpload] = useState(false);
+  const [unitUploadFiles, setUnitUploadFiles] = useState<File[]>([]);
+  const [unitUploading, setUnitUploading] = useState(false);
+  const [unitUploadProgress, setUnitUploadProgress] = useState<Record<string, string>>({});
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
@@ -1734,18 +1738,19 @@ const ChatPage = () => {
                 {paymentPlan === "group" && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Group Member Emails (5 required)</Label>
-                    {groupEmails.map((email, i) => (
+                    {groupEmails.map((ge, i) => (
                       <Input
                         key={i}
                         type="email"
-                        placeholder={`Member ${i + 1} email`}
-                        value={email}
+                        placeholder={i === 0 ? "Your email (auto-filled)" : `Member ${i + 1} email`}
+                        value={i === 0 ? (profile?.email || ge) : ge}
+                        disabled={i === 0}
                         onChange={(e) => {
                           const updated = [...groupEmails];
                           updated[i] = e.target.value;
                           setGroupEmails(updated);
                         }}
-                        className="text-sm"
+                        className={`text-sm ${i === 0 ? "bg-muted/50" : ""}`}
                       />
                     ))}
                   </div>
