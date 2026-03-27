@@ -481,7 +481,7 @@ const ChatPage = () => {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${accessToken}`
           },
-          body: JSON.stringify({ method: "card", plan: paymentPlan, groupEmails: paymentPlan === "group" ? groupEmails : undefined })
+          body: JSON.stringify({ method: "card", plan: paymentPlan, groupEmails: paymentPlan === "group" ? [profile?.email || "", ...groupEmails.slice(1)] : undefined })
         });
         const data = await resp.json();
         if (data.authorization_url) {
@@ -515,7 +515,7 @@ const ChatPage = () => {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken}`
         },
-        body: JSON.stringify({ phone, plan: paymentPlan, groupEmails: paymentPlan === "group" ? groupEmails : undefined })
+        body: JSON.stringify({ phone, plan: paymentPlan, groupEmails: paymentPlan === "group" ? [profile?.email || "", ...groupEmails.slice(1)] : undefined })
       });
       const data = await resp.json();
       if (data.reference) {
