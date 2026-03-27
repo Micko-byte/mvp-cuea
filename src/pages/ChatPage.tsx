@@ -410,6 +410,85 @@ const ChatPage = () => {
     await sendMessage(text, chat.id, filesToSend);
   };
 
+  // Unit training upload handler
+  const handleUnitTrainUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedUnitId || !user) return;
+    const selectedUnitData = enrolledUnits.find(u => u.unit_id === selectedUnitId);
+    if (!selectedUnitData) return;
+
+    setUnitUploading(true);
+    const progress: Record<string, string> = {};
+
+    for (const file of Array.from(files)) {
+      const key = `${selectedUnitId}_${file.name}`;
+      progress[key] = "Uploading...";
+      setUnitUploadProgress({ ...progress });
+
+      try {
+        const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("materials")
+          .upload(storagePath, file);
+
+        if (uploadError) {
+          progress[key] = `❌ Upload failed: ${uploadError.message}`;
+          setUnitUploadProgress({ ...progress });
+          continue;
+        }
+
+        const { data: material, error: matError } = await supabase
+          .from("materials")
+          .insert({
+            title: file.name.replace(/\.[^.]+$/, ""),
+            file_name: file.name,
+            file_type: file.type || "application/octet-stream",
+            file_size: file.size,
+            unit_id: selectedUnitId,
+            uploaded_by: user.id,
+            storage_path: storagePath,
+            embedding_status: "processing",
+          })
+          .select("id")
+          .single();
+
+        if (matError) {
+          progress[key] = `❌ Error: ${matError.message}`;
+          setUnitUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "🧠 Training AI...";
+        setUnitUploadProgress({ ...progress });
+
+        const { error: embedError } = await supabase.functions.invoke("process-document", {
+          body: {
+            materialId: material?.id,
+            title: file.name,
+            unitCode: selectedUnitData.unit_code,
+            storagePath,
+            fileType: file.type,
+          },
+        });
+
+        if (embedError) {
+          progress[key] = `❌ Training failed: ${embedError.message}`;
+          setUnitUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "✅ Trained";
+        setUnitUploadProgress({ ...progress });
+      } catch (err) {
+        progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+        setUnitUploadProgress({ ...progress });
+      }
+    }
+
+    setUnitUploading(false);
+    setUnitUploadProgress({});
+    toast.success("Training complete! Your AI is now smarter. 🧠");
+  };
+
   const speechSupported =
   typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
