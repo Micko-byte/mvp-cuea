@@ -463,13 +463,32 @@ serve(async (req) => {
             const queryEmbedding = embData.data?.[0]?.embedding;
 
             if (queryEmbedding) {
-              const { data: docs } = await supabaseAdmin.rpc("match_documents", {
-                query_embedding: JSON.stringify(queryEmbedding),
-                match_threshold: 0.5,
-                match_count: isAdmin ? maxRagChunks + 2 : maxRagChunks,
-              });
-              ragResults = docs || [];
-              await redis.set(ragCacheKey, ragResults, 300);
+              const allowedUnitIds = unitId
+                ? [unitId]
+                : (studentUnits?.map((su: any) => su.unit_id).filter(Boolean) || []);
+
+              if (allowedUnitIds.length > 0 || isAdmin) {
+                const { data: docs } = await supabaseAdmin.rpc(
+                  allowedUnitIds.length > 0 ? "match_documents_for_units" : "match_documents",
+                  allowedUnitIds.length > 0
+                    ? {
+                        query_embedding: JSON.stringify(queryEmbedding),
+                        allowed_unit_ids: allowedUnitIds,
+                        match_threshold: 0.45,
+                        match_count: isAdmin ? maxRagChunks + 2 : maxRagChunks,
+                      }
+                    : {
+                        query_embedding: JSON.stringify(queryEmbedding),
+                        match_threshold: 0.5,
+                        match_count: isAdmin ? maxRagChunks + 2 : maxRagChunks,
+                      }
+                );
+
+                ragResults = docs || [];
+                await redis.set(ragCacheKey, ragResults, 300);
+              } else {
+                ragResults = [];
+              }
             }
           }
         }
@@ -477,18 +496,12 @@ serve(async (req) => {
         if (ragResults && ragResults.length > 0) {
           let filteredDocs = ragResults;
 
-          if (unitId && unitCode) {
-            filteredDocs = ragResults.filter((d: any) => {
-              const docUnitCode = d.metadata?.unit_code;
-              return !docUnitCode || docUnitCode === unitCode;
-            });
+          if (unitId) {
+            filteredDocs = ragResults.filter((d: any) => d.unit_id === unitId || d.metadata?.unit_id === unitId);
           } else if (!isAdmin) {
-            const enrolledCodes = new Set(studentUnits?.map((su: any) => su.units?.code).filter(Boolean) || []);
-            if (enrolledCodes.size > 0) {
-              filteredDocs = ragResults.filter((d: any) => {
-                const docUnitCode = d.metadata?.unit_code;
-                return !docUnitCode || enrolledCodes.has(docUnitCode);
-              });
+            const enrolledUnitIds = new Set(studentUnits?.map((su: any) => su.unit_id).filter(Boolean) || []);
+            if (enrolledUnitIds.size > 0) {
+              filteredDocs = ragResults.filter((d: any) => enrolledUnitIds.has(d.unit_id) || enrolledUnitIds.has(d.metadata?.unit_id));
             }
           }
 
@@ -583,7 +596,7 @@ Answer the student's question helpfully, comprehensively, and naturally, but onl
       body: JSON.stringify({
         model,
         messages: [{ role: "system", content: systemPrompt }, ...parsedMessages],
-        temperature: 0.7,
+        temperature: 0.15,
         max_tokens: 4096,
         stream: true,
       }),
