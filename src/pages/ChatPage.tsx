@@ -920,9 +920,39 @@ const ChatPage = () => {
                 </button>
         }
               {selectedUnit &&
-        <div className="mb-3 p-2 rounded-lg bg-sidebar-accent/30">
-                  <p className="text-xs font-bold text-primary">{selectedUnit.unit_code}</p>
-                  <p className="text-sm font-medium text-sidebar-foreground truncate">{selectedUnit.unit_name}</p>
+        <div className="mb-3 space-y-2">
+                  <div className="p-2 rounded-lg bg-sidebar-accent/30">
+                    <p className="text-xs font-bold text-primary">{selectedUnit.unit_code}</p>
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">{selectedUnit.unit_name}</p>
+                  </div>
+                  <input
+                    ref={unitUploadInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.pptx,.txt,.csv,.md"
+                    className="hidden"
+                    onChange={(e) => { handleUnitTrainUpload(e.target.files); e.target.value = ""; }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed border-2 text-xs"
+                    disabled={unitUploading}
+                    onClick={() => unitUploadInputRef.current?.click()}
+                  >
+                    {unitUploading ? (
+                      <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Training...</>
+                    ) : (
+                      <><Upload className="w-3 h-3 mr-1" /> Train AI with Notes</>
+                    )}
+                  </Button>
+                  {Object.entries(unitUploadProgress).length > 0 && (
+                    <div className="space-y-1">
+                      {Object.entries(unitUploadProgress).map(([key, status]) => (
+                        <p key={key} className="text-xs text-muted-foreground truncate">{status}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
         }
               {filteredChats.length === 0 ?
