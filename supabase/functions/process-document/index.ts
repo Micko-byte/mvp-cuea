@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import mammoth from "https://esm.sh/mammoth@1.8.0";
 import JSZip from "https://esm.sh/jszip@3.10.1";
+import { getDocument } from "https://esm.sh/pdfjs-serverless";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,9 +20,32 @@ function sanitizeText(text: string): string {
     .replace(/\uFFFD/g, '');
 }
 
+function cleanExtractedText(text: string): string {
+  return sanitizeText(text)
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function looksLikeMeaningfulText(text: string): boolean {
+  const cleaned = cleanExtractedText(text);
+  if (cleaned.length < 120) return false;
+
+  const wordMatches = cleaned.match(/\b[\p{L}][\p{L}\p{N}'-]{2,}\b/gu) ?? [];
+  const letterMatches = cleaned.match(/[\p{L}]/gu) ?? [];
+  const suspiciousMatches = cleaned.match(/\b(?:endobj|obj|xref|stream|endstream|flatedecode|font|catalog|pages|resources|length|subtype|type)\b/gi) ?? [];
+
+  const letterRatio = letterMatches.length / Math.max(cleaned.length, 1);
+  const suspiciousRatio = suspiciousMatches.length / Math.max(wordMatches.length, 1);
+
+  return wordMatches.length >= 20 && letterRatio >= 0.45 && suspiciousRatio < 0.12;
+}
+
 function chunkText(text: string): string[] {
   const chunks: string[] = [];
-  const clean = sanitizeText(text);
+  const clean = cleanExtractedText(text);
   let start = 0;
   while (start < clean.length) {
     const end = Math.min(start + CHUNK_SIZE, clean.length);
@@ -80,8 +104,7 @@ async function extractTextFromDoc(buffer: ArrayBuffer): Promise<string> {
   return text;
 }
 
-async function extractTextFromPdf(buffer: ArrayBuffer): Promise<string> {
-  // Extract text streams from PDF binary
+async function extractTextFromPdfFallback(buffer: ArrayBuffer): Promise<string> {
   const bytes = new Uint8Array(buffer);
   const raw = new TextDecoder("latin1").decode(bytes);
   const texts: string[] = [];
@@ -124,15 +147,49 @@ async function extractTextFromPdf(buffer: ArrayBuffer): Promise<string> {
     const printable = raw.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ");
     const words = printable.split(" ").filter(w => w.length > 2);
     if (words.length > 20) {
-      return words.join(" ").slice(0, 50000);
+        return cleanExtractedText(words.join(" ").slice(0, 50000));
     }
   }
 
-  return texts.join(" ").slice(0, 100000);
+  return cleanExtractedText(texts.join(" ").slice(0, 100000));
+}
+
+async function extractTextFromPdf(buffer: ArrayBuffer): Promise<string> {
+  try {
+    const pdf = await getDocument({
+      data: new Uint8Array(buffer),
+      useSystemFonts: true,
+      isEvalSupported: false,
+    }).promise;
+
+    const pages: string[] = [];
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item: any) => (typeof item?.str === "string" ? item.str : ""))
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (pageText) pages.push(pageText);
+    }
+
+    const extracted = cleanExtractedText(pages.join("\n\n"));
+    if (looksLikeMeaningfulText(extracted)) {
+      return extracted;
+    }
+  } catch (error) {
+    console.warn("pdfjs extraction failed, falling back to raw parser", error);
+  }
+
+  return extractTextFromPdfFallback(buffer);
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  let materialId: string | null = null;
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -156,7 +213,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { materialId, title, unitCode, storagePath, fileType, content: directContent } = await req.json();
+    const { materialId: parsedMaterialId, title, unitCode, storagePath, fileType, content: directContent } = await req.json();
+    materialId = parsedMaterialId;
+
     if (!materialId) {
       return new Response(JSON.stringify({ error: "materialId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -183,7 +242,12 @@ serve(async (req) => {
       });
     }
 
-    let content = directContent || "";
+    let content = cleanExtractedText(directContent || "");
+
+    await supabaseAdmin
+      .from("materials")
+      .update({ embedding_status: "processing", chunk_count: 0 })
+      .eq("id", materialId);
 
     // If storagePath provided, download file and extract text
     if (storagePath && !content) {
@@ -227,10 +291,16 @@ serve(async (req) => {
         });
       }
 
+      content = cleanExtractedText(content);
       console.log(`Extracted ${content.length} characters of text`);
     }
 
-    if (!content || content.trim().length < 20) {
+    if (!content || content.trim().length < 20 || !looksLikeMeaningfulText(content)) {
+      await supabaseAdmin
+        .from("materials")
+        .update({ embedding_status: "failed", chunk_count: 0 })
+        .eq("id", materialId);
+
       return new Response(JSON.stringify({ error: "No extractable text content found in document" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -238,6 +308,15 @@ serve(async (req) => {
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+
+    const { error: cleanupError } = await supabaseAdmin
+      .from("document_embeddings")
+      .delete()
+      .eq("material_id", materialId);
+
+    if (cleanupError) {
+      throw new Error(`Failed to clear previous embeddings: ${cleanupError.message}`);
+    }
 
     const chunks = chunkText(content);
     let processedCount = 0;
@@ -304,6 +383,17 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("process-document error:", e);
+
+    if (materialId) {
+      await createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      )
+        .from("materials")
+        .update({ embedding_status: "failed" })
+        .eq("id", materialId);
+    }
+
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
