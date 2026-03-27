@@ -198,6 +198,40 @@ const AdminPage = () => {
     fetchData();
   };
 
+  const handleBulkAddUnits = async () => {
+    if (!bulkUnitsCourseId || !bulkUnitsText.trim()) {
+      toast.error("Select a course and enter unit lines");
+      return;
+    }
+    const lines = bulkUnitsText.trim().split("\n").filter(l => l.trim());
+    const unitsToInsert: { name: string; code: string; course_id: string; semester: number; year: number }[] = [];
+
+    for (const line of lines) {
+      // Format: CODE - Unit Name  OR  CODE, Unit Name  OR  CODE Unit Name
+      const match = line.match(/^([A-Za-z]+\s*\d+)\s*[-,]?\s*(.+)$/);
+      if (match) {
+        unitsToInsert.push({
+          code: match[1].trim(),
+          name: match[2].trim(),
+          course_id: bulkUnitsCourseId,
+          year: parseInt(bulkUnitsYear),
+          semester: parseInt(bulkUnitsSemester),
+        });
+      } else {
+        toast.error(`Could not parse line: "${line.slice(0, 40)}"`);
+      }
+    }
+
+    if (unitsToInsert.length === 0) { toast.error("No valid units found"); return; }
+
+    const { error } = await supabase.from("units").insert(unitsToInsert);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${unitsToInsert.length} units added!`);
+    setBulkUnitsText("");
+    setAddBulkUnitsOpen(false);
+    fetchData();
+  };
+
   const handleDeleteUnit = async (id: string) => {
     const { error } = await supabase.from("units").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
