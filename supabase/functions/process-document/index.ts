@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import mammoth from "npm:mammoth@1.8.0";
-import JSZip from "npm:jszip@3.10.1";
+import mammoth from "https://esm.sh/mammoth@1.8.0";
+import JSZip from "https://esm.sh/jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -270,7 +270,13 @@ serve(async (req) => {
         material_id: materialId,
         content: batch[idx],
         embedding: JSON.stringify(item.embedding),
-        metadata: { title: title || "Document", unit_code: unitCode || "N/A", chunk_index: i + idx },
+        metadata: {
+          title: title || "Document",
+          unit_code: unitCode || "N/A",
+          unit_id: materialRecord.unit_id,
+          uploaded_by: materialRecord.uploaded_by,
+          chunk_index: i + idx,
+        },
       }));
 
       const { error: insertError } = await supabaseAdmin
