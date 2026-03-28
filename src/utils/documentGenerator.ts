@@ -225,7 +225,7 @@ export async function generateDOCX(content: string, title: string = "Document") 
 
 export async function generatePPTX(content: string, title: string = "Presentation") {
   const pptx = new PptxGenJS();
-  pptx.author = "CUEA AI";
+  pptx.author = "Sekani AI";
   pptx.title = title;
 
   const blocks = parseMarkdown(content);

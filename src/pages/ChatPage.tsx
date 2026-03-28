@@ -118,7 +118,7 @@ const TypingIndicator = () =>
         transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} />
 
       )}
-        <span className="text-xs text-muted-foreground ml-2">CUEA AI is thinking...</span>
+        <span className="text-xs text-muted-foreground ml-2">Sekani AI is thinking...</span>
       </div>
     </div>
   </motion.div>;
@@ -633,7 +633,7 @@ const ChatPage = () => {
     const lastBotMsg = [...activeChat.messages].reverse().find(m => m.sender === 'bot');
     if (!lastBotMsg) return;
     const cleanContent = lastBotMsg.text.replace(/\[.*?\]\(download:[^)]+\)/g, '').trim();
-    const title = activeChat.title || 'CUEA AI Document';
+    const title = activeChat.title || 'Sekani AI Document';
     try {
       await generateDocument({ title, content: cleanContent, type: format });
       toast.success(`${format.toUpperCase()} downloaded!`);
@@ -792,7 +792,7 @@ const ChatPage = () => {
       <div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
         {sidebarExpanded || isMobile ?
       <div className="flex items-center gap-3 mb-4">
-            <span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI </span>
+            <span className="font-display font-bold text-sidebar-foreground text-lg">Sekani AI </span>
             <button
           onClick={toggleSidebar}
           className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
@@ -1210,7 +1210,7 @@ const ChatPage = () => {
             handleSend();
           }
         }}
-        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask CUEA AI anything..."}
+        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani AI anything..."}
         className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
         style={{ maxHeight: "150px" }}
         rows={1}
@@ -1298,7 +1298,7 @@ const ChatPage = () => {
                 `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` :
                 activeChat ?
                 activeChat.title :
-                "CUEA AI"}
+                "Sekani AI"}
               </h2>
             </div>
             <button
@@ -1414,7 +1414,7 @@ const ChatPage = () => {
                                       {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                           <Sparkles className="w-3.5 h-3.5 text-primary" />
-                                          <span className="text-xs font-semibold text-primary">CUEA AI</span>
+                                          <span className="text-xs font-semibold text-primary">Sekani AI</span>
                                         </div>
                                 }
                                       {msg.sender === "bot" ?
@@ -1802,7 +1802,7 @@ const ChatPage = () => {
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!paymentVerifying) setShowPaymentDialog(open); }}>
-        <DialogContent className="backdrop-blur-xl bg-card/80 border-border/50 shadow-2xl max-w-md">
+        <DialogContent className="backdrop-blur-xl bg-card/80 border-border/50 shadow-2xl max-w-md max-h-[90vh] overflow-y-auto">
           {paymentVerifying ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -1810,6 +1810,14 @@ const ChatPage = () => {
               <p className="text-sm text-muted-foreground text-center">
                 Please complete the M-Pesa prompt on your phone.<br />This may take a moment.
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setPaymentVerifying(false); }}
+                className="mt-4"
+              >
+                Cancel
+              </Button>
             </div>
           ) : (
             <>
@@ -1905,7 +1913,7 @@ const ChatPage = () => {
 
                 <Button
                   onClick={handlePayment}
-                  disabled={paymentLoading || (paymentMethod === "mpesa" && !paymentPhone.trim()) || (paymentPlan === "group" && groupEmails.some(e => !e.trim()))}
+                  disabled={paymentLoading || (paymentMethod === "mpesa" && !paymentPhone.trim()) || (paymentPlan === "group" && groupEmails.slice(1).some(e => !e.trim()))}
                   className="w-full text-white font-semibold py-3"
                   style={{ backgroundColor: "#800000" }}
                 >
