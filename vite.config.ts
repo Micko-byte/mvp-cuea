@@ -44,9 +44,9 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "NotifyAI - CUEA Academic Assistant",
-        short_name: "NotifyAI",
-        description: "Your AI-powered academic assistant for CUEA",
+        name: "Sekani AI - Your AI Study Assistant",
+        short_name: "Sekani AI",
+        description: "Your AI-powered study assistant by Soma na Sekani",
         theme_color: "#800020",
         background_color: "#fafafa",
         display: "standalone",

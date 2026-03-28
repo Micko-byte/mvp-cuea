@@ -778,7 +778,7 @@ const AdminPage = () => {
               <div className="flex items-center gap-3 mb-2"><Globe className="w-5 h-5 text-primary" /><h3 className="font-display font-semibold text-foreground">System Information</h3></div>
               <div className="space-y-3">
                 {[
-                  ["Platform", "CUEA AI — Soma na Sekani"],
+                  ["Platform", "Sekani AI — Soma na Sekani"],
                   ["AI Chat Model", String(systemSettings.default_model_general || "gpt-4o-mini").replace(/"/g, "")],
                   ["Free Daily Limit", `${Number(systemSettings.token_limit_free || 50000).toLocaleString()} tokens`],
                   ["Paid Daily Limit", `${Number(systemSettings.token_limit_paid || 200000).toLocaleString()} tokens`],
@@ -813,7 +813,7 @@ const AdminPage = () => {
           {sidebarOpen ? (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
-              <div><span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
+              <div><span className="font-display font-bold text-sidebar-foreground text-lg">Sekani AI</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
@@ -855,7 +855,7 @@ const AdminPage = () => {
             <div className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
-                <div><span className="font-display font-bold text-sidebar-foreground text-lg">CUEA AI</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
+                <div><span className="font-display font-bold text-sidebar-foreground text-lg">Sekani AI</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
               </div>
             </div>
             <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
