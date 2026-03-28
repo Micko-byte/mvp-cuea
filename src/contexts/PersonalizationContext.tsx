@@ -190,7 +190,7 @@ interface PersonalizationContextType extends PersonalizationState {
   getChatBg: () => ChatBackground | undefined;
 }
 
-const STORAGE_KEY = "cuea-personalization";
+const STORAGE_KEY = "sekani-personalization";
 
 const defaults: PersonalizationState = {
   font: "system-ui",
