@@ -320,7 +320,7 @@ serve(async (req) => {
     if (dailyUserUsage >= userDailyLimit) {
       const errorMsg = isPaidUser
         ? "You've used all your tokens for today. Come back tomorrow! 🎓"
-        : "You've reached your free daily limit! 🎓 Pay KES 200 to unlock 200,000 tokens/day.";
+        : "You've reached your free daily limit! 🎓 Upgrade to keep learning with Sekani AI.";
       return new Response(JSON.stringify({ error: errorMsg, limit_reached: true, is_paid: isPaidUser }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -549,7 +549,7 @@ At the end of your responses (especially for longer ones), naturally suggest 1-2
 - "Want exam-style questions on this?"
 This makes you feel like a real tutor, not just a Q&A bot.
 
-${CUEA_KNOWLEDGE}
+${INSTITUTIONAL_KNOWLEDGE}
 ${studentContext}
 ${enrolledUnitsContext}
 ${unitContext}
