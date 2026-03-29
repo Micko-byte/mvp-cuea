@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import sekaniLogo from "@/assets/sekani-logo.png";
 import {
   LayoutDashboard, Users, BookOpen, FileText, BarChart3,
-  Settings, LogOut, GraduationCap, Menu, X, TrendingUp,
+  Settings, LogOut, Menu, X, TrendingUp,
   UserCheck, BookMarked, Clock, Upload, Search,
   Download, Trash2, Plus, Shield, Database, Globe, Save,
   Edit, MessageSquare, Loader2, RefreshCw, ArrowLeft,
