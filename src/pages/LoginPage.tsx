@@ -183,8 +183,8 @@ const LoginPage = () => {
     });
     setLoading(false);
     if (result.error) { setError(result.error); return; }
-    toast.success("Verification code sent to your email! Check your inbox.");
-    setSignupStep(0.5 as any); // OTP step
+    toast.success("Account created! Continue setting up your profile.");
+    setSignupStep(1);
   };
 
   const handleOtpVerify = async () => {
@@ -394,8 +394,8 @@ const LoginPage = () => {
     );
   };
 
-  const totalSteps = 5;
-  const currentStepDisplay = signupStep === 0.5 ? 2 : signupStep >= 1 ? Math.floor(signupStep) + 2 : 1;
+  const totalSteps = 4;
+  const currentStepDisplay = signupStep >= 0 ? Math.floor(signupStep) + 1 : 1;
 
   const selectedUnitsData = dbUnits.filter(u => selectedUnitIds.includes(u.id));
 
