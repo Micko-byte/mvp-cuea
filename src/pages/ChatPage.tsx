@@ -644,12 +644,12 @@ const ChatPage = () => {
     const recognition = new SR();
     recognition.lang = "en-US";
     recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognitionRef.current = recognition;
     recognition.onresult = (e: any) => {
       let transcript = "";
       for (let i = 0; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
+        transcript += e.results[i][e.results[i].length - 1].transcript;
       }
       voiceTranscriptRef.current = transcript.trim();
     };
@@ -1304,7 +1304,7 @@ const ChatPage = () => {
             <VoiceInputVisualizer />
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground">Listening…</p>
-              <p className="text-xs text-muted-foreground">Talk first, then tap the mic again to review.</p>
+              <p className="text-xs text-muted-foreground">Speak freely — tap Stop when you're done.</p>
             </div>
           </div>
           <button
