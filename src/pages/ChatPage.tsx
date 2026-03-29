@@ -1321,6 +1321,17 @@ const ChatPage = () => {
           className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`}
           style={chatBgStyle}>
           
+          {/* Broadcast Banner */}
+          {activeBroadcast && !broadcastDismissed && (
+            <div className={`px-4 py-3 flex items-center gap-3 text-sm ${activeBroadcast.broadcastType === "downtime" ? "bg-destructive/15 text-destructive" : activeBroadcast.broadcastType === "back_online" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-primary/15 text-primary"}`}>
+              <span className="font-semibold shrink-0">{activeBroadcast.subject}</span>
+              <span className="truncate">{activeBroadcast.message}</span>
+              <button onClick={() => setBroadcastDismissed(true)} className="ml-auto shrink-0 p-1 hover:opacity-70">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Header */}
           <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent">
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
