@@ -179,3 +179,12 @@
 .katex-display > .katex {
   white-space: normal;
 }
+
+/* Teach Me Mode: Focus Mode */
+body.focus-mode header,
+body.focus-mode nav,
+body.focus-mode aside:not(.teach-me-panel) {
+  opacity: 0.1;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}

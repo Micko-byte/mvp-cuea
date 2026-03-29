@@ -264,6 +264,47 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeChat?.messages, isStreaming]);
 
+  // Parse control tags from the latest bot message for Teach Me Mode
+  useEffect(() => {
+    if (!teachMeActive || !activeChat || isStreaming) return;
+    const msgs = activeChat.messages;
+    const lastMsg = msgs[msgs.length - 1];
+    if (!lastMsg || lastMsg.sender !== 'bot') return;
+
+    const tags = parseControlTags(lastMsg.text);
+
+    // Topic outline detected → create session
+    if (tags.topicOutline && !teachMe.session) {
+      const outline = tags.topicOutline.map((t: any, i: number) => ({
+        ...t,
+        status: i === 0 ? 'active' : 'locked',
+      }));
+      const unitName = selectedUnit?.unit_name || activeChat.title || 'Unit';
+      teachMe.createSession(activeChat.id, unitName, outline);
+    }
+
+    if (teachMe.session) {
+      if (tags.topicDone !== null) {
+        teachMe.updateTopicProgress(teachMe.session.id, tags.topicDone, 'done');
+      }
+      if (tags.eli5Triggered !== null) {
+        teachMe.updateTopicProgress(teachMe.session.id, tags.eli5Triggered, 'active', true);
+      }
+      if (tags.checkpoint) {
+        teachMe.addCheckpointScore(teachMe.session.id, {
+          afterTopic: tags.checkpoint.afterTopic,
+          score: tags.checkpoint.score,
+          total: tags.checkpoint.total,
+          passed: tags.checkpoint.score >= 3,
+        });
+      }
+      if (tags.unitComplete) {
+        teachMe.markComplete(teachMe.session.id);
+        toast.success('🎓 Unit complete! Amazing work!');
+      }
+    }
+  }, [activeChat?.messages, isStreaming, teachMeActive]);
+
   // Focus rename input
   useEffect(() => {
     if (renamingChatId) renameInputRef.current?.focus();
@@ -1605,8 +1646,8 @@ const ChatPage = () => {
                                       }
                                     }}>
                                     
-                                            {(() => {
-                                              const raw = msg.text || "...";
+                                    {(() => {
+                                              const raw = teachMeActive ? stripControlTags(msg.text || "...") : (msg.text || "...");
                                               // Convert \(...\) → $...$ and \[...\] → $$...$$
                                               return raw
                                                 .replace(/\\\((.+?)\\\)/g, '$$$1$$')
