@@ -387,8 +387,8 @@ const LoginPage = () => {
     );
   };
 
-  const totalSteps = 4;
-  const currentStepDisplay = signupStep + 1;
+  const totalSteps = 5;
+  const currentStepDisplay = signupStep === 0.5 ? 2 : signupStep >= 1 ? Math.floor(signupStep) + 2 : 1;
 
   const selectedUnitsData = dbUnits.filter(u => selectedUnitIds.includes(u.id));
 
@@ -462,8 +462,8 @@ const LoginPage = () => {
                   <h2 className="text-xl font-display font-semibold text-foreground">Create Account</h2>
                   <p className="text-muted-foreground text-sm mt-1">Step {currentStepDisplay} of {totalSteps}</p>
                   <div className="flex gap-2 mt-3">
-                    {[0, 1, 2, 3].map(s => (
-                      <div key={s} className={`h-1 flex-1 rounded-full ${signupStep >= s ? "bg-primary" : "bg-muted"}`} />
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <div key={s} className={`h-1 flex-1 rounded-full ${currentStepDisplay >= s ? "bg-primary" : "bg-muted"}`} />
                     ))}
                   </div>
                 </div>
