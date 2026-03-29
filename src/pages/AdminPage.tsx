@@ -823,7 +823,22 @@ const AdminPage = () => {
                     onClick={() => handleSaveSetting("token_limit_paid", Number(systemSettings.token_limit_paid ?? 2000000))}
                   ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
+                <div className="space-y-2">
+                  <Label>Global Daily Limit (all users combined)</Label>
+                  <Input
+                    type="number"
+                    value={String(systemSettings.daily_global_limit ?? 5000000)}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, daily_global_limit: e.target.value }))}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("daily_global_limit", Number(systemSettings.daily_global_limit ?? 5000000))}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">Admins bypass all limits. These apply to students only.</p>
             </div>
 
             <div className="bg-card rounded-xl border border-border p-6 shadow-card space-y-5">
