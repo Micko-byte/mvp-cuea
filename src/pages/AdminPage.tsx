@@ -429,13 +429,116 @@ const AdminPage = () => {
         );
 
       case "users":
+        if (selectedUser) {
+          const userRole = getRoleForUser(selectedUser.user_id);
+          const hasPaid = payments.some(p => p.user_id === selectedUser.user_id && p.status === "success");
+          return (
+            <div className="space-y-6">
+              <button onClick={() => setSelectedUser(null)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="w-4 h-4" /> Back to Users</button>
+              <div className="bg-card rounded-xl border border-border p-6 shadow-card">
+                <div className="flex flex-col sm:flex-row items-start gap-4">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-xl font-bold text-primary">{selectedUser.name.split(" ").map(n => n[0]).join("").toUpperCase()}</div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-display font-bold text-foreground">{selectedUser.name || "—"}</h2>
+                    <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${userRole === "admin" ? "bg-primary/10 text-primary" : userRole === "lecturer" ? "bg-accent/30 text-accent-foreground" : "bg-muted text-muted-foreground"}`}>{userRole}</span>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${hasPaid ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600"}`}>{hasPaid ? "Premium" : "Free"}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setEditTokenDialog({ userId: selectedUser.user_id, email: selectedUser.email })}><Zap className="w-3.5 h-3.5 mr-1" /> Tokens</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditRoleDialog({ userId: selectedUser.user_id, currentRole: userRole })}><Edit className="w-3.5 h-3.5 mr-1" /> Role</Button>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: "Tokens Today", value: selectedUserTokens.toLocaleString() },
+                  { label: "Chat Sessions", value: selectedUserChats.length },
+                  { label: "Uploads", value: selectedUserMaterials.length },
+                  { label: "Payments", value: selectedUserPayments.filter(p => p.status === "success").length },
+                ].map(s => (
+                  <div key={s.label} className="bg-card rounded-xl border border-border p-4 shadow-card">
+                    <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</p>
+                    <p className="text-xl font-display font-bold text-foreground mt-1">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+                  <h4 className="font-display font-semibold text-foreground mb-1">Profile Details</h4>
+                  <div className="space-y-2 text-sm">
+                    {[
+                      ["Admission #", selectedUser.admission_number],
+                      ["Program", selectedUser.program],
+                      ["Course", selectedUser.course_name],
+                      ["Year", selectedUser.year],
+                      ["Semester", selectedUser.semester],
+                      ["Joined", new Date(selectedUser.created_at).toLocaleString()],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="flex justify-between py-1.5 border-b border-border last:border-0">
+                        <span className="text-muted-foreground">{label}</span>
+                        <span className="font-medium text-foreground">{value || "—"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+                  <h4 className="font-display font-semibold text-foreground mb-1">Payment History</h4>
+                  {selectedUserPayments.length === 0 ? <p className="text-sm text-muted-foreground mt-2">No payments</p> : (
+                    <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
+                      {selectedUserPayments.map(p => (
+                        <div key={p.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
+                          <div><span className="text-foreground font-medium">{p.currency} {p.amount}</span><span className="text-muted-foreground ml-2 text-xs">{p.plan_type}</span></div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${p.status === "success" ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600"}`}>{p.status}</span>
+                            <span className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+                  <h4 className="font-display font-semibold text-foreground mb-1">Recent Chats</h4>
+                  {selectedUserChats.length === 0 ? <p className="text-sm text-muted-foreground mt-2">No chats</p> : (
+                    <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
+                      {selectedUserChats.map(c => (
+                        <div key={c.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
+                          <div className="flex items-center gap-2"><MessageSquare className="w-3.5 h-3.5 text-muted-foreground" /><span className="text-foreground truncate max-w-[200px]">{c.title}</span></div>
+                          <span className="text-xs text-muted-foreground">{new Date(c.updated_at).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+                  <h4 className="font-display font-semibold text-foreground mb-1">Uploaded Materials</h4>
+                  {selectedUserMaterials.length === 0 ? <p className="text-sm text-muted-foreground mt-2">No uploads</p> : (
+                    <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
+                      {selectedUserMaterials.map(m => (
+                        <div key={m.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
+                          <div className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-muted-foreground" /><span className="text-foreground truncate max-w-[200px]">{m.title}</span></div>
+                          <span className="text-xs text-muted-foreground">{formatFileSize(m.file_size)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="space-y-4">
             <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
               <div className="p-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="font-display font-semibold text-foreground">User Management</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">{profiles.length} total users</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{profiles.length} total users · {paidUsersCount} paid · {freeUsersCount} free</p>
                 </div>
                 <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -449,7 +552,9 @@ const AdminPage = () => {
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Name</th>
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Email</th>
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Role</th>
-                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Program</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Status</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Tokens Today</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Uploads</th>
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Joined</th>
                       <th className="text-right text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Actions</th>
                     </tr>
@@ -457,8 +562,9 @@ const AdminPage = () => {
                   <tbody>
                     {filteredUsers.map((u) => {
                       const userRole = getRoleForUser(u.user_id);
+                      const hasPaid = payments.some(p => p.user_id === u.user_id && p.status === "success");
                       return (
-                        <tr key={u.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                        <tr key={u.id} className="border-b border-border hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => viewUserDetails(u)}>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{u.name.split(" ").map(n => n[0]).join("").toUpperCase()}</div>
@@ -469,16 +575,20 @@ const AdminPage = () => {
                           <td className="px-6 py-4">
                             <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${userRole === "admin" ? "bg-primary/10 text-primary" : userRole === "lecturer" ? "bg-accent/30 text-accent-foreground" : "bg-muted text-muted-foreground"}`}>{userRole}</span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{u.program || "—"}</td>
+                          <td className="px-6 py-4 hidden lg:table-cell">
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${hasPaid ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600"}`}>{hasPaid ? "Premium" : "Free"}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">{(userTokenUsageMap[u.user_id] || 0).toLocaleString()}</td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{userMaterialCounts[u.user_id] || 0}</td>
                           <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">{new Date(u.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                          <td className="px-6 py-4 text-right flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setEditTokenDialog({ userId: u.user_id, email: u.email })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Tokens"><Zap className="w-3.5 h-3.5" /></button>
                             <button onClick={() => setEditRoleDialog({ userId: u.user_id, currentRole: userRole })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Role"><Edit className="w-3.5 h-3.5" /></button>
                           </td>
                         </tr>
                       );
                     })}
-                    {filteredUsers.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-muted-foreground text-sm">No users found</td></tr>}
+                    {filteredUsers.length === 0 && <tr><td colSpan={8} className="text-center py-8 text-muted-foreground text-sm">No users found</td></tr>}
                   </tbody>
                 </table>
               </div>
