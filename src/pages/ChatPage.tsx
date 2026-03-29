@@ -524,11 +524,22 @@ const ChatPage = () => {
     setIsListening(true);
   };
 
+
+  const cancelPaymentPolling = () => {
+    paymentCancelledRef.current = true;
+    setPaymentVerifying(false);
+    setShowPaymentDialog(false);
+    toast.info("Payment cancelled.");
+  };
+
   const pollPaymentStatus = async (reference: string) => {
+    paymentCancelledRef.current = false;
     setPaymentVerifying(true);
     const maxAttempts = 60; // 5 minutes at 5s intervals
     for (let i = 0; i < maxAttempts; i++) {
+      if (paymentCancelledRef.current) return;
       await new Promise(r => setTimeout(r, 5000));
+      if (paymentCancelledRef.current) return;
       const { data } = await supabase
         .from("payments")
         .select("status")
@@ -538,6 +549,8 @@ const ChatPage = () => {
         setPaymentVerifying(false);
         setShowPaymentDialog(false);
         toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
+        // Refresh profile to unlock premium instantly
+        await refreshProfile();
         return;
       } else if (data?.status === "failed") {
         setPaymentVerifying(false);
@@ -551,7 +564,6 @@ const ChatPage = () => {
 
   const handlePayment = async () => {
     if (paymentMethod === "card") {
-      // Card payment via Paystack redirect
       setPaymentLoading(true);
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -567,15 +579,18 @@ const ChatPage = () => {
           body: JSON.stringify({ method: "card", plan: paymentPlan, groupEmails: paymentPlan === "group" ? [profile?.email || "", ...groupEmails.slice(1)] : undefined })
         });
         const data = await resp.json();
-        if (data.authorization_url) {
+        if (data.authorization_url && data.reference) {
           window.open(data.authorization_url, "_blank");
-          toast.info("Complete payment in the new tab.");
+          setPaymentLoading(false);
+          toast.info("Complete payment in the new tab. We'll detect it automatically.");
+          // Poll for card payment too — webhook will update status
+          pollPaymentStatus(data.reference);
         } else {
           toast.error(data.error || "Failed to initialize card payment");
+          setPaymentLoading(false);
         }
       } catch {
         toast.error("Payment initialization failed.");
-      } finally {
         setPaymentLoading(false);
       }
       return;
