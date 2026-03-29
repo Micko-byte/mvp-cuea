@@ -1,22 +1,19 @@
 project_id = "yqjorkcibfdxmuqrcpnn"
 
-[functions.chat]
-verify_jwt = false
-
-[functions.process-document]
-verify_jwt = false
-
-[functions.paystack-initialize]
-verify_jwt = false
-
-[functions.paystack-webhook]
-verify_jwt = false
-
-[functions.paystack-callback]
-verify_jwt = false
-
-[functions.embed-document]
-verify_jwt = false
-
-[functions.send-broadcast]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.chat]
+    verify_jwt = false
+  [functions.embed-document]
+    verify_jwt = false
+  [functions.paystack-callback]
+    verify_jwt = false
+  [functions.paystack-initialize]
+    verify_jwt = false
+  [functions.paystack-webhook]
+    verify_jwt = false
+  [functions.process-document]
+    verify_jwt = false
+  [functions.send-broadcast]
+    verify_jwt = false
