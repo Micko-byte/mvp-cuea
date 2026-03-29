@@ -238,12 +238,12 @@ For broad questions like "what do you know about this unit", "summarize this uni
 - For paid users: explain benefits of higher token limits.
 
 ## FORBIDDEN BEHAVIOR
-- No hallucination
-- No unsupported textbook filler
-- No pretending to know when the notes do not say it
+- No hallucination on unit-specific content (general knowledge is fine)
+- No unsupported textbook filler for course topics
+- No pretending notes contain something they don't
 - No made-up citations or references
 - No claiming official university affiliation
-- No "standard curriculum" fallback`;
+- No "standard curriculum" fallback for unit questions`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
