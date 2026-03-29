@@ -1395,14 +1395,39 @@ const ChatPage = () => {
               </h2>
             </div>
             <button
-              onClick={() => {
-                setTeachMeActive(!teachMeActive);
-                if (!teachMeActive && activeChat) {
-                  teachMe.loadSession(activeChat.id);
-                }
+              onClick={async () => {
                 if (teachMeActive) {
+                  // Turning off
                   teachMe.endSession();
+                  setTeachMeActive(false);
                   document.body.classList.remove('focus-mode');
+                  return;
+                }
+                // Turning on
+                setTeachMeActive(true);
+                
+                // Try to load existing session
+                if (activeChat) {
+                  const existing = await teachMe.loadSession(activeChat.id);
+                  if (existing) return; // Resume existing session
+                }
+                
+                // Auto-send initial message to start Teach Me
+                const unitName = selectedUnit ? selectedUnit.unit_name : null;
+                const initialPrompt = unitName
+                  ? `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`
+                  : `Start Teach Me Mode. Ask me what unit I want to study.`;
+                
+                let chat = activeChat;
+                if (!chat) {
+                  if (mainTab === "units" && selectedUnitId) {
+                    chat = await createChat("unit", selectedUnitId);
+                  } else {
+                    chat = await createChat("general");
+                  }
+                }
+                if (chat) {
+                  await sendMessage(initialPrompt, chat.id, undefined, true);
                 }
               }}
               className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
