@@ -186,8 +186,7 @@ const ChatPage = () => {
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [broadcastDismissed, setBroadcastDismissed] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const voiceTranscriptRef = useRef("");
+  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // placeholder to keep line refs
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -267,7 +266,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     return () => {
-      recognitionRef.current?.abort?.();
+      mediaRecorderRef.current?.stop();
     };
   }, []);
 
