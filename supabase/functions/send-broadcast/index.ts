@@ -20,13 +20,14 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify admin
+    // Verify caller identity
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
+    // Verify admin role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -44,44 +45,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Subject and message are required" }), { status: 400, headers: corsHeaders });
     }
 
-    // Get all user emails from profiles
-    const { data: profiles, error: profilesError } = await supabase
+    // Get recipient count
+    const { count } = await supabase
       .from("profiles")
-      .select("email, name");
+      .select("id", { count: "exact", head: true });
 
-    if (profilesError) throw profilesError;
-
-    const validProfiles = (profiles || []).filter(p => p.email && p.email.includes("@"));
-
-    // Send emails using Supabase Auth admin API (sends via built-in email)
-    // Since we don't have a transactional email system, we'll use a simple approach:
-    // Store broadcast in system_settings for record, and use the auth.admin API
-    let sent = 0;
-    const errors: string[] = [];
-
-    for (const profile of validProfiles) {
-      try {
-        // Use the Supabase Auth admin to send a "magic link" style email
-        // Actually, we'll use a direct SMTP approach via the admin API
-        // For now, we'll use the built-in invite functionality
-        // Since we can't send arbitrary emails without email infra,
-        // we'll store the broadcast and let the frontend show it as a notification
-        sent++;
-      } catch (err: any) {
-        errors.push(`${profile.email}: ${err.message}`);
-      }
-    }
-
-    // Store broadcast record
+    // Store active broadcast - users will see this as an in-app banner
     await supabase.from("system_settings").upsert({
-      key: "last_broadcast",
+      key: "active_broadcast",
       value: {
         subject,
         message,
         broadcastType,
         sentAt: new Date().toISOString(),
         sentBy: user.id,
-        recipientCount: validProfiles.length,
+        active: true,
       },
       updated_at: new Date().toISOString(),
     });
@@ -89,8 +67,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        sent: validProfiles.length,
-        message: "Broadcast recorded. Users will see the notification when they open the app.",
+        sent: count || 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
