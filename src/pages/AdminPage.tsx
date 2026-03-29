@@ -1004,6 +1004,7 @@ const AdminPage = () => {
       </Dialog>
 
 
+      <Dialog open={addBulkUnitsOpen} onOpenChange={setAddBulkUnitsOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle className="font-display">Bulk Add Units</DialogTitle></DialogHeader>
           <div className="space-y-4">
