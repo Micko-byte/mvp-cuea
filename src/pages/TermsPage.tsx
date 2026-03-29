@@ -11,13 +11,13 @@ const TermsPage = () => {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="font-display font-bold text-foreground text-lg">Sekani AI — Terms & Privacy</h1>
+        <h1 className="font-display font-bold text-foreground text-lg">Sekani — Terms & Privacy</h1>
       </header>
 
       <div className="max-w-3xl mx-auto p-6 space-y-10 text-foreground">
         {/* About Sekani AI */}
         <section>
-          <h2 className="text-2xl font-display font-bold mb-4">🤖 About Sekani AI</h2>
+          <h2 className="text-2xl font-display font-bold mb-4">🤖 About Sekani</h2>
           <div className="space-y-4 text-sm leading-relaxed">
             <p>I'm <strong>Sekani AI</strong>, an academic AI assistant.</p>
             <p>I was created by the <strong>Soma na Sekani</strong> team, an initiative focused on developing AI tools to help students with learning, studying, problem-solving, and creative projects.</p>
@@ -49,7 +49,7 @@ const TermsPage = () => {
 
         {/* Terms of Service */}
         <section>
-          <h2 className="text-2xl font-display font-bold mb-6">📜 Sekani AI — Terms of Service</h2>
+          <h2 className="text-2xl font-display font-bold mb-6">📜 Sekani — Terms of Service</h2>
           <p className="text-sm text-muted-foreground mb-4">Effective Date: March 25, 2026</p>
 
           <div className="space-y-6 text-sm leading-relaxed">
@@ -123,7 +123,7 @@ const TermsPage = () => {
 
         {/* Privacy Policy */}
         <section>
-          <h2 className="text-2xl font-display font-bold mb-6">📄 Sekani AI — Privacy Policy</h2>
+          <h2 className="text-2xl font-display font-bold mb-6">📄 Sekani — Privacy Policy</h2>
           <p className="text-sm text-muted-foreground mb-4">Effective Date: March 25, 2026</p>
 
           <div className="space-y-6 text-sm leading-relaxed">
