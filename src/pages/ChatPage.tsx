@@ -1982,6 +1982,17 @@ const ChatPage = () => {
           if (deleteChatId) deleteChat(deleteChatId);
           setDeleteChatId(null);
         }} />
+
+      <ConfirmDialog
+        open={showDeleteAllConfirm}
+        onOpenChange={setShowDeleteAllConfirm}
+        title="Delete All Chats?"
+        description="This will permanently delete all your conversations. This action cannot be undone."
+        confirmLabel="Delete All"
+        onConfirm={async () => {
+          await deleteAllChats();
+          setShowDeleteAllConfirm(false);
+        }} />
       
       <ConfirmDialog
         open={showLogoutConfirm}
