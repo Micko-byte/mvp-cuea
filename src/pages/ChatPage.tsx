@@ -1050,6 +1050,15 @@ const ChatPage = () => {
                 </div> :
 
         <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1 mb-1">
+                    <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40">Chat History</p>
+                    <button
+                      onClick={() => setShowDeleteAllConfirm(true)}
+                      className="text-xs text-destructive/70 hover:text-destructive transition-colors"
+                      title="Delete all chats">
+                      Delete All
+                    </button>
+                  </div>
                   {DATE_GROUP_ORDER.map((group) => {
             const groupChats = groupedChats[group];
             if (!groupChats || groupChats.length === 0) return null;
