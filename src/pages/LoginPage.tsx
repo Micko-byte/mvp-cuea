@@ -495,8 +495,24 @@ const LoginPage = () => {
                         <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Password</Label>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <Input type="password" placeholder="Min 6 characters" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pl-10" required minLength={6} />
+                          <Input type={showSignupPassword ? "text" : "password"} placeholder="Min 6 characters" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pl-10 pr-10" required minLength={6} />
+                          <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
                         </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Confirm Password</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input type={showConfirmPassword ? "text" : "password"} placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10 pr-10" required minLength={6} />
+                          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {confirmPassword && signupPassword !== confirmPassword && (
+                          <p className="text-xs text-destructive">Passwords do not match</p>
+                        )}
                       </div>
                       <div className="space-y-3 pt-2">
                         <div className="flex items-start gap-3">
