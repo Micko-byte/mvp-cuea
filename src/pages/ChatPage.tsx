@@ -163,6 +163,8 @@ const ChatPage = () => {
   const [editingMsgText, setEditingMsgText] = useState("");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
+  const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
+  const [broadcastDismissed, setBroadcastDismissed] = useState(false);
   const recognitionRef = useRef<any>(null);
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
