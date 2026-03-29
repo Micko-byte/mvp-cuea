@@ -79,6 +79,13 @@ const AdminPage = () => {
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
   const [settingsSaving, setSettingsSaving] = useState(false);
 
+  // Broadcast
+  const [broadcastType, setBroadcastType] = useState<"downtime" | "back_online" | "custom">("downtime");
+  const [broadcastSubject, setBroadcastSubject] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastHistory, setBroadcastHistory] = useState<any[]>([]);
+
   const [userSearch, setUserSearch] = useState("");
   const [docSearch, setDocSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
