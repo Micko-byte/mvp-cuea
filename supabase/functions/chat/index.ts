@@ -612,7 +612,7 @@ Answer the student's question helpfully, comprehensively, and naturally, but onl
     } else {
       const defaultModel = typeof settings.default_model_general === 'string' 
         ? settings.default_model_general.replace(/"/g, '') 
-        : "gpt-4o-mini";
+        : "gpt-4.1-nano";
       model = unitId 
         ? (typeof settings.default_model_unit === 'string' ? settings.default_model_unit.replace(/"/g, '') : defaultModel)
         : defaultModel;

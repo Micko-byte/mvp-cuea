@@ -689,29 +689,29 @@ const AdminPage = () => {
                 <div className="space-y-2">
                   <Label>General Chat Model</Label>
                   <Input
-                    value={String(systemSettings.default_model_general ?? "gpt-4o-nano").replace(/"/g, "")}
+                    value={String(systemSettings.default_model_general ?? "gpt-4.1-nano").replace(/"/g, "")}
                     onChange={e => setSystemSettings(prev => ({ ...prev, default_model_general: e.target.value }))}
-                    placeholder="gpt-4o-nano"
+                    placeholder="gpt-4.1-nano"
                   />
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={settingsSaving}
-                    onClick={() => handleSaveSetting("default_model_general", String(systemSettings.default_model_general ?? "gpt-4o-nano").replace(/"/g, "").trim())}
+                    onClick={() => handleSaveSetting("default_model_general", String(systemSettings.default_model_general ?? "gpt-4.1-nano").replace(/"/g, "").trim())}
                   ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
                 <div className="space-y-2">
                   <Label>Unit Chat Model</Label>
                   <Input
-                    value={String(systemSettings.default_model_unit ?? "gpt-4o-nano").replace(/"/g, "")}
+                    value={String(systemSettings.default_model_unit ?? "gpt-4.1-nano").replace(/"/g, "")}
                     onChange={e => setSystemSettings(prev => ({ ...prev, default_model_unit: e.target.value }))}
-                    placeholder="gpt-4o-nano"
+                    placeholder="gpt-4.1-nano"
                   />
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={settingsSaving}
-                    onClick={() => handleSaveSetting("default_model_unit", String(systemSettings.default_model_unit ?? "gpt-4o-nano").replace(/"/g, "").trim())}
+                    onClick={() => handleSaveSetting("default_model_unit", String(systemSettings.default_model_unit ?? "gpt-4.1-nano").replace(/"/g, "").trim())}
                   ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
               </div>
@@ -835,7 +835,7 @@ const AdminPage = () => {
               <div className="space-y-3">
                 {[
                   ["Platform", "Sekani — Soma na Sekani"],
-                  ["AI Chat Model", String(systemSettings.default_model_general || "gpt-4o-mini").replace(/"/g, "")],
+                  ["AI Chat Model", String(systemSettings.default_model_general || "gpt-4.1-nano").replace(/"/g, "")],
                   ["Free Daily Limit", `${Number(systemSettings.token_limit_free || 50000).toLocaleString()} tokens`],
                   ["Paid Daily Limit", `${Number(systemSettings.token_limit_paid || 200000).toLocaleString()} tokens`],
                   ["Global Daily Limit", "500,000 tokens"],
