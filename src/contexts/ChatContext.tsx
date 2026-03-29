@@ -45,6 +45,7 @@ interface ChatContextType {
   setActiveChat: (id: string) => void;
   sendMessage: (text: string, overrideChatId?: string, files?: ProcessedFile[], teachMeMode?: boolean) => Promise<void>;
   deleteChat: (id: string) => Promise<void>;
+  deleteAllChats: () => Promise<void>;
   renameChat: (id: string, newTitle: string) => Promise<void>;
   loadChats: () => Promise<void>;
 }
@@ -497,8 +498,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (activeChatId === id) setActiveChatId(null);
   }, [activeChatId]);
 
+  const deleteAllChats = useCallback(async () => {
+    if (!user) return;
+    await supabase.from("chats").delete().eq("user_id", user.id);
+    setChats([]);
+    setActiveChatId(null);
+  }, [user]);
+
   return (
-    <ChatContext.Provider value={{ chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, renameChat, loadChats }}>
+    <ChatContext.Provider value={{ chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, deleteAllChats, renameChat, loadChats }}>
       {children}
     </ChatContext.Provider>
   );

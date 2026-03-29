@@ -57,7 +57,8 @@ import {
   RotateCcw,
   Pen,
   Play,
-  Upload } from
+  Upload,
+  MoreVertical } from
 "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -130,7 +131,7 @@ const TypingIndicator = () =>
 
 const ChatPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading: authLoading, refreshProfile } = useAuth();
-  const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, renameChat, loadChats } =
+  const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, deleteAllChats, renameChat, loadChats } =
   useChat();
   const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
   const { nickname, getChatBg } = usePersonalization();
@@ -148,6 +149,7 @@ const ChatPage = () => {
   const [isListening, setIsListening] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -827,7 +829,6 @@ const ChatPage = () => {
               className="bg-transparent border-b border-primary text-sm w-full outline-none py-0.5"
               onClick={(e) => e.stopPropagation()} />
             
-
               <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-primary">
                 <Check className="w-3 h-3" />
               </button>
@@ -840,29 +841,35 @@ const ChatPage = () => {
           }
         </div>
         {!isRenaming &&
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1">
-            <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setRenamingChatId(chat.id);
-              setRenameValue(chat.title);
-            }}
-            className="p-1 hover:text-primary"
-            title="Rename">
-            
-              <Pencil className="w-3 h-3" />
-            </button>
-            <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteChatId(chat.id);
-            }}
-            className="p-1 hover:text-destructive"
-            title="Delete">
-            
-              <Trash2 className="w-3 h-3" />
-            </button>
-          </div>
+        <Popover>
+            <PopoverTrigger asChild>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-sidebar-accent rounded"
+                title="Options">
+                <MoreVertical className="w-3.5 h-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="right" align="start" className="w-36 p-1" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRenamingChatId(chat.id);
+                  setRenameValue(chat.title);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors">
+                <Pencil className="w-3.5 h-3.5" /> Rename
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteChatId(chat.id);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-destructive/10 text-destructive transition-colors">
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </PopoverContent>
+          </Popover>
         }
       </div>);
 
@@ -1043,6 +1050,15 @@ const ChatPage = () => {
                 </div> :
 
         <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1 mb-1">
+                    <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40">Chat History</p>
+                    <button
+                      onClick={() => setShowDeleteAllConfirm(true)}
+                      className="text-xs text-destructive/70 hover:text-destructive transition-colors"
+                      title="Delete all chats">
+                      Delete All
+                    </button>
+                  </div>
                   {DATE_GROUP_ORDER.map((group) => {
             const groupChats = groupedChats[group];
             if (!groupChats || groupChats.length === 0) return null;
@@ -1965,6 +1981,17 @@ const ChatPage = () => {
         onConfirm={() => {
           if (deleteChatId) deleteChat(deleteChatId);
           setDeleteChatId(null);
+        }} />
+
+      <ConfirmDialog
+        open={showDeleteAllConfirm}
+        onOpenChange={setShowDeleteAllConfirm}
+        title="Delete All Chats?"
+        description="This will permanently delete all your conversations. This action cannot be undone."
+        confirmLabel="Delete All"
+        onConfirm={async () => {
+          await deleteAllChats();
+          setShowDeleteAllConfirm(false);
         }} />
       
       <ConfirmDialog
