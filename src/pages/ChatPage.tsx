@@ -126,6 +126,26 @@ const TypingIndicator = () =>
       </div>
     </div>
   </motion.div>;
+  // Teach Me Mode: parse control tags from bot messages
+  useEffect(() => {
+    if (!teachMeActive || !activeChat) return;
+    const lastMsg = activeChat.messages[activeChat.messages.length - 1];
+    if (!lastMsg || lastMsg.sender !== "bot") return;
+    const tags = parseControlTags(lastMsg.text);
+    if (tags.topicOutline && !teachMe.session) {
+      const outline = tags.topicOutline.map((t: any, i: number) => ({
+        ...t, status: i === 0 ? 'active' : 'locked'
+      }));
+      const unitName = selectedUnit ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` : "General";
+      teachMe.createSession(activeChat.id, unitName, outline);
+    }
+    if (teachMe.session) {
+      if (tags.topicDone !== null) teachMe.updateTopicProgress(teachMe.session.id, tags.topicDone, 'done');
+      if (tags.eli5Triggered !== null) teachMe.updateTopicProgress(teachMe.session.id, tags.eli5Triggered, 'active', true);
+      if (tags.checkpoint) teachMe.addCheckpointScore(teachMe.session.id, { afterTopic: tags.checkpoint.afterTopic, score: tags.checkpoint.score, total: tags.checkpoint.total, passed: tags.checkpoint.score >= 3 });
+      if (tags.unitComplete) teachMe.markComplete(teachMe.session.id);
+    }
+  }, [activeChat?.messages?.length, teachMeActive]);
 
 
 const ChatPage = () => {
