@@ -875,6 +875,22 @@ const AdminPage = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label>Vision/Math Model</Label>
+                  <Input
+                    value={String(systemSettings.vision_model ?? "gpt-4.1").replace(/"/g, "")}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, vision_model: e.target.value }))}
+                    placeholder="gpt-4.1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("vision_model", String(systemSettings.vision_model ?? "gpt-4.1").replace(/"/g, "").trim())}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label>Max RAG Chunks</Label>
                   <Input
                     type="number"
