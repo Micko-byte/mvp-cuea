@@ -83,7 +83,7 @@ serve(async (req) => {
             user_id: userId,
             memory_type: "system",
             subject: "Premium Welcome",
-            content: `Welcome to Sekani Premium! 🎓 You now have unlimited tokens. Thank you for upgrading.`,
+            content: `Welcome to Sekani Premium! You now have unlimited tokens. Thank you for upgrading.`,
           });
         } catch (emailErr) {
           console.error("Welcome notification error:", emailErr);
@@ -128,7 +128,7 @@ serve(async (req) => {
                 user_id: memberProfile.user_id,
                 memory_type: "system",
                 subject: "Premium Welcome",
-                content: `Welcome to Sekani Premium! 🎓 You've been added to a group plan. You now have unlimited tokens.`,
+                content: `Welcome to Sekani Premium! You've been added to a group plan. You now have unlimited tokens.`,
               });
 
               console.log(`Activated group member: ${memberEmail}`);

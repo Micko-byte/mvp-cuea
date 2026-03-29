@@ -1840,7 +1840,7 @@ const ChatPage = () => {
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium 🎓</DialogTitle>
+                <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <p className="text-sm text-muted-foreground text-center">
