@@ -10,7 +10,7 @@ import {
   UserCheck, BookMarked, Clock, Upload, Search,
   Download, Trash2, Plus, Shield, Database, Globe, Save,
   Edit, MessageSquare, Loader2, RefreshCw, ArrowLeft,
-  CreditCard, Zap, DollarSign
+  CreditCard, Zap, DollarSign, Megaphone, AlertTriangle, CheckCircle, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { id: "documents", label: "Documents", icon: FileText },
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "ai-config", label: "AI Config", icon: Zap },
+  { id: "broadcast", label: "Broadcast", icon: Megaphone },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
 ];
@@ -77,6 +78,13 @@ const AdminPage = () => {
   // AI Config
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
   const [settingsSaving, setSettingsSaving] = useState(false);
+
+  // Broadcast
+  const [broadcastType, setBroadcastType] = useState<"downtime" | "back_online" | "custom">("downtime");
+  const [broadcastSubject, setBroadcastSubject] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastHistory, setBroadcastHistory] = useState<any[]>([]);
 
   const [userSearch, setUserSearch] = useState("");
   const [docSearch, setDocSearch] = useState("");
@@ -996,6 +1004,126 @@ const AdminPage = () => {
                     <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case "broadcast":
+        return (
+          <div className="space-y-6 max-w-4xl">
+            <div className="bg-card rounded-xl border border-border p-6 shadow-card space-y-5">
+              <div className="flex items-center gap-3 mb-2"><Megaphone className="w-5 h-5 text-primary" /><h3 className="font-display font-semibold text-foreground">Emergency Broadcast</h3></div>
+              <p className="text-sm text-muted-foreground">Send urgent notifications to all registered users via email.</p>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Broadcast Type</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: "downtime" as const, label: "System Down", icon: AlertTriangle, desc: "Notify users about downtime" },
+                      { value: "back_online" as const, label: "Back Online", icon: CheckCircle, desc: "System is back up" },
+                      { value: "custom" as const, label: "Custom", icon: MessageSquare, desc: "Custom message" },
+                    ]).map((type) => (
+                      <button
+                        key={type.value}
+                        onClick={() => {
+                          setBroadcastType(type.value);
+                          if (type.value === "downtime") {
+                            setBroadcastSubject("⚠️ Sekani — Scheduled Maintenance");
+                            setBroadcastMessage("We're currently performing maintenance on Sekani. The system will be temporarily unavailable. We'll notify you as soon as we're back online. Thank you for your patience!");
+                          } else if (type.value === "back_online") {
+                            setBroadcastSubject("✅ Sekani is Back Online!");
+                            setBroadcastMessage("Great news! Sekani is back up and running. You can now continue using the platform as usual. Thank you for your patience during the maintenance period.");
+                          } else {
+                            setBroadcastSubject("");
+                            setBroadcastMessage("");
+                          }
+                        }}
+                        className={`p-3 rounded-xl border text-left transition-all ${broadcastType === type.value ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+                      >
+                        <type.icon className={`w-5 h-5 mb-1 ${broadcastType === type.value ? "text-primary" : "text-muted-foreground"}`} />
+                        <p className="text-sm font-medium text-foreground">{type.label}</p>
+                        <p className="text-xs text-muted-foreground">{type.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    value={broadcastSubject}
+                    onChange={(e) => setBroadcastSubject(e.target.value)}
+                    placeholder="Email subject line..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Message</Label>
+                  <Textarea
+                    value={broadcastMessage}
+                    onChange={(e) => setBroadcastMessage(e.target.value)}
+                    placeholder="Type your message to all users..."
+                    rows={6}
+                  />
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground">This will send an email to <strong className="text-foreground">{profiles.length}</strong> registered users. This action cannot be undone.</p>
+                </div>
+
+                <Button
+                  onClick={async () => {
+                    if (!broadcastSubject.trim() || !broadcastMessage.trim()) {
+                      toast.error("Subject and message are required");
+                      return;
+                    }
+                    setBroadcastSending(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("send-broadcast", {
+                        body: {
+                          subject: broadcastSubject,
+                          message: broadcastMessage,
+                          broadcastType: broadcastType,
+                        },
+                      });
+                      if (error) throw error;
+                      toast.success(`Broadcast sent to ${data?.sent || profiles.length} users!`);
+                      setBroadcastSubject("");
+                      setBroadcastMessage("");
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed to send broadcast");
+                    } finally {
+                      setBroadcastSending(false);
+                    }
+                  }}
+                  disabled={broadcastSending || !broadcastSubject.trim() || !broadcastMessage.trim()}
+                  className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                >
+                  {broadcastSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                  {broadcastSending ? "Sending..." : `Send to All ${profiles.length} Users`}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await supabase.from("system_settings").upsert({
+                        key: "active_broadcast",
+                        value: { active: false },
+                        updated_at: new Date().toISOString(),
+                      });
+                      toast.success("Broadcast cleared");
+                    } catch (err: any) {
+                      toast.error("Failed to clear broadcast");
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <X className="w-4 h-4 mr-2" /> Clear Active Broadcast
+                </Button>
               </div>
             </div>
           </div>
