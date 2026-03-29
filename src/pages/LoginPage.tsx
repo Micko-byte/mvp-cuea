@@ -564,15 +564,20 @@ const LoginPage = () => {
                       <button
                         type="button"
                         onClick={async () => {
+                          if (resendCooldown > 0) return;
                           setLoading(true);
                           const { error: resendErr } = await supabase.auth.resend({ type: "signup", email: signupEmail });
                           setLoading(false);
                           if (resendErr) toast.error(resendErr.message);
-                          else toast.success("New code sent! Check your inbox.");
+                          else {
+                            toast.success("New code sent! Check your inbox.");
+                            setResendCooldown(30);
+                          }
                         }}
-                        className="w-full text-center text-sm text-primary hover:underline font-medium"
+                        className="w-full text-center text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:no-underline"
+                        disabled={resendCooldown > 0 || loading}
                       >
-                        Didn't receive it? Resend code
+                        {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive it? Resend code"}
                       </button>
                     </motion.div>
                   )}
