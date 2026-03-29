@@ -24,7 +24,7 @@ export const PWAInstallBanner = () => {
               <Smartphone className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-display font-semibold text-sm text-foreground">Install NotifyAI</h3>
+              <h3 className="font-display font-semibold text-sm text-foreground">Install Sekani</h3>
               <p className="text-xs text-muted-foreground mt-0.5">Add to your home screen for quick access & offline support</p>
               <div className="flex gap-2 mt-3">
                 <Button size="sm" onClick={install} className="bg-gradient-maroon text-primary-foreground gap-1.5 text-xs">

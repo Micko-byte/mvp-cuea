@@ -118,7 +118,7 @@ const TypingIndicator = () =>
         transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} />
 
       )}
-        <span className="text-xs text-muted-foreground ml-2">Sekani AI is thinking...</span>
+        <span className="text-xs text-muted-foreground ml-2">Sekani is thinking...</span>
       </div>
     </div>
   </motion.div>;
@@ -225,7 +225,7 @@ const ChatPage = () => {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
     if (payment === "success") {
-      toast.success("Payment successful! 🎉 You now have 200,000 tokens/day.");
+      toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
       window.history.replaceState({}, "", window.location.pathname);
     } else if (payment === "failed") {
       toast.error("Payment was not completed. Please try again.");
@@ -535,7 +535,7 @@ const ChatPage = () => {
       if (data?.status === "success") {
         setPaymentVerifying(false);
         setShowPaymentDialog(false);
-        toast.success("Payment successful! 🎉 You now have 200,000 tokens/day.");
+        toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
         return;
       } else if (data?.status === "failed") {
         setPaymentVerifying(false);
@@ -633,7 +633,7 @@ const ChatPage = () => {
     const lastBotMsg = [...activeChat.messages].reverse().find(m => m.sender === 'bot');
     if (!lastBotMsg) return;
     const cleanContent = lastBotMsg.text.replace(/\[.*?\]\(download:[^)]+\)/g, '').trim();
-    const title = activeChat.title || 'Sekani AI Document';
+    const title = activeChat.title || 'Sekani Document';
     try {
       await generateDocument({ title, content: cleanContent, type: format });
       toast.success(`${format.toUpperCase()} downloaded!`);
@@ -792,7 +792,7 @@ const ChatPage = () => {
       <div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
         {sidebarExpanded || isMobile ?
       <div className="flex items-center gap-3 mb-4">
-            <span className="font-display font-bold text-sidebar-foreground text-lg">Sekani AI </span>
+            <span className="font-display font-bold text-sidebar-foreground text-lg">Sekani</span>
             <button
           onClick={toggleSidebar}
           className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
@@ -1210,7 +1210,7 @@ const ChatPage = () => {
             handleSend();
           }
         }}
-        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani AI anything..."}
+        placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
         className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
         style={{ maxHeight: "150px" }}
         rows={1}
@@ -1298,7 +1298,7 @@ const ChatPage = () => {
                 `${selectedUnit.unit_code} — ${selectedUnit.unit_name}` :
                 activeChat ?
                 activeChat.title :
-                "Sekani AI"}
+                "Sekani"}
               </h2>
             </div>
             <button
@@ -1414,7 +1414,7 @@ const ChatPage = () => {
                                       {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                           <Sparkles className="w-3.5 h-3.5 text-primary" />
-                                          <span className="text-xs font-semibold text-primary">Sekani AI</span>
+                                          <span className="text-xs font-semibold text-primary">Sekani</span>
                                         </div>
                                 }
                                       {msg.sender === "bot" ?
@@ -1850,7 +1850,7 @@ const ChatPage = () => {
                 </div>
 
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">200K tokens/day • One-time payment</p>
+                  <p className="text-xs text-muted-foreground">Unlimited tokens • One-time payment</p>
                 </div>
 
                 {/* Group Emails */}
