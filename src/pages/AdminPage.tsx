@@ -654,17 +654,31 @@ const AdminPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Free Daily Limit</Label>
-                  <Input type="number" value={systemSettings.token_limit_free || 50000}
-                    onChange={e => setSystemSettings(prev => ({ ...prev, token_limit_free: Number(e.target.value) }))} />
-                  <Button size="sm" variant="outline" disabled={settingsSaving}
-                    onClick={() => handleSaveSetting("token_limit_free", Number(systemSettings.token_limit_free))}><Save className="w-3 h-3 mr-1" /> Save</Button>
+                  <Input
+                    type="number"
+                    value={String(systemSettings.token_limit_free ?? 50000)}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, token_limit_free: e.target.value }))}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("token_limit_free", Number(systemSettings.token_limit_free ?? 50000))}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
                 <div className="space-y-2">
                   <Label>Paid Daily Limit</Label>
-                  <Input type="number" value={systemSettings.token_limit_paid || 200000}
-                    onChange={e => setSystemSettings(prev => ({ ...prev, token_limit_paid: Number(e.target.value) }))} />
-                  <Button size="sm" variant="outline" disabled={settingsSaving}
-                    onClick={() => handleSaveSetting("token_limit_paid", Number(systemSettings.token_limit_paid))}><Save className="w-3 h-3 mr-1" /> Save</Button>
+                  <Input
+                    type="number"
+                    value={String(systemSettings.token_limit_paid ?? 2000000)}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, token_limit_paid: e.target.value }))}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("token_limit_paid", Number(systemSettings.token_limit_paid ?? 2000000))}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
               </div>
             </div>
@@ -674,41 +688,61 @@ const AdminPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>General Chat Model</Label>
-                  <Select value={String(systemSettings.default_model_general || '"gpt-4o-mini"').replace(/"/g, '')}
-                    onValueChange={v => { setSystemSettings(prev => ({ ...prev, default_model_general: `"${v}"` })); handleSaveSetting("default_model_general", `"${v}"`); }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={String(systemSettings.default_model_general ?? "gpt-4o-nano").replace(/"/g, "")}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, default_model_general: e.target.value }))}
+                    placeholder="gpt-4o-nano"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("default_model_general", String(systemSettings.default_model_general ?? "gpt-4o-nano").replace(/"/g, "").trim())}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
                 <div className="space-y-2">
                   <Label>Unit Chat Model</Label>
-                  <Select value={String(systemSettings.default_model_unit || '"gpt-4o-mini"').replace(/"/g, '')}
-                    onValueChange={v => { setSystemSettings(prev => ({ ...prev, default_model_unit: `"${v}"` })); handleSaveSetting("default_model_unit", `"${v}"`); }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={String(systemSettings.default_model_unit ?? "gpt-4o-nano").replace(/"/g, "")}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, default_model_unit: e.target.value }))}
+                    placeholder="gpt-4o-nano"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("default_model_unit", String(systemSettings.default_model_unit ?? "gpt-4o-nano").replace(/"/g, "").trim())}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Max RAG Chunks</Label>
-                  <Input type="number" value={systemSettings.max_rag_chunks || 8}
-                    onChange={e => setSystemSettings(prev => ({ ...prev, max_rag_chunks: Number(e.target.value) }))} />
-                  <Button size="sm" variant="outline" disabled={settingsSaving}
-                    onClick={() => handleSaveSetting("max_rag_chunks", Number(systemSettings.max_rag_chunks))}><Save className="w-3 h-3 mr-1" /> Save</Button>
+                  <Input
+                    type="number"
+                    value={String(systemSettings.max_rag_chunks ?? 8)}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, max_rag_chunks: e.target.value }))}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("max_rag_chunks", Number(systemSettings.max_rag_chunks ?? 8))}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
                 <div className="space-y-2">
                   <Label>Rate Limit (req/min)</Label>
-                  <Input type="number" value={systemSettings.rate_limit_per_minute || 20}
-                    onChange={e => setSystemSettings(prev => ({ ...prev, rate_limit_per_minute: Number(e.target.value) }))} />
-                  <Button size="sm" variant="outline" disabled={settingsSaving}
-                    onClick={() => handleSaveSetting("rate_limit_per_minute", Number(systemSettings.rate_limit_per_minute))}><Save className="w-3 h-3 mr-1" /> Save</Button>
+                  <Input
+                    type="number"
+                    value={String(systemSettings.rate_limit_per_minute ?? 20)}
+                    onChange={e => setSystemSettings(prev => ({ ...prev, rate_limit_per_minute: e.target.value }))}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={settingsSaving}
+                    onClick={() => handleSaveSetting("rate_limit_per_minute", Number(systemSettings.rate_limit_per_minute ?? 20))}
+                  ><Save className="w-3 h-3 mr-1" /> Save</Button>
                 </div>
               </div>
             </div>
