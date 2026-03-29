@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X, Search, Brain } from "lucide-react";
+import { Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X, Search, Brain, Eye, EyeOff } from "lucide-react";
 import sekaniLogo from "@/assets/sekani-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,13 +59,18 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Signup state
   const [signupStep, setSignupStep] = useState(0);
   const [name, setName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [year, setYear] = useState("");
   const [semester, setSemester] = useState("");
@@ -143,12 +148,20 @@ const LoginPage = () => {
     if (result.error) setError(result.error);
   };
 
-  const canProceedStep0 = name && signupEmail && signupPassword.length >= 6 && termsAccepted;
+  const canProceedStep0 = name && signupEmail && signupPassword.length >= 6 && confirmPassword && termsAccepted;
   const canProceedStep1 = selectedCourseId && year && semester;
 
   const handleStep0Verify = async () => {
     if (!canProceedStep0) {
       setError("Fill all fields, accept terms, and use a password with min 6 characters");
+      return;
+    }
+    if (signupPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (signupPassword.length < 6) {
+      setError("Password must be at least 6 characters");
       return;
     }
     const emailLower = signupEmail.toLowerCase();
@@ -163,7 +176,28 @@ const LoginPage = () => {
     });
     setLoading(false);
     if (result.error) { setError(result.error); return; }
-    toast.success("Account created! Continue setting up your profile.");
+    toast.success("Verification code sent to your email! Check your inbox.");
+    setSignupStep(0.5 as any); // OTP step
+  };
+
+  const handleOtpVerify = async () => {
+    if (otpCode.length !== 6) {
+      setError("Enter the 6-digit code from your email");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    const { error: otpError } = await supabase.auth.verifyOtp({
+      email: signupEmail,
+      token: otpCode,
+      type: "signup",
+    });
+    setLoading(false);
+    if (otpError) {
+      setError(otpError.message);
+      return;
+    }
+    toast.success("Email verified! Continue setting up your profile.");
     setSignupStep(1);
   };
 
@@ -353,8 +387,8 @@ const LoginPage = () => {
     );
   };
 
-  const totalSteps = 4;
-  const currentStepDisplay = signupStep + 1;
+  const totalSteps = 5;
+  const currentStepDisplay = signupStep === 0.5 ? 2 : signupStep >= 1 ? Math.floor(signupStep) + 2 : 1;
 
   const selectedUnitsData = dbUnits.filter(u => selectedUnitIds.includes(u.id));
 
@@ -394,7 +428,10 @@ const LoginPage = () => {
                   <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" required />
+                    <Input type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10" required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
                 <Button type="submit" className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading}>
@@ -428,8 +465,8 @@ const LoginPage = () => {
                   <h2 className="text-xl font-display font-semibold text-foreground">Create Account</h2>
                   <p className="text-muted-foreground text-sm mt-1">Step {currentStepDisplay} of {totalSteps}</p>
                   <div className="flex gap-2 mt-3">
-                    {[0, 1, 2, 3].map(s => (
-                      <div key={s} className={`h-1 flex-1 rounded-full ${signupStep >= s ? "bg-primary" : "bg-muted"}`} />
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <div key={s} className={`h-1 flex-1 rounded-full ${currentStepDisplay >= s ? "bg-primary" : "bg-muted"}`} />
                     ))}
                   </div>
                 </div>
@@ -458,8 +495,24 @@ const LoginPage = () => {
                         <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Password</Label>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <Input type="password" placeholder="Min 6 characters" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pl-10" required minLength={6} />
+                          <Input type={showSignupPassword ? "text" : "password"} placeholder="Min 6 characters" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pl-10 pr-10" required minLength={6} />
+                          <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
                         </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Confirm Password</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input type={showConfirmPassword ? "text" : "password"} placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10 pr-10" required minLength={6} />
+                          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        {confirmPassword && signupPassword !== confirmPassword && (
+                          <p className="text-xs text-destructive">Passwords do not match</p>
+                        )}
                       </div>
                       <div className="space-y-3 pt-2">
                         <div className="flex items-start gap-3">
@@ -479,7 +532,51 @@ const LoginPage = () => {
                     </motion.div>
                   )}
 
-                  {/* STEP 1: Course, Year, Semester */}
+                  {/* OTP VERIFICATION STEP */}
+                  {signupStep === 0.5 && (
+                    <motion.div key="otp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                      <div className="text-center">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center">
+                          <Mail className="w-6 h-6 text-primary" />
+                        </div>
+                        <h3 className="font-display font-semibold text-foreground">Verify Your Email</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          We sent a 6-digit code to <strong>{signupEmail}</strong>
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Verification Code</Label>
+                        <Input
+                          type="text"
+                          placeholder="000000"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          className="text-center text-2xl tracking-[0.5em] font-mono"
+                          maxLength={6}
+                          autoFocus
+                        />
+                        <p className="text-xs text-muted-foreground text-center">Code expires in 10 minutes</p>
+                      </div>
+                      <Button type="button" onClick={handleOtpVerify} className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading || otpCode.length !== 6}>
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                        Verify Email <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setLoading(true);
+                          const { error: resendErr } = await supabase.auth.resend({ type: "signup", email: signupEmail });
+                          setLoading(false);
+                          if (resendErr) toast.error(resendErr.message);
+                          else toast.success("New code sent! Check your inbox.");
+                        }}
+                        className="w-full text-center text-sm text-primary hover:underline font-medium"
+                      >
+                        Didn't receive it? Resend code
+                      </button>
+                    </motion.div>
+                  )}
+
                   {signupStep === 1 && (
                     <motion.div key="s1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                       <div className="space-y-2">

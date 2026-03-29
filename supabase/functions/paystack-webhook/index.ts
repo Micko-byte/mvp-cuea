@@ -16,24 +16,27 @@ serve(async (req) => {
 
     const body = await req.text();
     
-    // Verify Paystack signature
+    // MANDATORY signature verification
     const signature = req.headers.get("x-paystack-signature");
-    if (signature) {
-      const encoder = new TextEncoder();
-      const key = await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(PAYSTACK_SECRET_KEY),
-        { name: "HMAC", hash: "SHA-512" },
-        false,
-        ["sign"]
-      );
-      const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-      const hash = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      if (hash !== signature) {
-        console.error("Invalid Paystack signature");
-        return new Response("Invalid signature", { status: 401 });
-      }
+    if (!signature) {
+      console.error("Missing Paystack signature header");
+      return new Response("Missing signature", { status: 401 });
+    }
+
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(PAYSTACK_SECRET_KEY),
+      { name: "HMAC", hash: "SHA-512" },
+      false,
+      ["sign"]
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+    const hash = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    if (hash !== signature) {
+      console.error("Invalid Paystack signature");
+      return new Response("Invalid signature", { status: 401 });
     }
 
     const event = JSON.parse(body);
@@ -52,6 +55,18 @@ serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
 
+      // Idempotency check: skip if already processed
+      const { data: existingPayment } = await supabaseAdmin
+        .from("payments")
+        .select("id, status")
+        .eq("paystack_reference", reference)
+        .single();
+
+      if (existingPayment?.status === "success") {
+        console.log(`Payment ${reference} already processed, skipping`);
+        return new Response("OK", { status: 200 });
+      }
+
       // Update payment status
       await supabaseAdmin
         .from("payments")
@@ -60,15 +75,10 @@ serve(async (req) => {
 
       console.log(`Payment successful for user ${userId}, reference: ${reference}`);
 
-      // Send welcome email to paying user
+      // Store a welcome notification
       const userEmail = customer?.email || metadata?.email;
       if (userEmail) {
         try {
-          const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-          // Simple welcome email via Paystack (or log for now)
-          console.log(`Welcome email would be sent to: ${userEmail}`);
-          
-          // Store a welcome notification in student_memory
           await supabaseAdmin.from("student_memory").insert({
             user_id: userId,
             memory_type: "system",
@@ -87,7 +97,6 @@ serve(async (req) => {
       if (planType === "group" && groupEmails.length > 0) {
         console.log(`Group payment: activating ${groupEmails.length} members`);
         for (const memberEmail of groupEmails) {
-          // Look up user by email in profiles
           const { data: memberProfile } = await supabaseAdmin
             .from("profiles")
             .select("user_id")
@@ -95,28 +104,35 @@ serve(async (req) => {
             .single();
 
           if (memberProfile) {
-            // Create a payment record for each group member
-            await supabaseAdmin.from("payments").insert({
-              user_id: memberProfile.user_id,
-              amount: 0,
-              currency: "KES",
-              status: "success",
-              paid_at: new Date().toISOString(),
-              email: memberEmail,
-              plan_type: "group_member",
-              group_emails: [],
-              paystack_reference: `${reference}_group_${memberEmail}`,
-            });
+            // Idempotency: check if group member already activated
+            const { data: existingMemberPayment } = await supabaseAdmin
+              .from("payments")
+              .select("id")
+              .eq("paystack_reference", `${reference}_group_${memberEmail}`)
+              .single();
 
-            // Send welcome notification to group member
-            await supabaseAdmin.from("student_memory").insert({
-              user_id: memberProfile.user_id,
-              memory_type: "system",
-              subject: "Premium Welcome",
-              content: `Welcome to Sekani Premium! 🎓 You've been added to a group plan. You now have unlimited tokens.`,
-            });
+            if (!existingMemberPayment) {
+              await supabaseAdmin.from("payments").insert({
+                user_id: memberProfile.user_id,
+                amount: 0,
+                currency: "KES",
+                status: "success",
+                paid_at: new Date().toISOString(),
+                email: memberEmail,
+                plan_type: "group_member",
+                group_emails: [],
+                paystack_reference: `${reference}_group_${memberEmail}`,
+              });
 
-            console.log(`Activated group member: ${memberEmail}`);
+              await supabaseAdmin.from("student_memory").insert({
+                user_id: memberProfile.user_id,
+                memory_type: "system",
+                subject: "Premium Welcome",
+                content: `Welcome to Sekani Premium! 🎓 You've been added to a group plan. You now have unlimited tokens.`,
+              });
+
+              console.log(`Activated group member: ${memberEmail}`);
+            }
           } else {
             console.log(`Group member not found (not yet registered): ${memberEmail}`);
           }
