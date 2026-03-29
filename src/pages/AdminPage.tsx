@@ -437,8 +437,9 @@ const AdminPage = () => {
                           </td>
                           <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{u.program || "—"}</td>
                           <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">{new Date(u.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 text-right">
-                            <button onClick={() => setEditRoleDialog({ userId: u.user_id, currentRole: userRole })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground"><Edit className="w-3.5 h-3.5" /></button>
+                          <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                            <button onClick={() => setEditTokenDialog({ userId: u.user_id, email: u.email })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Tokens"><Zap className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setEditRoleDialog({ userId: u.user_id, currentRole: userRole })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Role"><Edit className="w-3.5 h-3.5" /></button>
                           </td>
                         </tr>
                       );
