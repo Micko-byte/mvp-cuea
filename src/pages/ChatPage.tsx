@@ -1333,21 +1333,21 @@ const ChatPage = () => {
   // Chat input component
   const chatInput =
   <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
-    {isListening &&
+    {(isListening || isTranscribing) &&
     <div className="mb-2 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <VoiceInputVisualizer />
+            {isTranscribing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <VoiceInputVisualizer />}
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground">Listening…</p>
-              <p className="text-xs text-muted-foreground">Speak freely — tap Stop when you're done.</p>
+              <p className="text-sm font-medium text-foreground">{isTranscribing ? "Transcribing…" : "Listening…"}</p>
+              <p className="text-xs text-muted-foreground">{isTranscribing ? "Converting your speech to text." : "Speak freely — tap Stop when you're done."}</p>
             </div>
           </div>
-          <button
+          {isListening && <button
           onClick={toggleVoice}
           className="rounded-full border border-primary/20 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
             Stop
-          </button>
+          </button>}
         </div>
       </div>
     }
