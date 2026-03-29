@@ -126,7 +126,7 @@ const TypingIndicator = () =>
 
 
 const ChatPage = () => {
-  const { user, profile, role, logout, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, profile, role, logout, isAuthenticated, isLoading: authLoading, refreshProfile } = useAuth();
   const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, renameChat, loadChats } =
   useChat();
   const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
