@@ -88,6 +88,13 @@ const LoginPage = () => {
   const [dbCourses, setDbCourses] = useState<DbCourse[]>([]);
   const [dbUnits, setDbUnits] = useState<DbUnit[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (isAuthenticated && !authLoading && isLogin) {
