@@ -1354,6 +1354,22 @@ const ChatPage = () => {
               </h2>
             </div>
             <button
+              onClick={() => {
+                setTeachMeActive(!teachMeActive);
+                if (!teachMeActive && activeChat) {
+                  teachMe.loadSession(activeChat.id);
+                }
+                if (teachMeActive) {
+                  teachMe.endSession();
+                  document.body.classList.remove('focus-mode');
+                }
+              }}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
+            >
+              <BookOpen className="w-3 h-3" />
+              {teachMeActive ? 'Teaching...' : 'Teach Me'}
+            </button>
+            <button
               onClick={() => setCalendarOpen(!calendarOpen)}
               className="p-2 hover:bg-foreground/10 rounded-lg text-foreground"
               title="Academic Calendar">
