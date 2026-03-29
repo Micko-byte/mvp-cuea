@@ -148,6 +148,7 @@ const ChatPage = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState("");
   const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const paymentCancelledRef = useRef(false);
   const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
   const [paymentPlan, setPaymentPlan] = useState<"individual" | "group">("individual");
   const [groupEmails, setGroupEmails] = useState<string[]>(["", "", "", "", ""]);
