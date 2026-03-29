@@ -34,7 +34,7 @@ serve(async (req) => {
         .eq("paystack_reference", reference);
 
       // Redirect back to app with success
-      const appUrl = Deno.env.get("APP_URL") || "https://mvp-cuea.lovable.app";
+      const appUrl = Deno.env.get("APP_URL") || "https://id-preview--309cf47d-8bcb-4fb5-bcbc-62733d9669b3.lovable.app";
       return new Response(null, {
         status: 302,
         headers: { Location: `${appUrl}/chat?payment=success` },
@@ -45,7 +45,7 @@ serve(async (req) => {
         .update({ status: "failed" })
         .eq("paystack_reference", reference);
 
-      const appUrl = Deno.env.get("APP_URL") || "https://mvp-cuea.lovable.app";
+      const appUrl = Deno.env.get("APP_URL") || "https://id-preview--309cf47d-8bcb-4fb5-bcbc-62733d9669b3.lovable.app";
       return new Response(null, {
         status: 302,
         headers: { Location: `${appUrl}/chat?payment=failed` },
