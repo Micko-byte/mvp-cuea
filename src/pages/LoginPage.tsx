@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X, Search, Brain } from "lucide-react";
+import { Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X, Search, Brain, Eye, EyeOff } from "lucide-react";
 import sekaniLogo from "@/assets/sekani-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,13 +59,18 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Signup state
   const [signupStep, setSignupStep] = useState(0);
   const [name, setName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [year, setYear] = useState("");
   const [semester, setSemester] = useState("");
