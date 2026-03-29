@@ -95,7 +95,7 @@ const redis = createRedis();
 // Hardcoded fallback limits
 const DEFAULT_FREE_LIMIT = 50000;
 const DEFAULT_PAID_LIMIT = 200000;
-const DAILY_GLOBAL_LIMIT = 500000;
+const DEFAULT_GLOBAL_LIMIT = 5000000;
 
 const INSTITUTIONAL_KNOWLEDGE = `
 ## About the Platform
@@ -288,19 +288,13 @@ serve(async (req) => {
 
     const FREE_DAILY_LIMIT = Number(settings.token_limit_free) || DEFAULT_FREE_LIMIT;
     const PAID_DAILY_LIMIT = Number(settings.token_limit_paid) || DEFAULT_PAID_LIMIT;
+    const DAILY_GLOBAL_LIMIT = Number(settings.daily_global_limit) || DEFAULT_GLOBAL_LIMIT;
     const rateLimitPerMinute = Number(settings.rate_limit_per_minute) || 20;
     const maxRagChunks = Number(settings.max_rag_chunks) || 8;
 
-    // --- Rate Limiting ---
+    // --- Rate Limiting (admins bypass) ---
     const rateLimitKey = `ratelimit:${userId}:${Math.floor(Date.now() / 60000)}`;
     const requests = await redis.get(rateLimitKey) || 0;
-    if (requests >= rateLimitPerMinute) {
-      return new Response(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
-    await redis.set(rateLimitKey, requests + 1, 90);
 
     // --- Cached: Profile + enrolled units (10 min) ---
     const today = new Date().toISOString().split('T')[0];
@@ -330,8 +324,19 @@ serve(async (req) => {
       await redis.set(profileCacheKey, { profile: profileData, studentUnits, roleData, isPaidUser }, 600);
     }
 
-    const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
     const isAdmin = roleData?.role === "admin";
+    const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
+
+    // Admins bypass ALL limits
+    if (!isAdmin) {
+      if (requests >= rateLimitPerMinute) {
+        return new Response(JSON.stringify({ error: 'Too many requests. Please wait a moment.' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+    }
+    await redis.set(rateLimitKey, requests + 1, 90);
 
     // --- Token usage cache (60s) ---
     const tokenCacheKey = `tokens:${userId}:${today}`;
@@ -342,18 +347,21 @@ serve(async (req) => {
       await redis.set(tokenCacheKey, dailyUserUsage, 60);
     }
 
-    if (dailyUserUsage >= userDailyLimit) {
-      const errorMsg = isPaidUser
-        ? "You've used all your tokens for today. Come back tomorrow! 🎓"
-        : "You've reached your free daily limit! 🎓 Upgrade to keep learning with Sekani.";
-      return new Response(JSON.stringify({ error: errorMsg, limit_reached: true, is_paid: isPaidUser }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    // Admins bypass token and global limits
+    if (!isAdmin) {
+      if (dailyUserUsage >= userDailyLimit) {
+        const errorMsg = isPaidUser
+          ? "You've used all your tokens for today. Come back tomorrow!"
+          : "You've reached your free daily limit! Upgrade to keep learning with Sekani.";
+        return new Response(JSON.stringify({ error: errorMsg, limit_reached: true, is_paid: isPaidUser }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
-    // Check global daily limit
-    const { data: globalData } = await supabaseAdmin.from("token_usage").select("tokens_used").gte("created_at", today);
-    const globalUsage = globalData?.reduce((sum: number, t: any) => sum + t.tokens_used, 0) || 0;
-    if (globalUsage >= DAILY_GLOBAL_LIMIT) {
-      return new Response(JSON.stringify({ error: "System is at capacity today. Come back tomorrow! 🎓" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Check global daily limit
+      const { data: globalData } = await supabaseAdmin.from("token_usage").select("tokens_used").gte("created_at", today);
+      const globalUsage = globalData?.reduce((sum: number, t: any) => sum + t.tokens_used, 0) || 0;
+      if (globalUsage >= DAILY_GLOBAL_LIMIT) {
+        return new Response(JSON.stringify({ error: "System is at capacity today. Come back tomorrow!" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // --- Enrolled units context ---
@@ -603,12 +611,13 @@ Answer the student's question helpfully, comprehensively, and naturally, but onl
       Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url")
     );
     
-    // Model selection: vision > math > default
+    // Model selection: vision > math > default (all configurable from admin)
+    const visionModel = typeof settings.vision_model === 'string' ? settings.vision_model.replace(/"/g, '') : "gpt-4.1";
     let model: string;
     if (hasImageContent) {
-      model = "gpt-4o";
+      model = visionModel;
     } else if (hasMathContent) {
-      model = "gpt-4o";
+      model = visionModel;
     } else {
       const defaultModel = typeof settings.default_model_general === 'string' 
         ? settings.default_model_general.replace(/"/g, '') 
