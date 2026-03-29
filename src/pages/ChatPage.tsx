@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat, type ProcessedFile } from "@/contexts/ChatContext";
 import { useArtifacts, detectArtifactType } from "@/contexts/ArtifactContext";
+import { useTeachMeSession } from "@/hooks/useTeachMeSession";
+import { parseControlTags, stripControlTags } from "@/lib/teachMePrompt";
 import { generateDocument, type DocType } from "@/utils/documentGenerator";
 import { usePersonalization } from "@/contexts/PersonalizationContext";
 import { useNavigate } from "react-router-dom";
@@ -68,6 +70,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
 import ArtifactViewer from "@/components/ArtifactViewer";
+import { TeachMePanel } from "@/components/TeachMePanel";
 import { getTimeBasedGreeting } from "@/utils/greetings";
 
 const SUGGESTIONS = [
