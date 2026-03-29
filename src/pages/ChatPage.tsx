@@ -186,8 +186,7 @@ const ChatPage = () => {
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [broadcastDismissed, setBroadcastDismissed] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const voiceTranscriptRef = useRef("");
+  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // placeholder to keep line refs
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -267,7 +266,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     return () => {
-      recognitionRef.current?.abort?.();
+      mediaRecorderRef.current?.stop();
     };
   }, []);
 
@@ -601,8 +600,11 @@ const ChatPage = () => {
     toast.success("Training complete! Your AI is now smarter. 🧠");
   };
 
-  const speechSupported =
-  typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const micSupported = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
 
   const applyVoiceDraft = () => {
     const transcript = voiceDraft.trim();
@@ -611,7 +613,6 @@ const ChatPage = () => {
     setInput((prev) => prev.trim() ? `${prev.trimEnd()} ${transcript}` : transcript);
     setVoiceDraft("");
     setShowVoicePreview(false);
-    voiceTranscriptRef.current = "";
 
     requestAnimationFrame(() => {
       const el = inputRef.current;
@@ -625,54 +626,88 @@ const ChatPage = () => {
   const discardVoiceDraft = () => {
     setVoiceDraft("");
     setShowVoicePreview(false);
-    voiceTranscriptRef.current = "";
     inputRef.current?.focus();
   };
 
-  const toggleVoice = () => {
-    if (!speechSupported) return;
+  const toggleVoice = async () => {
+    if (!micSupported) return;
+
+    // If currently listening, stop recording and transcribe
     if (isListening) {
-      recognitionRef.current?.stop();
+      mediaRecorderRef.current?.stop();
       return;
     }
 
-    voiceTranscriptRef.current = "";
     setVoiceDraft("");
     setShowVoicePreview(false);
+    audioChunksRef.current = [];
 
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = true;
-    recognitionRef.current = recognition;
-    recognition.onresult = (e: any) => {
-      let transcript = "";
-      for (let i = 0; i < e.results.length; i++) {
-        transcript += e.results[i][e.results[i].length - 1].transcript;
-      }
-      voiceTranscriptRef.current = transcript.trim();
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-      recognitionRef.current = null;
-      const transcript = voiceTranscriptRef.current.trim();
-      if (transcript) {
-        setVoiceDraft(transcript);
-        setShowVoicePreview(true);
-      } else {
-        inputRef.current?.focus();
-      }
-    };
-    recognition.onerror = (event: any) => {
-      setIsListening(false);
-      recognitionRef.current = null;
-      if (event?.error && event.error !== "no-speech" && event.error !== "aborted") {
-        toast.error("Voice input failed. Please try again.");
-      }
-    };
-    recognition.start();
-    setIsListening(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Stop all tracks so mic indicator goes away
+        stream.getTracks().forEach((t) => t.stop());
+        setIsListening(false);
+        mediaRecorderRef.current = null;
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        if (audioBlob.size < 1000) {
+          toast.error("Recording too short. Try again.");
+          return;
+        }
+
+        // Send to edge function for transcription
+        setIsTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "recording.webm");
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token;
+
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
+            method: "POST",
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: formData,
+          });
+
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || "Transcription failed");
+          }
+
+          const result = await resp.json();
+          const transcript = result.text?.trim();
+          if (transcript) {
+            setVoiceDraft(transcript);
+            setShowVoicePreview(true);
+          } else {
+            toast.error("No speech detected. Try again.");
+          }
+        } catch (err: any) {
+          console.error("Transcription error:", err);
+          toast.error(err.message || "Transcription failed. Please try again.");
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start(250); // collect chunks every 250ms
+      setIsListening(true);
+    } catch (err: any) {
+      console.error("Mic access error:", err);
+      toast.error("Microphone access denied. Please allow mic access.");
+    }
   };
 
 
@@ -1297,21 +1332,21 @@ const ChatPage = () => {
   // Chat input component
   const chatInput =
   <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
-    {isListening &&
+    {(isListening || isTranscribing) &&
     <div className="mb-2 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <VoiceInputVisualizer />
+            {isTranscribing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <VoiceInputVisualizer />}
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground">Listening…</p>
-              <p className="text-xs text-muted-foreground">Speak freely — tap Stop when you're done.</p>
+              <p className="text-sm font-medium text-foreground">{isTranscribing ? "Transcribing…" : "Listening…"}</p>
+              <p className="text-xs text-muted-foreground">{isTranscribing ? "Converting your speech to text." : "Speak freely — tap Stop when you're done."}</p>
             </div>
           </div>
-          <button
+          {isListening && <button
           onClick={toggleVoice}
           className="rounded-full border border-primary/20 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
             Stop
-          </button>
+          </button>}
         </div>
       </div>
     }
@@ -1431,8 +1466,10 @@ const ChatPage = () => {
         <div
         className="relative flex-shrink-0"
         title={
-        !speechSupported ?
+        !micSupported ?
         "Voice input isn't supported on this browser" :
+        isTranscribing ?
+        "Transcribing…" :
         isListening ?
         "Stop listening" :
         "Record voice"
@@ -1440,10 +1477,10 @@ const ChatPage = () => {
         
           <button
           onClick={toggleVoice}
-          disabled={!speechSupported}
-          className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
+          disabled={!micSupported || isTranscribing}
+          className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : isTranscribing ? "text-primary animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!micSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
           
-            <Mic className="w-4 h-4" />
+            {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
           </button>
         </div>
         <button
