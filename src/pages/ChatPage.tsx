@@ -1467,8 +1467,10 @@ const ChatPage = () => {
         <div
         className="relative flex-shrink-0"
         title={
-        !speechSupported ?
+        !micSupported ?
         "Voice input isn't supported on this browser" :
+        isTranscribing ?
+        "Transcribing…" :
         isListening ?
         "Stop listening" :
         "Record voice"
@@ -1476,10 +1478,10 @@ const ChatPage = () => {
         
           <button
           onClick={toggleVoice}
-          disabled={!speechSupported}
-          className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!speechSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
+          disabled={!micSupported || isTranscribing}
+          className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : isTranscribing ? "text-primary animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!micSupported ? "opacity-40 cursor-not-allowed" : ""}`}>
           
-            <Mic className="w-4 h-4" />
+            {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
           </button>
         </div>
         <button
