@@ -1061,18 +1061,7 @@ const ChatPage = () => {
             </> :
 
 
-      <div className="flex flex-col items-center gap-1">
-            {chats.slice(0, 8).map((chat) =>
-        <button
-          key={chat.id}
-          onClick={() => setActiveChat(chat.id)}
-          className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-colors ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"}`}
-          title={chat.title}>
-          
-                {chat.title.charAt(0).toUpperCase()}
-              </button>
-        )}
-          </div>
+      <div className="flex flex-col items-center gap-1" />
       }
       </div>
 
