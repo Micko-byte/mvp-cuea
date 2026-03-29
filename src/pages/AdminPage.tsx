@@ -10,7 +10,7 @@ import {
   UserCheck, BookMarked, Clock, Upload, Search,
   Download, Trash2, Plus, Shield, Database, Globe, Save,
   Edit, MessageSquare, Loader2, RefreshCw, ArrowLeft,
-  CreditCard, Zap, DollarSign
+  CreditCard, Zap, DollarSign, Megaphone, AlertTriangle, CheckCircle, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { id: "documents", label: "Documents", icon: FileText },
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "ai-config", label: "AI Config", icon: Zap },
+  { id: "broadcast", label: "Broadcast", icon: Megaphone },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
 ];
