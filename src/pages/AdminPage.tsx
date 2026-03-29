@@ -65,6 +65,14 @@ const AdminPage = () => {
   const [freeUsersCount, setFreeUsersCount] = useState(0);
   const [monthRevenue, setMonthRevenue] = useState(0);
   const [dailyRevenue, setDailyRevenue] = useState<{ date: string; amount: number }[]>([]);
+  const [userTokenUsageMap, setUserTokenUsageMap] = useState<Record<string, number>>({});
+  const [userChatCounts, setUserChatCounts] = useState<Record<string, number>>({});
+  const [userMaterialCounts, setUserMaterialCounts] = useState<Record<string, number>>({});
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [selectedUserChats, setSelectedUserChats] = useState<any[]>([]);
+  const [selectedUserMaterials, setSelectedUserMaterials] = useState<Material[]>([]);
+  const [selectedUserPayments, setSelectedUserPayments] = useState<any[]>([]);
+  const [selectedUserTokens, setSelectedUserTokens] = useState(0);
 
   // AI Config
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
