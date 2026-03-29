@@ -175,6 +175,22 @@ const AdminPage = () => {
     fetchData();
   };
 
+  const handleAdjustTokens = async (userId: string) => {
+    const amount = parseInt(tokenAdjustAmount);
+    if (isNaN(amount) || amount <= 0) { toast.error("Enter a valid positive number"); return; }
+    const tokensValue = tokenAdjustType === "subtract" ? amount : -amount;
+    const { error } = await supabase.from("token_usage").insert({
+      user_id: userId,
+      tokens_used: tokensValue,
+      model: tokenAdjustType === "add" ? "admin_bonus" : "admin_deduction",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Tokens ${tokenAdjustType === "add" ? "added" : "deducted"} successfully`);
+    setEditTokenDialog(null);
+    setTokenAdjustAmount("");
+    fetchData();
+  };
+
   const handleAddCourse = async () => {
     if (!newCourse.name || !newCourse.code || !newCourse.faculty) { toast.error("Fill all required fields"); return; }
     const { error } = await supabase.from("courses").insert({ name: newCourse.name, code: newCourse.code, faculty: newCourse.faculty, description: newCourse.description || null });
