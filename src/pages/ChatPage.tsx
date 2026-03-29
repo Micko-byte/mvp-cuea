@@ -1494,7 +1494,7 @@ const ChatPage = () => {
                         transition={{ delay: 0.2 }}
                         className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0">
                         {[
-                          { icon: BookOpen, label: "Teach Me", prompt: `Teach me this unit from the beginning. Start with a roadmap of all topics from the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}, then teach me topic by topic.` },
+                          { icon: BookOpen, label: "Teach Me", isTeachMe: true, prompt: `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.` },
                           { icon: PenLine, label: "Exam Prep", prompt: `Help me prepare for my ${selectedUnit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.` },
                           { icon: ListChecks, label: "Quiz Me", prompt: `Quiz me on ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.` },
                           { icon: FileText, label: "Summarize", prompt: `Give me a complete summary of all the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Organize by topic.` },
@@ -1504,7 +1504,20 @@ const ChatPage = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.25 + i * 0.08 }}
-                            onClick={() => handleSuggestion(s.prompt)}
+                            onClick={async () => {
+                              if ((s as any).isTeachMe) {
+                                setTeachMeActive(true);
+                                let chat = activeChat;
+                                if (!chat) {
+                                  chat = await createChat("unit", selectedUnitId!);
+                                }
+                                if (chat) {
+                                  await sendMessage(s.prompt, chat.id, undefined, true);
+                                }
+                              } else {
+                                handleSuggestion(s.prompt);
+                              }
+                            }}
                             className="inline-flex items-center gap-2 px-4 py-2.5 glass-card hover:-translate-y-0.5 transition-all"
                             style={{ borderRadius: "30px" }}>
                             <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
