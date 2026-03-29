@@ -219,6 +219,24 @@ const ChatPage = () => {
     loadUnits();
   }, [user]);
 
+  // Load active broadcast
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const loadBroadcast = async () => {
+      const { data } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "active_broadcast")
+        .single();
+      if (data?.value && (data.value as any).active) {
+        setActiveBroadcast(data.value);
+      }
+    };
+    loadBroadcast();
+    const interval = setInterval(loadBroadcast, 60000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   useEffect(() => {
     const handler = () => setShowPaymentDialog(true);
     window.addEventListener("show-payment-prompt", handler);
