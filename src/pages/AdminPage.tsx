@@ -76,6 +76,10 @@ const AdminPage = () => {
   const [addCourseOpen, setAddCourseOpen] = useState(false);
   const [addUnitOpen, setAddUnitOpen] = useState(false);
   const [editRoleDialog, setEditRoleDialog] = useState<{ userId: string; currentRole: string } | null>(null);
+  const [editTokenDialog, setEditTokenDialog] = useState<{ userId: string; email: string } | null>(null);
+  const [tokenAdjustAmount, setTokenAdjustAmount] = useState("");
+  const [tokenAdjustType, setTokenAdjustType] = useState<"add" | "subtract">("add");
+  const [userTokenUsage, setUserTokenUsage] = useState<Record<string, number>>({});
 
   const [newCourse, setNewCourse] = useState({ name: "", code: "", faculty: "", description: "" });
   const [newUnit, setNewUnit] = useState({ name: "", code: "", course_id: "", semester: "1", year: "1", lecturer: "" });
@@ -168,6 +172,22 @@ const AdminPage = () => {
     if (error) { toast.error(error.message); return; }
     toast.success("Role updated");
     setEditRoleDialog(null);
+    fetchData();
+  };
+
+  const handleAdjustTokens = async (userId: string) => {
+    const amount = parseInt(tokenAdjustAmount);
+    if (isNaN(amount) || amount <= 0) { toast.error("Enter a valid positive number"); return; }
+    const tokensValue = tokenAdjustType === "subtract" ? amount : -amount;
+    const { error } = await supabase.from("token_usage").insert({
+      user_id: userId,
+      tokens_used: tokensValue,
+      model: tokenAdjustType === "add" ? "admin_bonus" : "admin_deduction",
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Tokens ${tokenAdjustType === "add" ? "added" : "deducted"} successfully`);
+    setEditTokenDialog(null);
+    setTokenAdjustAmount("");
     fetchData();
   };
 
@@ -417,8 +437,9 @@ const AdminPage = () => {
                           </td>
                           <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{u.program || "—"}</td>
                           <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">{new Date(u.created_at).toLocaleDateString()}</td>
-                          <td className="px-6 py-4 text-right">
-                            <button onClick={() => setEditRoleDialog({ userId: u.user_id, currentRole: userRole })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground"><Edit className="w-3.5 h-3.5" /></button>
+                          <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                            <button onClick={() => setEditTokenDialog({ userId: u.user_id, email: u.email })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Tokens"><Zap className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setEditRoleDialog({ userId: u.user_id, currentRole: userRole })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Role"><Edit className="w-3.5 h-3.5" /></button>
                           </td>
                         </tr>
                       );
@@ -778,7 +799,7 @@ const AdminPage = () => {
               <div className="flex items-center gap-3 mb-2"><Globe className="w-5 h-5 text-primary" /><h3 className="font-display font-semibold text-foreground">System Information</h3></div>
               <div className="space-y-3">
                 {[
-                  ["Platform", "Sekani AI — Soma na Sekani"],
+                  ["Platform", "Sekani — Soma na Sekani"],
                   ["AI Chat Model", String(systemSettings.default_model_general || "gpt-4o-mini").replace(/"/g, "")],
                   ["Free Daily Limit", `${Number(systemSettings.token_limit_free || 50000).toLocaleString()} tokens`],
                   ["Paid Daily Limit", `${Number(systemSettings.token_limit_paid || 200000).toLocaleString()} tokens`],
@@ -813,7 +834,7 @@ const AdminPage = () => {
           {sidebarOpen ? (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
-              <div><span className="font-display font-bold text-sidebar-foreground text-lg">Sekani AI</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
+              <div><span className="font-display font-bold text-sidebar-foreground text-lg">Sekani</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
@@ -855,7 +876,7 @@ const AdminPage = () => {
             <div className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
-                <div><span className="font-display font-bold text-sidebar-foreground text-lg">Sekani AI</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
+                <div><span className="font-display font-bold text-sidebar-foreground text-lg">Sekani</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
               </div>
             </div>
             <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -949,6 +970,39 @@ const AdminPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editTokenDialog} onOpenChange={() => { setEditTokenDialog(null); setTokenAdjustAmount(""); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Adjust User Tokens</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{editTokenDialog?.email}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTokenAdjustType("add")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${tokenAdjustType === "add" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              >+ Add Tokens</button>
+              <button
+                onClick={() => setTokenAdjustType("subtract")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${tokenAdjustType === "subtract" ? "bg-destructive text-destructive-foreground" : "bg-muted text-muted-foreground"}`}
+              >− Deduct Tokens</button>
+            </div>
+            <Input
+              type="number"
+              placeholder="Amount (e.g. 10000)"
+              value={tokenAdjustAmount}
+              onChange={(e) => setTokenAdjustAmount(e.target.value)}
+            />
+            <Button
+              onClick={() => { if (editTokenDialog) handleAdjustTokens(editTokenDialog.userId); }}
+              className="w-full"
+              disabled={!tokenAdjustAmount}
+            >
+              {tokenAdjustType === "add" ? "Add" : "Deduct"} Tokens
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={addBulkUnitsOpen} onOpenChange={setAddBulkUnitsOpen}>
         <DialogContent className="max-w-lg">

@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createHmac } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +60,26 @@ serve(async (req) => {
 
       console.log(`Payment successful for user ${userId}, reference: ${reference}`);
 
+      // Send welcome email to paying user
+      const userEmail = customer?.email || metadata?.email;
+      if (userEmail) {
+        try {
+          const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+          // Simple welcome email via Paystack (or log for now)
+          console.log(`Welcome email would be sent to: ${userEmail}`);
+          
+          // Store a welcome notification in student_memory
+          await supabaseAdmin.from("student_memory").insert({
+            user_id: userId,
+            memory_type: "system",
+            subject: "Premium Welcome",
+            content: `Welcome to Sekani Premium! 🎓 You now have unlimited tokens. Thank you for upgrading.`,
+          });
+        } catch (emailErr) {
+          console.error("Welcome notification error:", emailErr);
+        }
+      }
+
       // Handle group plan: activate group members
       const planType = metadata?.plan || "individual";
       const groupEmails: string[] = metadata?.group_emails || [];
@@ -88,6 +107,15 @@ serve(async (req) => {
               group_emails: [],
               paystack_reference: `${reference}_group_${memberEmail}`,
             });
+
+            // Send welcome notification to group member
+            await supabaseAdmin.from("student_memory").insert({
+              user_id: memberProfile.user_id,
+              memory_type: "system",
+              subject: "Premium Welcome",
+              content: `Welcome to Sekani Premium! 🎓 You've been added to a group plan. You now have unlimited tokens.`,
+            });
+
             console.log(`Activated group member: ${memberEmail}`);
           } else {
             console.log(`Group member not found (not yet registered): ${memberEmail}`);
