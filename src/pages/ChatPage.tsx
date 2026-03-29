@@ -821,9 +821,7 @@ const ChatPage = () => {
           </div> :
 
       <div className="flex flex-col items-center gap-2 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-sidebar-primary" />
-            </div>
+            <img src={sekaniLogo} alt="Sekani" className="w-9 h-9" />
             <button
           onClick={toggleSidebar}
           className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
@@ -1454,9 +1452,9 @@ const ChatPage = () => {
                             `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-bl-md ${!hasCustomBg ? "bg-muted text-foreground" : ""}`;
                             return (
                               <div className={bubbleClass} style={bubbleStyle}>
-                                      {msg.sender === "bot" &&
+                      {msg.sender === "bot" &&
                                 <div className="flex items-center gap-1.5 mb-1.5">
-                                          <Sparkles className="w-3.5 h-3.5 text-primary" />
+                                          <img src={sekaniLogo} alt="Sekani" className="w-4 h-4" />
                                           <span className="text-xs font-semibold text-primary">Sekani</span>
                                         </div>
                                 }
