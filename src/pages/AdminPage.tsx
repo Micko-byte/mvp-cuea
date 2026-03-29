@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import sekaniLogo from "@/assets/sekani-logo.png";
 import {
   LayoutDashboard, Users, BookOpen, FileText, BarChart3,
   Settings, LogOut, GraduationCap, Menu, X, TrendingUp,
@@ -833,12 +834,12 @@ const AdminPage = () => {
         <div className={`p-4 ${!sidebarOpen ? "px-1.5 py-3" : ""}`}>
           {sidebarOpen ? (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
+              <img src={sekaniLogo} alt="Sekani" className="w-9 h-9" />
               <div><span className="font-display font-bold text-sidebar-foreground text-lg">Sekani</span><p className="text-xs text-sidebar-foreground/50">Admin Panel</p></div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
+              <img src={sekaniLogo} alt="Sekani" className="w-9 h-9" />
             </div>
           )}
         </div>

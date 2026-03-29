@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
+import sekaniLogo from "@/assets/sekani-logo.png";
 import { Download } from "lucide-react";
 import {
   Plus,
@@ -792,6 +793,7 @@ const ChatPage = () => {
       <div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
         {sidebarExpanded || isMobile ?
       <div className="flex items-center gap-3 mb-4">
+            <img src={sekaniLogo} alt="Sekani" className="w-8 h-8" />
             <span className="font-display font-bold text-sidebar-foreground text-lg">Sekani</span>
             <button
           onClick={toggleSidebar}
