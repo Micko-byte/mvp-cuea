@@ -134,6 +134,8 @@ const ChatPage = () => {
   useChat();
   const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
   const { nickname, getChatBg } = usePersonalization();
+  const teachMe = useTeachMeSession();
+  const [teachMeActive, setTeachMeActive] = useState(false);
   const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
