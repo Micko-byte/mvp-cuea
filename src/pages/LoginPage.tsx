@@ -183,8 +183,8 @@ const LoginPage = () => {
     });
     setLoading(false);
     if (result.error) { setError(result.error); return; }
-    toast.success("Verification code sent to your email! Check your inbox.");
-    setSignupStep(0.5 as any); // OTP step
+    toast.success("Account created! Continue setting up your profile.");
+    setSignupStep(1);
   };
 
   const handleOtpVerify = async () => {
@@ -394,8 +394,8 @@ const LoginPage = () => {
     );
   };
 
-  const totalSteps = 5;
-  const currentStepDisplay = signupStep === 0.5 ? 2 : signupStep >= 1 ? Math.floor(signupStep) + 2 : 1;
+  const totalSteps = 4;
+  const currentStepDisplay = signupStep >= 0 ? Math.floor(signupStep) + 1 : 1;
 
   const selectedUnitsData = dbUnits.filter(u => selectedUnitIds.includes(u.id));
 
@@ -536,56 +536,6 @@ const LoginPage = () => {
                         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                         Create Account <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
-                    </motion.div>
-                  )}
-
-                  {/* OTP VERIFICATION STEP */}
-                  {signupStep === 0.5 && (
-                    <motion.div key="otp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                      <div className="text-center">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center">
-                          <Mail className="w-6 h-6 text-primary" />
-                        </div>
-                        <h3 className="font-display font-semibold text-foreground">Verify Your Email</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          We sent a 6-digit code to <strong>{signupEmail}</strong>
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Verification Code</Label>
-                        <Input
-                          type="text"
-                          placeholder="000000"
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          className="text-center text-2xl tracking-[0.5em] font-mono"
-                          maxLength={6}
-                          autoFocus
-                        />
-                        <p className="text-xs text-muted-foreground text-center">Code expires in 10 minutes</p>
-                      </div>
-                      <Button type="button" onClick={handleOtpVerify} className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading || otpCode.length !== 6}>
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                        Verify Email <ArrowRight className="ml-2 w-4 h-4" />
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (resendCooldown > 0) return;
-                          setLoading(true);
-                          const { error: resendErr } = await supabase.auth.resend({ type: "signup", email: signupEmail });
-                          setLoading(false);
-                          if (resendErr) toast.error(resendErr.message);
-                          else {
-                            toast.success("New code sent! Check your inbox.");
-                            setResendCooldown(30);
-                          }
-                        }}
-                        className="w-full text-center text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:no-underline"
-                        disabled={resendCooldown > 0 || loading}
-                      >
-                        {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive it? Resend code"}
-                      </button>
                     </motion.div>
                   )}
 
