@@ -839,7 +839,7 @@ const AdminPage = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center"><GraduationCap className="w-5 h-5 text-sidebar-primary" /></div>
+              <img src={sekaniLogo} alt="Sekani" className="w-9 h-9" />
             </div>
           )}
         </div>
