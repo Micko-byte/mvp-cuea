@@ -148,12 +148,20 @@ const LoginPage = () => {
     if (result.error) setError(result.error);
   };
 
-  const canProceedStep0 = name && signupEmail && signupPassword.length >= 6 && termsAccepted;
+  const canProceedStep0 = name && signupEmail && signupPassword.length >= 6 && confirmPassword && termsAccepted;
   const canProceedStep1 = selectedCourseId && year && semester;
 
   const handleStep0Verify = async () => {
     if (!canProceedStep0) {
       setError("Fill all fields, accept terms, and use a password with min 6 characters");
+      return;
+    }
+    if (signupPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (signupPassword.length < 6) {
+      setError("Password must be at least 6 characters");
       return;
     }
     const emailLower = signupEmail.toLowerCase();
@@ -168,7 +176,28 @@ const LoginPage = () => {
     });
     setLoading(false);
     if (result.error) { setError(result.error); return; }
-    toast.success("Account created! Continue setting up your profile.");
+    toast.success("Verification code sent to your email! Check your inbox.");
+    setSignupStep(0.5 as any); // OTP step
+  };
+
+  const handleOtpVerify = async () => {
+    if (otpCode.length !== 6) {
+      setError("Enter the 6-digit code from your email");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    const { error: otpError } = await supabase.auth.verifyOtp({
+      email: signupEmail,
+      token: otpCode,
+      type: "signup",
+    });
+    setLoading(false);
+    if (otpError) {
+      setError(otpError.message);
+      return;
+    }
+    toast.success("Email verified! Continue setting up your profile.");
     setSignupStep(1);
   };
 
