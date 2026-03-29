@@ -17,3 +17,5 @@ project_id = "yqjorkcibfdxmuqrcpnn"
     verify_jwt = false
   [functions.send-broadcast]
     verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
