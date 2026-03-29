@@ -1395,14 +1395,39 @@ const ChatPage = () => {
               </h2>
             </div>
             <button
-              onClick={() => {
-                setTeachMeActive(!teachMeActive);
-                if (!teachMeActive && activeChat) {
-                  teachMe.loadSession(activeChat.id);
-                }
+              onClick={async () => {
                 if (teachMeActive) {
+                  // Turning off
                   teachMe.endSession();
+                  setTeachMeActive(false);
                   document.body.classList.remove('focus-mode');
+                  return;
+                }
+                // Turning on
+                setTeachMeActive(true);
+                
+                // Try to load existing session
+                if (activeChat) {
+                  const existing = await teachMe.loadSession(activeChat.id);
+                  if (existing) return; // Resume existing session
+                }
+                
+                // Auto-send initial message to start Teach Me
+                const unitName = selectedUnit ? selectedUnit.unit_name : null;
+                const initialPrompt = unitName
+                  ? `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`
+                  : `Start Teach Me Mode. Ask me what unit I want to study.`;
+                
+                let chat = activeChat;
+                if (!chat) {
+                  if (mainTab === "units" && selectedUnitId) {
+                    chat = await createChat("unit", selectedUnitId);
+                  } else {
+                    chat = await createChat("general");
+                  }
+                }
+                if (chat) {
+                  await sendMessage(initialPrompt, chat.id, undefined, true);
                 }
               }}
               className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
@@ -1469,7 +1494,7 @@ const ChatPage = () => {
                         transition={{ delay: 0.2 }}
                         className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0">
                         {[
-                          { icon: BookOpen, label: "Teach Me", prompt: `Teach me this unit from the beginning. Start with a roadmap of all topics from the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}, then teach me topic by topic.` },
+                          { icon: BookOpen, label: "Teach Me", isTeachMe: true, prompt: `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.` },
                           { icon: PenLine, label: "Exam Prep", prompt: `Help me prepare for my ${selectedUnit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.` },
                           { icon: ListChecks, label: "Quiz Me", prompt: `Quiz me on ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.` },
                           { icon: FileText, label: "Summarize", prompt: `Give me a complete summary of all the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Organize by topic.` },
@@ -1479,7 +1504,20 @@ const ChatPage = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.25 + i * 0.08 }}
-                            onClick={() => handleSuggestion(s.prompt)}
+                            onClick={async () => {
+                              if ((s as any).isTeachMe) {
+                                setTeachMeActive(true);
+                                let chat = activeChat;
+                                if (!chat) {
+                                  chat = await createChat("unit", selectedUnitId!);
+                                }
+                                if (chat) {
+                                  await sendMessage(s.prompt, chat.id, undefined, true);
+                                }
+                              } else {
+                                handleSuggestion(s.prompt);
+                              }
+                            }}
                             className="inline-flex items-center gap-2 px-4 py-2.5 glass-card hover:-translate-y-0.5 transition-all"
                             style={{ borderRadius: "30px" }}>
                             <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
