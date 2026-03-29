@@ -1105,6 +1105,25 @@ const AdminPage = () => {
                   {broadcastSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                   {broadcastSending ? "Sending..." : `Send to All ${profiles.length} Users`}
                 </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await supabase.from("system_settings").upsert({
+                        key: "active_broadcast",
+                        value: { active: false },
+                        updated_at: new Date().toISOString(),
+                      });
+                      toast.success("Broadcast cleared");
+                    } catch (err: any) {
+                      toast.error("Failed to clear broadcast");
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <X className="w-4 h-4 mr-2" /> Clear Active Broadcast
+                </Button>
               </div>
             </div>
           </div>
