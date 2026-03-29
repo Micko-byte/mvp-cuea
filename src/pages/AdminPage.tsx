@@ -88,7 +88,7 @@ const AdminPage = () => {
   const [editTokenDialog, setEditTokenDialog] = useState<{ userId: string; email: string } | null>(null);
   const [tokenAdjustAmount, setTokenAdjustAmount] = useState("");
   const [tokenAdjustType, setTokenAdjustType] = useState<"add" | "subtract">("add");
-  const [userTokenUsage, setUserTokenUsage] = useState<Record<string, number>>({});
+  const [userTokenUsage] = useState<Record<string, number>>({});
 
   const [newCourse, setNewCourse] = useState({ name: "", code: "", faculty: "", description: "" });
   const [newUnit, setNewUnit] = useState({ name: "", code: "", course_id: "", semester: "1", year: "1", lecturer: "" });
