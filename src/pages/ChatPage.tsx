@@ -1826,12 +1826,12 @@ const ChatPage = () => {
               <Loader2 className="w-12 h-12 animate-spin text-primary" />
               <p className="text-lg font-semibold">Authenticating Payment...</p>
               <p className="text-sm text-muted-foreground text-center">
-                Please complete the M-Pesa prompt on your phone.<br />This may take a moment.
+                {paymentMethod === "card" ? "Complete payment in the new tab." : "Please complete the M-Pesa prompt on your phone."}<br />We'll detect it automatically.
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { setPaymentVerifying(false); }}
+                onClick={cancelPaymentPolling}
                 className="mt-4"
               >
                 Cancel
