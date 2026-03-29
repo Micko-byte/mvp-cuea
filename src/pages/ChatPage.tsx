@@ -583,8 +583,7 @@ const ChatPage = () => {
     };
     recognition.onend = () => {
       setIsListening(false);
-      const currentInput = document.querySelector<HTMLTextAreaElement>('textarea')?.value?.trim();
-      if (currentInput) handleSend(currentInput);
+      inputRef.current?.focus();
     };
     recognition.onerror = () => setIsListening(false);
     recognition.start();
