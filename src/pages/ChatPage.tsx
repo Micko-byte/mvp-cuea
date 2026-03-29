@@ -128,6 +128,18 @@ const TypingIndicator = () =>
     </div>
   </motion.div>;
 
+const VoiceInputVisualizer = () =>
+<div className="flex h-8 items-end gap-1" aria-hidden="true">
+    {[0, 1, 2, 3, 4].map((i) =>
+  <motion.div
+    key={i}
+    className="w-1.5 rounded-full bg-primary"
+    animate={{ height: [10, 24 - i * 2, 14 + (i % 2) * 8, 20 - (i % 3) * 3, 10] }}
+    transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }} />
+
+  )}
+  </div>;
+
 
 const ChatPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading: authLoading, refreshProfile } = useAuth();
@@ -147,6 +159,8 @@ const ChatPage = () => {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceDraft, setVoiceDraft] = useState("");
+  const [showVoicePreview, setShowVoicePreview] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
@@ -173,6 +187,7 @@ const ChatPage = () => {
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [broadcastDismissed, setBroadcastDismissed] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const voiceTranscriptRef = useRef("");
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -248,6 +263,12 @@ const ChatPage = () => {
     const handler = () => setShowPaymentDialog(true);
     window.addEventListener("show-payment-prompt", handler);
     return () => window.removeEventListener("show-payment-prompt", handler);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -562,12 +583,42 @@ const ChatPage = () => {
   const speechSupported =
   typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
+  const applyVoiceDraft = () => {
+    const transcript = voiceDraft.trim();
+    if (!transcript) return;
+
+    setInput((prev) => prev.trim() ? `${prev.trimEnd()} ${transcript}` : transcript);
+    setVoiceDraft("");
+    setShowVoicePreview(false);
+    voiceTranscriptRef.current = "";
+
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
+      el.focus();
+    });
+  };
+
+  const discardVoiceDraft = () => {
+    setVoiceDraft("");
+    setShowVoicePreview(false);
+    voiceTranscriptRef.current = "";
+    inputRef.current?.focus();
+  };
+
   const toggleVoice = () => {
     if (!speechSupported) return;
     if (isListening) {
       recognitionRef.current?.stop();
       return;
     }
+
+    voiceTranscriptRef.current = "";
+    setVoiceDraft("");
+    setShowVoicePreview(false);
+
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SR();
     recognition.lang = "en-US";
@@ -579,13 +630,26 @@ const ChatPage = () => {
       for (let i = 0; i < e.results.length; i++) {
         transcript += e.results[i][0].transcript;
       }
-      setInput(transcript);
+      voiceTranscriptRef.current = transcript.trim();
     };
     recognition.onend = () => {
       setIsListening(false);
-      inputRef.current?.focus();
+      recognitionRef.current = null;
+      const transcript = voiceTranscriptRef.current.trim();
+      if (transcript) {
+        setVoiceDraft(transcript);
+        setShowVoicePreview(true);
+      } else {
+        inputRef.current?.focus();
+      }
     };
-    recognition.onerror = () => setIsListening(false);
+    recognition.onerror = (event: any) => {
+      setIsListening(false);
+      recognitionRef.current = null;
+      if (event?.error && event.error !== "no-speech" && event.error !== "aborted") {
+        toast.error("Voice input failed. Please try again.");
+      }
+    };
     recognition.start();
     setIsListening(true);
   };
@@ -1212,6 +1276,48 @@ const ChatPage = () => {
   // Chat input component
   const chatInput =
   <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
+    {isListening &&
+    <div className="mb-2 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <VoiceInputVisualizer />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Listening…</p>
+              <p className="text-xs text-muted-foreground">Talk first, then tap the mic again to review.</p>
+            </div>
+          </div>
+          <button
+          onClick={toggleVoice}
+          className="rounded-full border border-primary/20 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+            Stop
+          </button>
+        </div>
+      </div>
+    }
+    {showVoicePreview && !isListening && voiceDraft &&
+    <div className="mb-2 rounded-3xl border border-border bg-card px-4 py-3">
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Voice preview</p>
+            <p className="mt-1 text-sm text-foreground break-words">{voiceDraft}</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+            onClick={discardVoiceDraft}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            title="Discard voice note">
+              <X className="w-4 h-4" />
+            </button>
+            <button
+            onClick={applyVoiceDraft}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90"
+            title="Use transcript">
+              <Check className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    }
     {attachedFiles.length > 0 &&
     <div className="flex flex-wrap gap-1.5 mb-2">
           {attachedFiles.map((pf, i) =>
@@ -1307,8 +1413,8 @@ const ChatPage = () => {
         !speechSupported ?
         "Voice input isn't supported on this browser" :
         isListening ?
-        "Stop recording" :
-        "Voice input"
+        "Stop listening" :
+        "Record voice"
         }>
         
           <button
