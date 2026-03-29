@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.embed-document]
 verify_jwt = false
+
+[functions.send-broadcast]
+verify_jwt = false
