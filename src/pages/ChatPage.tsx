@@ -601,8 +601,11 @@ const ChatPage = () => {
     toast.success("Training complete! Your AI is now smarter. 🧠");
   };
 
-  const speechSupported =
-  typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const micSupported = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
 
   const applyVoiceDraft = () => {
     const transcript = voiceDraft.trim();
@@ -611,7 +614,6 @@ const ChatPage = () => {
     setInput((prev) => prev.trim() ? `${prev.trimEnd()} ${transcript}` : transcript);
     setVoiceDraft("");
     setShowVoicePreview(false);
-    voiceTranscriptRef.current = "";
 
     requestAnimationFrame(() => {
       const el = inputRef.current;
@@ -625,54 +627,88 @@ const ChatPage = () => {
   const discardVoiceDraft = () => {
     setVoiceDraft("");
     setShowVoicePreview(false);
-    voiceTranscriptRef.current = "";
     inputRef.current?.focus();
   };
 
-  const toggleVoice = () => {
-    if (!speechSupported) return;
+  const toggleVoice = async () => {
+    if (!micSupported) return;
+
+    // If currently listening, stop recording and transcribe
     if (isListening) {
-      recognitionRef.current?.stop();
+      mediaRecorderRef.current?.stop();
       return;
     }
 
-    voiceTranscriptRef.current = "";
     setVoiceDraft("");
     setShowVoicePreview(false);
+    audioChunksRef.current = [];
 
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.interimResults = true;
-    recognition.continuous = true;
-    recognitionRef.current = recognition;
-    recognition.onresult = (e: any) => {
-      let transcript = "";
-      for (let i = 0; i < e.results.length; i++) {
-        transcript += e.results[i][e.results[i].length - 1].transcript;
-      }
-      voiceTranscriptRef.current = transcript.trim();
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-      recognitionRef.current = null;
-      const transcript = voiceTranscriptRef.current.trim();
-      if (transcript) {
-        setVoiceDraft(transcript);
-        setShowVoicePreview(true);
-      } else {
-        inputRef.current?.focus();
-      }
-    };
-    recognition.onerror = (event: any) => {
-      setIsListening(false);
-      recognitionRef.current = null;
-      if (event?.error && event.error !== "no-speech" && event.error !== "aborted") {
-        toast.error("Voice input failed. Please try again.");
-      }
-    };
-    recognition.start();
-    setIsListening(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Stop all tracks so mic indicator goes away
+        stream.getTracks().forEach((t) => t.stop());
+        setIsListening(false);
+        mediaRecorderRef.current = null;
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        if (audioBlob.size < 1000) {
+          toast.error("Recording too short. Try again.");
+          return;
+        }
+
+        // Send to edge function for transcription
+        setIsTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "recording.webm");
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token;
+
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
+            method: "POST",
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: formData,
+          });
+
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || "Transcription failed");
+          }
+
+          const result = await resp.json();
+          const transcript = result.text?.trim();
+          if (transcript) {
+            setVoiceDraft(transcript);
+            setShowVoicePreview(true);
+          } else {
+            toast.error("No speech detected. Try again.");
+          }
+        } catch (err: any) {
+          console.error("Transcription error:", err);
+          toast.error(err.message || "Transcription failed. Please try again.");
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start(250); // collect chunks every 250ms
+      setIsListening(true);
+    } catch (err: any) {
+      console.error("Mic access error:", err);
+      toast.error("Microphone access denied. Please allow mic access.");
+    }
   };
 
 
