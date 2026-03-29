@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import sekaniLogo from "@/assets/sekani-logo.png";
 import {
   LayoutDashboard, Users, BookOpen, FileText, BarChart3,
   Settings, LogOut, GraduationCap, Menu, X, TrendingUp,

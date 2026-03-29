@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
+import sekaniLogo from "@/assets/sekani-logo.png";
 import { Download } from "lucide-react";
 import {
   Plus,

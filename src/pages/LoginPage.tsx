@@ -368,7 +368,7 @@ const LoginPage = () => {
       >
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 mb-4">
-            <GraduationCap className="w-8 h-8 text-primary-foreground" />
+            <img src={sekaniLogo} alt="Sekani" className="w-12 h-12" />
           </div>
           <h1 className="text-3xl font-display font-bold text-primary-foreground">Sekani</h1>
           <p className="text-primary-foreground/60 mt-1 font-body">Your AI Study Assistant</p>
