@@ -210,6 +210,21 @@ const AdminPage = () => {
     fetchData();
   };
 
+  const viewUserDetails = async (u: Profile) => {
+    setSelectedUser(u);
+    const userId = u.user_id;
+    const [chatsRes, matsRes, paysRes, tokenRes] = await Promise.all([
+      supabase.from("chats").select("id, title, chat_type, created_at, updated_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(20),
+      supabase.from("materials").select("*").eq("uploaded_by", userId).order("created_at", { ascending: false }),
+      supabase.from("payments").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+      supabase.from("token_usage").select("tokens_used").eq("user_id", userId).gte("created_at", new Date().toISOString().split("T")[0]),
+    ]);
+    setSelectedUserChats(chatsRes.data || []);
+    setSelectedUserMaterials((matsRes.data || []) as Material[]);
+    setSelectedUserPayments(paysRes.data || []);
+    setSelectedUserTokens(tokenRes.data?.reduce((s, t) => s + t.tokens_used, 0) || 0);
+  };
+
   const handleAddCourse = async () => {
     if (!newCourse.name || !newCourse.code || !newCourse.faculty) { toast.error("Fill all required fields"); return; }
     const { error } = await supabase.from("courses").insert({ name: newCourse.name, code: newCourse.code, faculty: newCourse.faculty, description: newCourse.description || null });
