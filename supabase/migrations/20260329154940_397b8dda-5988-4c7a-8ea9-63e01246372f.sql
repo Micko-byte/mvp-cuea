@@ -1,0 +1,1 @@
+UPDATE system_settings SET value = jsonb_set(value::jsonb, '{active}', 'false')::jsonb, updated_at = now() WHERE key = 'active_broadcast';
