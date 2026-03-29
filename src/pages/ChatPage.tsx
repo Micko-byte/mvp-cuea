@@ -570,20 +570,19 @@ const ChatPage = () => {
     const recognition = new SR();
     recognition.lang = "en-US";
     recognition.interimResults = true;
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognitionRef.current = recognition;
-    let finalTranscript = "";
     recognition.onresult = (e: any) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;else
-        interim += e.results[i][0].transcript;
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
       }
-      setInput(finalTranscript + interim);
+      setInput(transcript);
     };
     recognition.onend = () => {
       setIsListening(false);
-      if (finalTranscript.trim()) handleSend(finalTranscript.trim());
+      const currentInput = document.querySelector<HTMLTextAreaElement>('textarea')?.value?.trim();
+      if (currentInput) handleSend(currentInput);
     };
     recognition.onerror = () => setIsListening(false);
     recognition.start();
