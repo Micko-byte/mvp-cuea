@@ -158,9 +158,19 @@ const AdminPage = () => {
 
     const { data: tokenData } = await supabase
       .from("token_usage")
-      .select("tokens_used")
+      .select("tokens_used, user_id")
       .gte("created_at", new Date().toISOString().split("T")[0]);
     setTokenUsageToday(tokenData?.reduce((sum, t) => sum + t.tokens_used, 0) || 0);
+
+    // Per-user token usage today
+    const tokenMap: Record<string, number> = {};
+    tokenData?.forEach(t => { tokenMap[t.user_id] = (tokenMap[t.user_id] || 0) + t.tokens_used; });
+    setUserTokenUsageMap(tokenMap);
+
+    // Per-user material counts
+    const matMap: Record<string, number> = {};
+    materialsRes.data?.forEach((m: any) => { matMap[m.uploaded_by] = (matMap[m.uploaded_by] || 0) + 1; });
+    setUserMaterialCounts(matMap);
 
     setLoading(false);
   }, []);
