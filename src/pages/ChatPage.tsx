@@ -333,6 +333,27 @@ const ChatPage = () => {
     if (renamingChatId) renameInputRef.current?.focus();
   }, [renamingChatId]);
 
+  // Auto-restore Teach Me session when switching chats or on reload
+  useEffect(() => {
+    if (!activeChat) return;
+    const restoreTeachMe = async () => {
+      const existing = await teachMe.loadSession(activeChat.id);
+      if (existing && existing.status === 'active') {
+        setTeachMeActive(true);
+        if (existing.focusMode) {
+          document.body.classList.add('focus-mode');
+        }
+      } else {
+        // Only reset if we switched to a chat with no active session
+        if (teachMeActive && !teachMe.session) {
+          setTeachMeActive(false);
+          document.body.classList.remove('focus-mode');
+        }
+      }
+    };
+    restoreTeachMe();
+  }, [activeChat?.id]);
+
   const handleTouchStart = useCallback((e: TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
