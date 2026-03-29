@@ -43,7 +43,7 @@ interface ChatContextType {
   isStreaming: boolean;
   createChat: (chatType?: "general" | "unit", unitId?: string) => Promise<Chat | null>;
   setActiveChat: (id: string) => void;
-  sendMessage: (text: string, overrideChatId?: string, files?: ProcessedFile[]) => Promise<void>;
+  sendMessage: (text: string, overrideChatId?: string, files?: ProcessedFile[], teachMeMode?: boolean) => Promise<void>;
   deleteChat: (id: string) => Promise<void>;
   renameChat: (id: string, newTitle: string) => Promise<void>;
   loadChats: () => Promise<void>;
@@ -229,7 +229,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const sendMessage = useCallback(async (text: string, overrideChatId?: string, attachedFiles?: ProcessedFile[]) => {
+  const sendMessage = useCallback(async (text: string, overrideChatId?: string, attachedFiles?: ProcessedFile[], teachMeMode?: boolean) => {
     const chatId = overrideChatId || activeChatId;
     if (!user || !chatId) return;
 
@@ -377,6 +377,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const bodyPayload: Record<string, unknown> = { messages: aiMessages, chatId };
       if (currentChat?.unit_id) bodyPayload.unitId = currentChat.unit_id;
+      if (teachMeMode) bodyPayload.teachMeMode = true;
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",

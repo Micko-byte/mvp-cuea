@@ -471,6 +471,54 @@ export type Database = {
         }
         Relationships: []
       }
+      teach_me_sessions: {
+        Row: {
+          checkpoint_scores: Json
+          completed_topics: Json
+          created_at: string | null
+          current_topic_index: number
+          eli5_triggers: number
+          focus_mode: boolean
+          id: string
+          status: string
+          thread_id: string
+          topic_outline: Json
+          unit_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          checkpoint_scores?: Json
+          completed_topics?: Json
+          created_at?: string | null
+          current_topic_index?: number
+          eli5_triggers?: number
+          focus_mode?: boolean
+          id?: string
+          status?: string
+          thread_id: string
+          topic_outline?: Json
+          unit_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          checkpoint_scores?: Json
+          completed_topics?: Json
+          created_at?: string | null
+          current_topic_index?: number
+          eli5_triggers?: number
+          focus_mode?: boolean
+          id?: string
+          status?: string
+          thread_id?: string
+          topic_outline?: Json
+          unit_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       token_usage: {
         Row: {
           created_at: string

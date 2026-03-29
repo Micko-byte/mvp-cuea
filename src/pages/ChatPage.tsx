@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat, type ProcessedFile } from "@/contexts/ChatContext";
 import { useArtifacts, detectArtifactType } from "@/contexts/ArtifactContext";
+import { useTeachMeSession } from "@/hooks/useTeachMeSession";
+import { parseControlTags, stripControlTags } from "@/lib/teachMePrompt";
 import { generateDocument, type DocType } from "@/utils/documentGenerator";
 import { usePersonalization } from "@/contexts/PersonalizationContext";
 import { useNavigate } from "react-router-dom";
@@ -68,6 +70,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
 import ArtifactViewer from "@/components/ArtifactViewer";
+import { TeachMePanel } from "@/components/TeachMePanel";
 import { getTimeBasedGreeting } from "@/utils/greetings";
 
 const SUGGESTIONS = [
@@ -131,6 +134,8 @@ const ChatPage = () => {
   useChat();
   const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
   const { nickname, getChatBg } = usePersonalization();
+  const teachMe = useTeachMeSession();
+  const [teachMeActive, setTeachMeActive] = useState(false);
   const navigate = useNavigate();
   const [input, setInput] = useState("");
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
@@ -429,7 +434,7 @@ const ChatPage = () => {
     setInput("");
     setAttachedFiles([]);
     inputRef.current?.focus();
-    await sendMessage(text, chat.id, filesToSend);
+    await sendMessage(text, chat.id, filesToSend, teachMeActive);
   };
 
   // Unit training upload handler
@@ -1349,6 +1354,22 @@ const ChatPage = () => {
               </h2>
             </div>
             <button
+              onClick={() => {
+                setTeachMeActive(!teachMeActive);
+                if (!teachMeActive && activeChat) {
+                  teachMe.loadSession(activeChat.id);
+                }
+                if (teachMeActive) {
+                  teachMe.endSession();
+                  document.body.classList.remove('focus-mode');
+                }
+              }}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
+            >
+              <BookOpen className="w-3 h-3" />
+              {teachMeActive ? 'Teaching...' : 'Teach Me'}
+            </button>
+            <button
               onClick={() => setCalendarOpen(!calendarOpen)}
               className="p-2 hover:bg-foreground/10 rounded-lg text-foreground"
               title="Academic Calendar">
@@ -1777,6 +1798,26 @@ const ChatPage = () => {
             <ArtifactViewer />
           </div>
         }
+        {/* Teach Me Panel */}
+        <AnimatePresence>
+          {teachMeActive && teachMe.session && !viewerOpen && (
+            <TeachMePanel
+              session={teachMe.session}
+              onToggleFocusMode={() => {
+                if (teachMe.session) {
+                  teachMe.toggleFocusMode(teachMe.session.id);
+                  document.body.classList.toggle('focus-mode', !teachMe.session.focusMode);
+                }
+              }}
+              onEndSession={() => {
+                if (teachMe.session) teachMe.markComplete(teachMe.session.id);
+                setTeachMeActive(false);
+                teachMe.endSession();
+                document.body.classList.remove('focus-mode');
+              }}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Settings Dialog */}
