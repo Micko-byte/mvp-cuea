@@ -971,7 +971,39 @@ const AdminPage = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={addBulkUnitsOpen} onOpenChange={setAddBulkUnitsOpen}>
+      <Dialog open={!!editTokenDialog} onOpenChange={() => { setEditTokenDialog(null); setTokenAdjustAmount(""); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Adjust User Tokens</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{editTokenDialog?.email}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTokenAdjustType("add")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${tokenAdjustType === "add" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+              >+ Add Tokens</button>
+              <button
+                onClick={() => setTokenAdjustType("subtract")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${tokenAdjustType === "subtract" ? "bg-destructive text-destructive-foreground" : "bg-muted text-muted-foreground"}`}
+              >− Deduct Tokens</button>
+            </div>
+            <Input
+              type="number"
+              placeholder="Amount (e.g. 10000)"
+              value={tokenAdjustAmount}
+              onChange={(e) => setTokenAdjustAmount(e.target.value)}
+            />
+            <Button
+              onClick={() => { if (editTokenDialog) handleAdjustTokens(editTokenDialog.userId); }}
+              className="w-full"
+              disabled={!tokenAdjustAmount}
+            >
+              {tokenAdjustType === "add" ? "Add" : "Deduct"} Tokens
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle className="font-display">Bulk Add Units</DialogTitle></DialogHeader>
           <div className="space-y-4">
