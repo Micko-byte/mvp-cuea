@@ -8,6 +8,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -16,12 +17,15 @@ interface ReauthenticationEmailProps {
   token: string
 }
 
+const LOGO_URL = 'https://yqjorkcibfdxmuqrcpnn.supabase.co/storage/v1/object/public/email-assets/sekani-logo.png'
+
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your CUEA AI verification code</Preview>
+    <Preview>Your Sekani verification code</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Img src={LOGO_URL} alt="Sekani" width="120" height="auto" style={logo} />
         <Heading style={h1}>Confirm reauthentication</Heading>
         <Text style={text}>Use the code below to confirm your identity:</Text>
         <Text style={codeStyle}>{token}</Text>
@@ -38,10 +42,11 @@ export default ReauthenticationEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
+const logo = { margin: '0 0 20px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#800000',
+  color: '#1C2939',
   margin: '0 0 20px',
 }
 const text = {
@@ -54,7 +59,7 @@ const codeStyle = {
   fontFamily: "'JetBrains Mono', Courier, monospace",
   fontSize: '28px',
   fontWeight: 'bold' as const,
-  color: '#800000',
+  color: '#1C2939',
   margin: '0 0 30px',
   letterSpacing: '4px',
 }
