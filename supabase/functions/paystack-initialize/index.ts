@@ -73,7 +73,7 @@ serve(async (req) => {
 
     // ── CARD PAYMENT (redirect flow) ──
     if (method === "card") {
-      const appUrl = Deno.env.get("APP_URL") || "https://mvp-cuea.lovable.app";
+      const appUrl = Deno.env.get("APP_URL") || "https://id-preview--309cf47d-8bcb-4fb5-bcbc-62733d9669b3.lovable.app";
       const paystackResp = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
