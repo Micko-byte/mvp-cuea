@@ -434,7 +434,7 @@ const ChatPage = () => {
     setInput("");
     setAttachedFiles([]);
     inputRef.current?.focus();
-    await sendMessage(text, chat.id, filesToSend);
+    await sendMessage(text, chat.id, filesToSend, teachMeActive);
   };
 
   // Unit training upload handler
