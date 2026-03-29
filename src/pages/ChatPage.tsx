@@ -57,7 +57,8 @@ import {
   RotateCcw,
   Pen,
   Play,
-  Upload } from
+  Upload,
+  MoreVertical } from
 "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -130,7 +131,7 @@ const TypingIndicator = () =>
 
 const ChatPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading: authLoading, refreshProfile } = useAuth();
-  const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, renameChat, loadChats } =
+  const { chats, activeChat, isStreaming, createChat, setActiveChat, sendMessage, deleteChat, deleteAllChats, renameChat, loadChats } =
   useChat();
   const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
   const { nickname, getChatBg } = usePersonalization();
@@ -148,6 +149,7 @@ const ChatPage = () => {
   const [isListening, setIsListening] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
