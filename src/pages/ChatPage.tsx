@@ -616,6 +616,11 @@ const ChatPage = () => {
 
     setUnitUploading(false);
     setUnitUploadProgress({});
+    // Refresh notes count
+    if (selectedUnitId) {
+      const { count } = await supabase.from("materials").select("id", { count: "exact", head: true }).eq("unit_id", selectedUnitId).eq("document_type", "notes");
+      setNotesCount(count || 0);
+    }
     toast.success("Training complete! Your AI is now smarter. 🧠");
   };
 
