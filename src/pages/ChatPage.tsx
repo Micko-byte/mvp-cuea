@@ -201,35 +201,11 @@ const ChatPage = () => {
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [broadcastDismissed, setBroadcastDismissed] = useState(false);
-  const unitUploadInputRef2 = useRef<HTMLInputElement>(null);
+  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // past paper upload ref
   const pastPaperInputRef = useRef<HTMLInputElement>(null);
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
-
-  // ── SCROLL TO BOTTOM ──────────────────────────────────────────────────────
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [showScrollButton, setShowScrollButton] = useState(false);
-
-  useEffect(() => {
-    const container = chatContainerRef.current;
-    if (!container) return;
-    const handleScroll = () => {
-      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-      setShowScrollButton(distanceFromBottom > 120);
-    };
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToBottom = () => {
-    chatContainerRef.current?.scrollTo({
-      top: chatContainerRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  };
-  // ─────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -240,6 +216,7 @@ const ChatPage = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, [profileMenuOpen]);
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -356,6 +333,7 @@ const ChatPage = () => {
 
     const tags = parseControlTags(lastMsg.text);
 
+    // Topic outline detected → create session
     if (tags.topicOutline && !teachMe.session) {
       const outline = tags.topicOutline.map((t: any, i: number) => ({
         ...t,
@@ -403,6 +381,7 @@ const ChatPage = () => {
           document.body.classList.add("focus-mode");
         }
       } else {
+        // Only reset if we switched to a chat with no active session
         if (teachMeActive && !teachMe.session) {
           setTeachMeActive(false);
           document.body.classList.remove("focus-mode");
@@ -655,6 +634,7 @@ const ChatPage = () => {
 
     setUnitUploading(false);
     setUnitUploadProgress({});
+    // Refresh notes count
     if (selectedUnitId) {
       const { count } = await supabase
         .from("materials")
@@ -681,6 +661,7 @@ const ChatPage = () => {
       setPastPaperUploadProgress({ ...progress });
 
       try {
+        // Extract year from filename
         const yearMatch = file.name.match(/(20\d{2})/);
         const detectedYear = yearMatch ? parseInt(yearMatch[1]) : null;
 
@@ -746,6 +727,7 @@ const ChatPage = () => {
 
     setPastPaperUploading(false);
     setPastPaperUploadProgress({});
+    // Refresh count
     const { count } = await supabase
       .from("materials")
       .select("id", { count: "exact", head: true })
@@ -787,6 +769,7 @@ const ChatPage = () => {
   const toggleVoice = async () => {
     if (!micSupported) return;
 
+    // If currently listening, stop recording and transcribe
     if (isListening) {
       mediaRecorderRef.current?.stop();
       return;
@@ -808,6 +791,7 @@ const ChatPage = () => {
       };
 
       mediaRecorder.onstop = async () => {
+        // Stop all tracks so mic indicator goes away
         stream.getTracks().forEach((t) => t.stop());
         setIsListening(false);
         mediaRecorderRef.current = null;
@@ -818,6 +802,7 @@ const ChatPage = () => {
           return;
         }
 
+        // Send to edge function for transcription
         setIsTranscribing(true);
         try {
           const formData = new FormData();
@@ -856,7 +841,7 @@ const ChatPage = () => {
         }
       };
 
-      mediaRecorder.start(250);
+      mediaRecorder.start(250); // collect chunks every 250ms
       setIsListening(true);
     } catch (err: any) {
       console.error("Mic access error:", err);
@@ -874,7 +859,7 @@ const ChatPage = () => {
   const pollPaymentStatus = async (reference: string) => {
     paymentCancelledRef.current = false;
     setPaymentVerifying(true);
-    const maxAttempts = 60;
+    const maxAttempts = 60; // 5 minutes at 5s intervals
     for (let i = 0; i < maxAttempts; i++) {
       if (paymentCancelledRef.current) return;
       await new Promise((r) => setTimeout(r, 5000));
@@ -884,6 +869,7 @@ const ChatPage = () => {
         setPaymentVerifying(false);
         setShowPaymentDialog(false);
         toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
+        // Refresh profile to unlock premium instantly
         await refreshProfile();
         return;
       } else if (data?.status === "failed") {
@@ -924,6 +910,7 @@ const ChatPage = () => {
           window.open(data.authorization_url, "_blank");
           setPaymentLoading(false);
           toast.info("Complete payment in the new tab. We'll detect it automatically.");
+          // Poll for card payment too — webhook will update status
           pollPaymentStatus(data.reference);
         } else {
           toast.error(data.error || "Failed to initialize card payment");
@@ -1021,6 +1008,7 @@ const ChatPage = () => {
 
   const handleRetry = async (msgIndex: number) => {
     if (!activeChat || isStreaming) return;
+    // Find the last user message before this bot message
     const msgs = activeChat.messages;
     let lastUserMsg = "";
     for (let i = msgIndex - 1; i >= 0; i--) {
@@ -1035,6 +1023,7 @@ const ChatPage = () => {
   const handleEditMessage = async (msgId: string, newText: string) => {
     if (!newText.trim() || !activeChat) return;
     setEditingMsgId(null);
+    // Re-send the edited message as a new message
     await sendMessage(newText.trim(), activeChat.id);
   };
 
@@ -1253,6 +1242,7 @@ const ChatPage = () => {
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {sidebarExpanded || isMobile ? (
           mainTab === "units" && !selectedUnitId ? (
+            // Show unit cards
             enrolledUnits.length === 0 ? (
               <div className="text-center py-8">
                 <BookOpen className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
@@ -1278,6 +1268,7 @@ const ChatPage = () => {
               </div>
             )
           ) : (
+            // Show chat list grouped by date
             <>
               {mainTab === "units" && selectedUnitId && (
                 <button
@@ -1476,6 +1467,7 @@ const ChatPage = () => {
                   <CircleHelp className="w-4 h-4 text-muted-foreground" /> <span>Help</span>
                 </button>
 
+                {/* ── UPGRADE BUTTON ── */}
                 <div className="mx-3 my-2 border-t border-border" />
                 <div className="px-2 pb-1">
                   <button
@@ -1489,6 +1481,7 @@ const ChatPage = () => {
                     <span>⚡ Upgrade to Premium</span>
                   </button>
                 </div>
+                {/* ── END UPGRADE BUTTON ── */}
 
                 <div className="my-1.5" />
                 <button
@@ -1628,6 +1621,7 @@ const ChatPage = () => {
         className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
         style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}
       >
+        {/* Three separate hidden file inputs */}
         <input
           ref={cameraInputRef}
           type="file"
@@ -1713,6 +1707,7 @@ const ChatPage = () => {
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
+            // Auto-expand height
             const el = e.target;
             el.style.height = "auto";
             el.style.height = Math.min(el.scrollHeight, 150) + "px";
@@ -1834,11 +1829,13 @@ const ChatPage = () => {
             <button
               onClick={async () => {
                 if (teachMeActive) {
+                  // Turning off
                   teachMe.endSession();
                   setTeachMeActive(false);
                   document.body.classList.remove("focus-mode");
                   return;
                 }
+                // Turning on — require a unit with notes
                 if (!selectedUnit) {
                   toast.error("Select a unit first to use Teach Me Mode");
                   return;
@@ -1849,11 +1846,13 @@ const ChatPage = () => {
                 }
                 setTeachMeActive(true);
 
+                // Try to load existing session
                 if (activeChat) {
                   const existing = await teachMe.loadSession(activeChat.id);
-                  if (existing) return;
+                  if (existing) return; // Resume existing session
                 }
 
+                // Auto-send initial message to start Teach Me
                 const unitName = selectedUnit.unit_name;
                 const initialPrompt = `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`;
 
@@ -1893,8 +1892,7 @@ const ChatPage = () => {
 
               return (
                 <>
-                  {/* ── SCROLLABLE MESSAGE AREA ── */}
-                  <div className="flex-1 overflow-y-auto chat-scroll-area relative" ref={chatContainerRef}>
+                  <div className="flex-1 overflow-y-auto">
                     <AnimatePresence mode="wait">
                       {isNewChat ? (
                         <motion.div
@@ -2072,37 +2070,10 @@ const ChatPage = () => {
                                       )}
                                       {msg.sender === "bot" ? (
                                         <div className="prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
-                                          {/* ── UPDATED ReactMarkdown with remarkGfm for tables ── */}
                                           <ReactMarkdown
-                                            remarkPlugins={[remarkMath, remarkGfm]}
+                                            remarkPlugins={[remarkMath]}
                                             rehypePlugins={[rehypeKatex]}
                                             components={{
-                                              // ── TABLE RENDERING ──────────────────────────────
-                                              table: ({ children }) => (
-                                                <div className="overflow-x-auto my-3">
-                                                  <table className="min-w-full border-collapse text-sm">
-                                                    {children}
-                                                  </table>
-                                                </div>
-                                              ),
-                                              thead: ({ children }) => (
-                                                <thead className="bg-muted/60 font-medium">{children}</thead>
-                                              ),
-                                              tbody: ({ children }) => (
-                                                <tbody className="divide-y divide-border">{children}</tbody>
-                                              ),
-                                              tr: ({ children }) => (
-                                                <tr className="hover:bg-muted/30 transition-colors">{children}</tr>
-                                              ),
-                                              th: ({ children }) => (
-                                                <th className="px-3 py-2 text-left border border-border text-xs font-semibold uppercase tracking-wide">
-                                                  {children}
-                                                </th>
-                                              ),
-                                              td: ({ children }) => (
-                                                <td className="px-3 py-2 border border-border">{children}</td>
-                                              ),
-                                              // ── LINKS + DOWNLOADS ────────────────────────────
                                               a({ href, children, ...props }) {
                                                 if (href?.startsWith("download:")) {
                                                   const format = href.replace("download:", "") as
@@ -2151,7 +2122,6 @@ const ChatPage = () => {
                                                   </a>
                                                 );
                                               },
-                                              // ── CODE BLOCKS ──────────────────────────────────
                                               code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || "");
                                                 const lang = match ? match[1] : "";
@@ -2252,6 +2222,7 @@ const ChatPage = () => {
                                               const raw = teachMeActive
                                                 ? stripControlTags(msg.text || "...")
                                                 : msg.text || "...";
+                                              // Convert \(...\) → $...$ and \[...\] → $$...$$
                                               return raw
                                                 .replace(/\\\((.+?)\\\)/g, "$$$1$$")
                                                 .replace(/\\\[(.+?)\\\]/gs, "$$$$$1$$$$");
@@ -2272,6 +2243,7 @@ const ChatPage = () => {
                                             className="flex-1 bg-transparent border-b border-primary-foreground/50 outline-none text-sm"
                                             autoFocus
                                           />
+
                                           <button type="submit" className="p-0.5">
                                             <Check className="w-3.5 h-3.5" />
                                           </button>
@@ -2426,19 +2398,6 @@ const ChatPage = () => {
                       )}
                     </AnimatePresence>
                   </div>
-
-                  {/* ── SCROLL TO BOTTOM BUTTON ── */}
-                  {showScrollButton && !isNewChat && (
-                    <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-                      <button
-                        onClick={scrollToBottom}
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-background border border-border shadow-md text-muted-foreground hover:text-foreground hover:bg-muted transition-all animate-in fade-in slide-in-from-bottom-2"
-                        aria-label="Scroll to bottom"
-                      >
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
 
                   {!isNewChat && (
                     <motion.div
@@ -2627,6 +2586,8 @@ const ChatPage = () => {
                 <p className="text-sm text-muted-foreground text-center">
                   You've reached your free daily limit. Upgrade to keep learning!
                 </p>
+
+                {/* Plan Selection */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setPaymentPlan("individual")}
@@ -2659,9 +2620,12 @@ const ChatPage = () => {
                     <p className="text-xs text-muted-foreground">5 users</p>
                   </button>
                 </div>
+
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">Unlimited tokens • One-time payment</p>
                 </div>
+
+                {/* Group Emails */}
                 {paymentPlan === "group" && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Group Member Emails (5 required)</Label>
@@ -2682,6 +2646,8 @@ const ChatPage = () => {
                     ))}
                   </div>
                 )}
+
+                {/* Payment Method Tabs */}
                 <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
                   <button
                     onClick={() => setPaymentMethod("mpesa")}
@@ -2696,6 +2662,7 @@ const ChatPage = () => {
                     💳 Card
                   </button>
                 </div>
+
                 {paymentMethod === "mpesa" ? (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
@@ -2715,6 +2682,7 @@ const ChatPage = () => {
                     You'll be redirected to a secure Paystack page to complete your card payment.
                   </p>
                 )}
+
                 <Button
                   onClick={handlePayment}
                   disabled={
