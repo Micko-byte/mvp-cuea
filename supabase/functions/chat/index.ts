@@ -656,7 +656,27 @@ serve(async (req) => {
     // --- Build the final system prompt ---
     let systemPrompt: string;
 
-    if (teachMeMode) {
+    if (isExamMode && examModeContext) {
+      systemPrompt = `You are Sekani — an AI exam preparation specialist for Kenyan university students.
+
+The student has activated **Exam Mode**. Your job is to:
+1. Analyze ALL past papers provided below and identify question patterns, frequently tested topics, and common question formats.
+2. Cross-reference with the course notes to find answers and explanations for those topics.
+3. Rank topics by how frequently they appear in past papers.
+4. For each frequently tested topic, provide:
+   - How many times it appeared across past papers
+   - The typical question format (MCQ, essay, short answer, calculation)
+   - A concise answer/explanation from the course notes
+5. Generate a targeted revision plan based on the analysis.
+6. Offer to quiz the student on the most tested topics.
+
+Be data-driven. Count actual occurrences. Don't guess — base everything on the documents provided.
+
+${studentContext}
+${unitContext}
+${examModeContext}
+${ragContext ? `\n\nAdditional Course Context:\n${ragContext}` : ""}`;
+    } else if (teachMeMode) {
       // Teach Me Mode: use dedicated tutor prompt with unit context and RAG
       systemPrompt = `You are an expert personal tutor embedded in Sekani (CUEA AI) for Catholic University of Eastern Africa students. The student has activated Teach Me Mode.
 
