@@ -739,8 +739,9 @@ const AdminPage = () => {
                     <tr className="bg-muted/50">
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Document</th>
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Unit</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Type</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Chunks</th>
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Size</th>
-                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Downloads</th>
                       <th className="text-right text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Actions</th>
                     </tr>
                   </thead>
