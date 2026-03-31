@@ -283,7 +283,7 @@ serve(async (req) => {
     }
     const userId = user.id;
 
-    const { messages, chatId, unitId, teachMeMode } = await req.json();
+    const { messages, chatId, unitId, teachMeMode, examMode } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
