@@ -7,7 +7,7 @@ const DEFAULT_AUTH_TTL_MINUTES = 15;
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60;
 
 // ---------------------------------------------------------------------------
-// Resend API send helper — replaces sendLovableEmail
+// Resend API send helper
 // ---------------------------------------------------------------------------
 async function sendResendEmail(
   payload: {
@@ -25,44 +25,32 @@ async function sendResendEmail(
     to: [payload.to],
     subject: payload.subject,
     html: payload.html,
-    headers: {
-      "List-Unsubscribe": `<mailto:unsubscribe@notifyai.org?subject=unsubscribe>`,
-      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-    },
   };
 
   if (payload.text) {
     body.text = payload.text;
   }
 
-  // Pass message_id as idempotency key so Resend deduplicates on retries
-  const body: Record<string, unknown> = {
-    from: payload.from,
-    to: [payload.to],
-    subject: payload.subject,
-    html: payload.html,
-    headers: {
-      "List-Unsubscribe": `<mailto:unsubscribe@notifyai.org?subject=unsubscribe>`,
-      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-    },
-  };
-
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers,
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+      ...(payload.message_id ? { "Idempotency-Key": payload.message_id } : {}),
+    },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const errorText = await res.text().catch(() => res.statusText);
-    const err = new Error(`Resend API error: ${errorText}`) as Error & { status: number };
+    const err = new Error(`Email API error: ${res.status} ${errorText}`) as Error & { status: number };
     err.status = res.status;
     throw err;
   }
 }
 
 // ---------------------------------------------------------------------------
-// Error helpers (same logic as before, works with our custom error shape)
+// Error helpers
 // ---------------------------------------------------------------------------
 function isRateLimited(error: unknown): boolean {
   if (error && typeof error === "object" && "status" in error) {
@@ -78,8 +66,6 @@ function isForbidden(error: unknown): boolean {
   return error instanceof Error && error.message.includes("403");
 }
 
-// Resend returns Retry-After in the response header; we don't have it here
-// after the throw, so default to 60 s.
 function getRetryAfterSeconds(_error: unknown): number {
   return 60;
 }
@@ -127,7 +113,7 @@ async function moveToDlq(
 // Entry point
 // ---------------------------------------------------------------------------
 Deno.serve(async (req) => {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY"); // ← only change to env vars
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -205,6 +191,7 @@ Deno.serve(async (req) => {
           .filter((id): id is string => Boolean(id)),
       ),
     );
+
     const failedAttemptsByMessageId = new Map<string, number>();
     if (messageIds.length > 0) {
       const { data: failedRows, error: failedRowsError } = await supabase
@@ -290,7 +277,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        // ── Send via Resend ────────────────────────────────────────────────
+        // ── Send via Resend ──────────────────────────────────────────────
         await sendResendEmail(
           {
             to: payload.to,
