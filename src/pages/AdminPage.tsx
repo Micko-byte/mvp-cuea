@@ -917,6 +917,8 @@ const AdminPage = () => {
               </div>
             </div>
 
+            <div className="bg-card rounded-xl border border-border p-6 shadow-card space-y-5">
+              <h3 className="font-display font-semibold text-foreground flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Model Config</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>General Chat Model</Label>
