@@ -20,11 +20,18 @@ async function sendResendEmail(
   },
   resendApiKey: string,
 ): Promise<void> {
+  const unsubscribeToken = payload.message_id ?? crypto.randomUUID();
+
   const body: Record<string, unknown> = {
     from: payload.from,
     to: [payload.to],
     subject: payload.subject,
     html: payload.html,
+
+    // ⭐ REQUIRED by Resend
+    unsubscribe: {
+      token: unsubscribeToken,
+    },
   };
 
   if (payload.text) {
