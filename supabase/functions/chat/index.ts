@@ -733,9 +733,9 @@ ${ragContext ? `\n\nAdditional Course Context:\n${ragContext}` : ""}`;
               ? Math.floor((now.getTime() - new Date(m.last_seen_at).getTime()) / (1000 * 60 * 60 * 24))
               : 999;
             const dueForReview = (m.strength_level || 0) <= 3 && daysSince > 3;
-            return \`- \${m.content} (\${m.subject || 'unknown unit'}): strength=\${m.strength_level || 0}/5, last seen \${daysSince} days ago\${dueForReview ? ' ⚠️ DUE FOR REVIEW' : ''}\`;
+            return "- " + m.content + " (" + (m.subject || "unknown unit") + "): strength=" + (m.strength_level || 0) + "/5, last seen " + daysSince + " days ago" + (dueForReview ? " ⚠️ DUE FOR REVIEW" : "");
           });
-          memoryForTeachMe = \`\\n\\n## Student's Topic Memory (from previous sessions)\\n\${memLines.join('\\n')}\\n\\nUse this to decide whether to skip, reinforce, or do spaced review of topics.\`;
+          memoryForTeachMe = "\n\n## Student's Topic Memory (from previous sessions)\n" + memLines.join("\n") + "\n\nUse this to decide whether to skip, reinforce, or do spaced review of topics.";
         }
       } catch (e) {
         console.warn("Failed to load teach me memory:", e);
@@ -754,10 +754,10 @@ ${ragContext ? `\n\nAdditional Course Context:\n${ragContext}` : ""}`;
       }
 
       const pastPaperNote = hasPastPapers
-        ? "\\n\\nPast papers ARE available for this unit. Reorder topics by exam frequency — most tested first. Emit [OUTLINE_REORDERED:reason=past_paper_priority]."
-        : "\\n\\nNo past papers uploaded for this unit. Teach in notes order. Suggest uploading past papers for smarter ordering.";
+        ? "\n\nPast papers ARE available for this unit. Reorder topics by exam frequency — most tested first. Emit [OUTLINE_REORDERED:reason=past_paper_priority]."
+        : "\n\nNo past papers uploaded for this unit. Teach in notes order. Suggest uploading past papers for smarter ordering.";
 
-      systemPrompt = \`You are an expert personal tutor embedded in Sekani for Kenyan university students. The student has activated Teach Me Mode.
+      const teachMePromptBody = `You are an expert personal tutor embedded in Sekani for Kenyan university students. The student has activated Teach Me Mode.
 
 INITIALIZATION
 When the student first activates Teach Me Mode:
@@ -765,15 +765,10 @@ When the student first activates Teach Me Mode:
 2. Then ask: "Do you want a full walkthrough from the beginning, or start at a specific topic?"
 3. Generate a numbered topic outline for the unit. Output it in this exact JSON format inside a code block tagged "topic_outline":
 
-\\\`\\\`\\\`topic_outline
-[
-  {"index": 0, "name": "Topic name here"},
-  {"index": 1, "name": "Topic name here"}
-]
-\\\`\\\`\\\`
+` + "```topic_outline\n[\n  {\"index\": 0, \"name\": \"Topic name here\"},\n  {\"index\": 1, \"name\": \"Topic name here\"}\n]\n```" + `
 
 Then immediately begin teaching Topic 1.
-\${pastPaperNote}
+` + pastPaperNote + `
 
 ### Exam-Priority Topic Ordering
 If past papers are available, reorder the outline so topics with highest past-paper frequency appear first.
@@ -862,12 +857,9 @@ RULES
 - Never move to next topic until student passes check or skips
 - Always reference topic roadmap ("Topic 3 of 8")
 - Output all control tags exactly as shown
-- Use LaTeX with $ delimiters for math. Use \\\\boxed{} for final answers.
+- Use LaTeX with $ delimiters for math. Use \\boxed{} for final answers.`;
 
-\${studentContext}
-\${unitContext}
-\${memoryForTeachMe}
-\${ragContext ? \`\\n\\nCourse Material Context (use these notes as source of truth for topics):\\n\${ragContext}\` : ""}\`;
+      systemPrompt = teachMePromptBody + "\n" + studentContext + "\n" + unitContext + "\n" + memoryForTeachMe + "\n" + (ragContext ? "\nCourse Material Context (use these notes as source of truth for topics):\n" + ragContext : "");
     } else {
       systemPrompt = `${SEKANI_SYSTEM_PROMPT}
 
