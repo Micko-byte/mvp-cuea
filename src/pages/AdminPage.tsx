@@ -93,6 +93,7 @@ const AdminPage = () => {
 
   const [userSearch, setUserSearch] = useState("");
   const [docSearch, setDocSearch] = useState("");
+  const [docTypeFilter, setDocTypeFilter] = useState<"all" | "notes" | "past_paper">("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
 
   const [addCourseOpen, setAddCourseOpen] = useState(false);
