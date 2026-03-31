@@ -86,47 +86,38 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Admin access required" }), { status: 403, headers: corsHeaders });
     }
 
-    const { subject, message, broadcastType, recipientEmails } = await req.json();
+    const { subject, message, broadcastType } = await req.json();
 
     if (!subject || !message) {
       return new Response(JSON.stringify({ error: "Subject and message are required" }), { status: 400, headers: corsHeaders });
     }
 
-    // Only store active broadcast for "all" sends (not targeted)
-    if (!recipientEmails) {
-      await supabase.from("system_settings").upsert({
-        key: "active_broadcast",
-        value: {
-          subject,
-          message,
-          broadcastType,
-          sentAt: new Date().toISOString(),
-          sentBy: user.id,
-          active: true,
-        },
-        updated_at: new Date().toISOString(),
-      });
+    // Store active broadcast for in-app banner
+    await supabase.from("system_settings").upsert({
+      key: "active_broadcast",
+      value: {
+        subject,
+        message,
+        broadcastType,
+        sentAt: new Date().toISOString(),
+        sentBy: user.id,
+        active: true,
+      },
+      updated_at: new Date().toISOString(),
+    });
+
+    // Fetch all user emails
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("email")
+      .neq("email", "");
+
+    if (profilesError) {
+      console.error("Failed to fetch profiles", profilesError);
+      return new Response(JSON.stringify({ error: "Failed to fetch users" }), { status: 500, headers: corsHeaders });
     }
 
-    let uniqueEmails: string[];
-
-    if (recipientEmails && Array.isArray(recipientEmails) && recipientEmails.length > 0) {
-      // Targeted send — use provided emails
-      uniqueEmails = [...new Set(recipientEmails.filter(Boolean))];
-    } else {
-      // Broadcast to all
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("email")
-        .neq("email", "");
-
-      if (profilesError) {
-        console.error("Failed to fetch profiles", profilesError);
-        return new Response(JSON.stringify({ error: "Failed to fetch users" }), { status: 500, headers: corsHeaders });
-      }
-
-      uniqueEmails = [...new Set((profiles || []).map((p: any) => p.email).filter(Boolean))];
-    }
+    const uniqueEmails = [...new Set((profiles || []).map((p: any) => p.email).filter(Boolean))];
 
     if (uniqueEmails.length === 0) {
       return new Response(
