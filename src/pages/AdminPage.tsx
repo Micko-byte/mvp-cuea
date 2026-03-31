@@ -1100,12 +1100,17 @@ const AdminPage = () => {
           </div>
         );
 
-      case "broadcast":
+      case "broadcast": {
+        const filteredRecipients = profiles.filter(p => 
+          p.name.toLowerCase().includes(recipientSearch.toLowerCase()) || 
+          p.email.toLowerCase().includes(recipientSearch.toLowerCase())
+        );
+        const recipientCount = broadcastTarget === "all" ? profiles.length : selectedRecipients.size;
         return (
           <div className="space-y-6 max-w-4xl">
             <div className="bg-card rounded-xl border border-border p-6 shadow-card space-y-5">
-              <div className="flex items-center gap-3 mb-2"><Megaphone className="w-5 h-5 text-primary" /><h3 className="font-display font-semibold text-foreground">Emergency Broadcast</h3></div>
-              <p className="text-sm text-muted-foreground">Send urgent notifications to all registered users via email.</p>
+              <div className="flex items-center gap-3 mb-2"><Megaphone className="w-5 h-5 text-primary" /><h3 className="font-display font-semibold text-foreground">Broadcast & Targeted Email</h3></div>
+              <p className="text-sm text-muted-foreground">Send notifications to all users or select specific recipients.</p>
 
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -1141,6 +1146,66 @@ const AdminPage = () => {
                   </div>
                 </div>
 
+                {/* Target Selection */}
+                <div className="space-y-2">
+                  <Label>Send To</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => { setBroadcastTarget("all"); setSelectedRecipients(new Set()); }}
+                      className={`p-3 rounded-xl border text-left transition-all ${broadcastTarget === "all" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+                    >
+                      <Globe className="w-4 h-4 mb-1 text-primary" />
+                      <p className="text-sm font-medium text-foreground">All Users</p>
+                      <p className="text-xs text-muted-foreground">{profiles.length} users</p>
+                    </button>
+                    <button
+                      onClick={() => setBroadcastTarget("selected")}
+                      className={`p-3 rounded-xl border text-left transition-all ${broadcastTarget === "selected" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
+                    >
+                      <Users className="w-4 h-4 mb-1 text-primary" />
+                      <p className="text-sm font-medium text-foreground">Select Users</p>
+                      <p className="text-xs text-muted-foreground">{selectedRecipients.size} selected</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* User picker when "selected" */}
+                {broadcastTarget === "selected" && (
+                  <div className="space-y-2 border border-border rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Search className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={recipientSearch}
+                        onChange={(e) => setRecipientSearch(e.target.value)}
+                        placeholder="Search users by name or email..."
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2 mb-2">
+                      <Button size="sm" variant="outline" onClick={() => setSelectedRecipients(new Set(profiles.map(p => p.email)))}>Select All</Button>
+                      <Button size="sm" variant="outline" onClick={() => setSelectedRecipients(new Set())}>Clear All</Button>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {filteredRecipients.map((p) => (
+                        <label key={p.user_id} className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted/50 rounded-lg cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedRecipients.has(p.email)}
+                            onChange={() => {
+                              const next = new Set(selectedRecipients);
+                              if (next.has(p.email)) next.delete(p.email); else next.add(p.email);
+                              setSelectedRecipients(next);
+                            }}
+                            className="rounded border-border"
+                          />
+                          <span className="text-sm text-foreground">{p.name}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">{p.email}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label>Subject</Label>
                   <Input
@@ -1155,14 +1220,14 @@ const AdminPage = () => {
                   <Textarea
                     value={broadcastMessage}
                     onChange={(e) => setBroadcastMessage(e.target.value)}
-                    placeholder="Type your message to all users..."
+                    placeholder="Type your message..."
                     rows={6}
                   />
                 </div>
 
                 <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                  <p className="text-xs text-muted-foreground">This will send an email to <strong className="text-foreground">{profiles.length}</strong> registered users. This action cannot be undone.</p>
+                  <p className="text-xs text-muted-foreground">This will send an email to <strong className="text-foreground">{recipientCount}</strong> {broadcastTarget === "selected" ? "selected" : "registered"} user{recipientCount !== 1 ? "s" : ""}. This action cannot be undone.</p>
                 </div>
 
                 <Button
@@ -1171,30 +1236,37 @@ const AdminPage = () => {
                       toast.error("Subject and message are required");
                       return;
                     }
+                    if (broadcastTarget === "selected" && selectedRecipients.size === 0) {
+                      toast.error("Select at least one recipient");
+                      return;
+                    }
                     setBroadcastSending(true);
                     try {
-                      const { data, error } = await supabase.functions.invoke("send-broadcast", {
-                        body: {
-                          subject: broadcastSubject,
-                          message: broadcastMessage,
-                          broadcastType: broadcastType,
-                        },
-                      });
+                      const body: any = {
+                        subject: broadcastSubject,
+                        message: broadcastMessage,
+                        broadcastType: broadcastType,
+                      };
+                      if (broadcastTarget === "selected") {
+                        body.recipientEmails = Array.from(selectedRecipients);
+                      }
+                      const { data, error } = await supabase.functions.invoke("send-broadcast", { body });
                       if (error) throw error;
-                      toast.success(`Broadcast sent to ${data?.sent || profiles.length} users!`);
+                      toast.success(`Email sent to ${data?.sent || recipientCount} users!`);
                       setBroadcastSubject("");
                       setBroadcastMessage("");
+                      setSelectedRecipients(new Set());
                     } catch (err: any) {
-                      toast.error(err.message || "Failed to send broadcast");
+                      toast.error(err.message || "Failed to send");
                     } finally {
                       setBroadcastSending(false);
                     }
                   }}
-                  disabled={broadcastSending || !broadcastSubject.trim() || !broadcastMessage.trim()}
+                  disabled={broadcastSending || !broadcastSubject.trim() || !broadcastMessage.trim() || (broadcastTarget === "selected" && selectedRecipients.size === 0)}
                   className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                 >
                   {broadcastSending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                  {broadcastSending ? "Sending..." : `Send to All ${profiles.length} Users`}
+                  {broadcastSending ? "Sending..." : `Send to ${broadcastTarget === "all" ? `All ${profiles.length}` : selectedRecipients.size} User${recipientCount !== 1 ? "s" : ""}`}
                 </Button>
 
                 <Button
@@ -1219,6 +1291,7 @@ const AdminPage = () => {
             </div>
           </div>
         );
+      }
 
       case "settings":
         return (
