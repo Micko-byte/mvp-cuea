@@ -177,6 +177,9 @@ const ChatPage = () => {
   const [unitUploadFiles, setUnitUploadFiles] = useState<File[]>([]);
   const [unitUploading, setUnitUploading] = useState(false);
   const [unitUploadProgress, setUnitUploadProgress] = useState<Record<string, string>>({});
+  const [pastPaperUploading, setPastPaperUploading] = useState(false);
+  const [pastPaperUploadProgress, setPastPaperUploadProgress] = useState<Record<string, string>>({});
+  const [pastPaperCount, setPastPaperCount] = useState(0);
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
