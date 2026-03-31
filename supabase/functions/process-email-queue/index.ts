@@ -20,19 +20,54 @@ async function sendResendEmail(
   },
   resendApiKey: string,
 ): Promise<void> {
-  const unsubscribeToken = payload.message_id ?? crypto.randomUUID();
-
-  const body: Record<string, unknown> = {
-    from: payload.from,
-    to: [payload.to],
-    subject: payload.subject,
-    html: payload.html,
-
-    // ⭐ REQUIRED by Resend
-    unsubscribe: {
-      token: unsubscribeToken,
+  async function sendResendEmail(
+    payload: {
+      to: string;
+      from: string;
+      subject: string;
+      html: string;
+      text?: string;
+      message_id?: string;
     },
-  };
+    resendApiKey: string,
+  ): Promise<void> {
+    const unsubscribeToken = payload.message_id ?? crypto.randomUUID();
+    const unsubscribeUrl = `https://your-domain.com/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+
+    const body: Record<string, unknown> = {
+      from: payload.from,
+      to: [payload.to],
+      subject: payload.subject,
+      html: payload.html,
+      ...(payload.text ? { text: payload.text } : {}),
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    };
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    };
+
+    if (payload.message_id) {
+      headers["Idempotency-Key"] = payload.message_id;
+    }
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => res.statusText);
+      const err = new Error(`Email API error: ${res.status} ${errorText}`) as Error & { status: number };
+      err.status = res.status;
+      throw err;
+    }
+  }
 
   if (payload.text) {
     body.text = payload.text;
