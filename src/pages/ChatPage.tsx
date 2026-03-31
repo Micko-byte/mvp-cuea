@@ -180,6 +180,7 @@ const ChatPage = () => {
   const [pastPaperUploading, setPastPaperUploading] = useState(false);
   const [pastPaperUploadProgress, setPastPaperUploadProgress] = useState<Record<string, string>>({});
   const [pastPaperCount, setPastPaperCount] = useState(0);
+  const [notesCount, setNotesCount] = useState(0);
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
@@ -244,18 +245,18 @@ const ChatPage = () => {
     loadUnits();
   }, [user]);
 
-  // Load past paper count for selected unit
+  // Load notes & past paper count for selected unit
   useEffect(() => {
-    if (!selectedUnitId) { setPastPaperCount(0); return; }
-    const loadCount = async () => {
-      const { count } = await supabase
-        .from("materials")
-        .select("id", { count: "exact", head: true })
-        .eq("unit_id", selectedUnitId)
-        .eq("document_type", "past_paper");
-      setPastPaperCount(count || 0);
+    if (!selectedUnitId) { setPastPaperCount(0); setNotesCount(0); return; }
+    const loadCounts = async () => {
+      const [ppRes, notesRes] = await Promise.all([
+        supabase.from("materials").select("id", { count: "exact", head: true }).eq("unit_id", selectedUnitId).eq("document_type", "past_paper"),
+        supabase.from("materials").select("id", { count: "exact", head: true }).eq("unit_id", selectedUnitId).eq("document_type", "notes"),
+      ]);
+      setPastPaperCount(ppRes.count || 0);
+      setNotesCount(notesRes.count || 0);
     };
-    loadCount();
+    loadCounts();
   }, [selectedUnitId]);
 
   // Load active broadcast
@@ -615,6 +616,11 @@ const ChatPage = () => {
 
     setUnitUploading(false);
     setUnitUploadProgress({});
+    // Refresh notes count
+    if (selectedUnitId) {
+      const { count } = await supabase.from("materials").select("id", { count: "exact", head: true }).eq("unit_id", selectedUnitId).eq("document_type", "notes");
+      setNotesCount(count || 0);
+    }
     toast.success("Training complete! Your AI is now smarter. 🧠");
   };
 
@@ -1716,7 +1722,15 @@ const ChatPage = () => {
                   document.body.classList.remove('focus-mode');
                   return;
                 }
-                // Turning on
+                // Turning on — require a unit with notes
+                if (!selectedUnit) {
+                  toast.error("Select a unit first to use Teach Me Mode");
+                  return;
+                }
+                if (notesCount === 0) {
+                  toast.error("Upload course notes for this unit first so Sekani can teach you from them.");
+                  return;
+                }
                 setTeachMeActive(true);
                 
                 // Try to load existing session
@@ -1726,10 +1740,8 @@ const ChatPage = () => {
                 }
                 
                 // Auto-send initial message to start Teach Me
-                const unitName = selectedUnit ? selectedUnit.unit_name : null;
-                const initialPrompt = unitName
-                  ? `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`
-                  : `Start Teach Me Mode. Ask me what unit I want to study.`;
+                const unitName = selectedUnit.unit_name;
+                const initialPrompt = `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`;
                 
                 let chat = activeChat;
                 if (!chat) {
@@ -1807,11 +1819,11 @@ const ChatPage = () => {
                         transition={{ delay: 0.2 }}
                         className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0">
                         {[
-                          { icon: BookOpen, label: "Teach Me", isTeachMe: true, prompt: `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.` },
-                          { icon: PenLine, label: "Exam Prep", prompt: `Help me prepare for my ${selectedUnit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.` },
+                          { icon: BookOpen, label: "Teach Me", isTeachMe: true, needsNotes: true, prompt: `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.` },
+                          { icon: PenLine, label: "Exam Prep", needsNotes: true, prompt: `Help me prepare for my ${selectedUnit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.` },
                           ...(pastPaperCount > 0 ? [{ icon: FileQuestion, label: "Exam Mode", isExamMode: true, prompt: `[EXAM_MODE] Analyze ALL past papers uploaded for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.` }] : []),
-                          { icon: ListChecks, label: "Quiz Me", prompt: `Quiz me on ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.` },
-                          { icon: FileText, label: "Summarize", prompt: `Give me a complete summary of all the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Organize by topic.` },
+                          { icon: ListChecks, label: "Quiz Me", needsNotes: true, prompt: `Quiz me on ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.` },
+                          { icon: FileText, label: "Summarize", needsNotes: true, prompt: `Give me a complete summary of all the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Organize by topic.` },
                         ].map((s, i) => (
                           <motion.button
                             key={s.label}
@@ -1819,6 +1831,10 @@ const ChatPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.25 + i * 0.08 }}
                             onClick={async () => {
+                              if ((s as any).needsNotes && notesCount === 0) {
+                                toast.error("Upload course notes for this unit first. Use 'Train AI with Notes' in the sidebar.");
+                                return;
+                              }
                               if ((s as any).isTeachMe) {
                                 setTeachMeActive(true);
                                 let chat = activeChat;
