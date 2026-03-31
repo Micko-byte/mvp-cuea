@@ -618,6 +618,99 @@ const ChatPage = () => {
     toast.success("Training complete! Your AI is now smarter. 🧠");
   };
 
+  // Past paper upload handler
+  const handlePastPaperUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedUnitId || !user) return;
+    const selectedUnitData = enrolledUnits.find(u => u.unit_id === selectedUnitId);
+    if (!selectedUnitData) return;
+
+    setPastPaperUploading(true);
+    const progress: Record<string, string> = {};
+
+    for (const file of Array.from(files)) {
+      const key = `pp_${selectedUnitId}_${file.name}`;
+      progress[key] = "Uploading...";
+      setPastPaperUploadProgress({ ...progress });
+
+      try {
+        // Extract year from filename
+        const yearMatch = file.name.match(/(20\d{2})/);
+        const detectedYear = yearMatch ? parseInt(yearMatch[1]) : null;
+
+        const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("materials")
+          .upload(storagePath, file);
+
+        if (uploadError) {
+          progress[key] = `❌ Upload failed: ${uploadError.message}`;
+          setPastPaperUploadProgress({ ...progress });
+          continue;
+        }
+
+        const { data: material, error: matError } = await supabase
+          .from("materials")
+          .insert({
+            title: file.name.replace(/\.[^.]+$/, ""),
+            file_name: file.name,
+            file_type: file.type || "application/octet-stream",
+            file_size: file.size,
+            unit_id: selectedUnitId,
+            uploaded_by: user.id,
+            storage_path: storagePath,
+            embedding_status: "processing",
+            document_type: "past_paper",
+          } as any)
+          .select("id")
+          .single();
+
+        if (matError) {
+          progress[key] = `❌ Error: ${matError.message}`;
+          setPastPaperUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "🧠 Analyzing past paper...";
+        setPastPaperUploadProgress({ ...progress });
+
+        const { error: embedError } = await supabase.functions.invoke("process-document", {
+          body: {
+            materialId: material?.id,
+            title: file.name,
+            unitCode: selectedUnitData.unit_code,
+            storagePath,
+            fileType: file.type,
+            documentType: "past_paper",
+            skipHashCheck: true,
+          },
+        });
+
+        if (embedError) {
+          progress[key] = `❌ Analysis failed: ${embedError.message}`;
+          setPastPaperUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "✅ Analyzed";
+        setPastPaperUploadProgress({ ...progress });
+      } catch (err) {
+        progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+        setPastPaperUploadProgress({ ...progress });
+      }
+    }
+
+    setPastPaperUploading(false);
+    setPastPaperUploadProgress({});
+    // Refresh count
+    const { count } = await supabase
+      .from("materials")
+      .select("id", { count: "exact", head: true })
+      .eq("unit_id", selectedUnitId)
+      .eq("document_type", "past_paper");
+    setPastPaperCount(count || 0);
+    toast.success("Past papers analyzed! Exam Mode is ready. 📝");
+  };
+
   const [isTranscribing, setIsTranscribing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
