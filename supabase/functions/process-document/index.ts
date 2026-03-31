@@ -213,8 +213,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { materialId: parsedMaterialId, title, unitCode, storagePath, fileType, content: directContent } = await req.json();
+    const { materialId: parsedMaterialId, title, unitCode, storagePath, fileType, content: directContent, documentType, skipHashCheck } = await req.json();
     materialId = parsedMaterialId;
+    const docType = documentType || "notes";
 
     if (!materialId) {
       return new Response(JSON.stringify({ error: "materialId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
