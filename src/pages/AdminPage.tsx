@@ -755,8 +755,9 @@ const AdminPage = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 hidden md:table-cell"><span className="text-xs font-mono bg-muted px-2 py-1 rounded text-muted-foreground">{getUnitName(d.unit_id)}</span></td>
+                        <td className="px-6 py-4 hidden md:table-cell"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${(d.document_type || 'notes') === 'past_paper' ? 'bg-amber-500/10 text-amber-600' : 'bg-primary/10 text-primary'}`}>{(d.document_type || 'notes') === 'past_paper' ? 'Past Paper' : 'Notes'}</span></td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{d.chunk_count ?? '—'}</td>
                         <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">{formatFileSize(d.file_size)}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{d.downloads}</td>
                         <td className="px-6 py-4 text-right">
                           <button onClick={() => handleDeleteMaterial(d.id, d.storage_path)} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
                         </td>
