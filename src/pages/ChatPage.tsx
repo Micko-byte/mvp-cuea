@@ -177,6 +177,9 @@ const ChatPage = () => {
   const [unitUploadFiles, setUnitUploadFiles] = useState<File[]>([]);
   const [unitUploading, setUnitUploading] = useState(false);
   const [unitUploadProgress, setUnitUploadProgress] = useState<Record<string, string>>({});
+  const [pastPaperUploading, setPastPaperUploading] = useState(false);
+  const [pastPaperUploadProgress, setPastPaperUploadProgress] = useState<Record<string, string>>({});
+  const [pastPaperCount, setPastPaperCount] = useState(0);
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [mainTab, setMainTab] = useState<"general" | "units">("general");
@@ -186,7 +189,8 @@ const ChatPage = () => {
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [broadcastDismissed, setBroadcastDismissed] = useState(false);
-  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // placeholder to keep line refs
+  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // past paper upload ref
+  const pastPaperInputRef = useRef<HTMLInputElement>(null);
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -239,6 +243,20 @@ const ChatPage = () => {
     };
     loadUnits();
   }, [user]);
+
+  // Load past paper count for selected unit
+  useEffect(() => {
+    if (!selectedUnitId) { setPastPaperCount(0); return; }
+    const loadCount = async () => {
+      const { count } = await supabase
+        .from("materials")
+        .select("id", { count: "exact", head: true })
+        .eq("unit_id", selectedUnitId)
+        .eq("document_type", "past_paper");
+      setPastPaperCount(count || 0);
+    };
+    loadCount();
+  }, [selectedUnitId]);
 
   // Load active broadcast
   useEffect(() => {
@@ -598,6 +616,99 @@ const ChatPage = () => {
     setUnitUploading(false);
     setUnitUploadProgress({});
     toast.success("Training complete! Your AI is now smarter. 🧠");
+  };
+
+  // Past paper upload handler
+  const handlePastPaperUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedUnitId || !user) return;
+    const selectedUnitData = enrolledUnits.find(u => u.unit_id === selectedUnitId);
+    if (!selectedUnitData) return;
+
+    setPastPaperUploading(true);
+    const progress: Record<string, string> = {};
+
+    for (const file of Array.from(files)) {
+      const key = `pp_${selectedUnitId}_${file.name}`;
+      progress[key] = "Uploading...";
+      setPastPaperUploadProgress({ ...progress });
+
+      try {
+        // Extract year from filename
+        const yearMatch = file.name.match(/(20\d{2})/);
+        const detectedYear = yearMatch ? parseInt(yearMatch[1]) : null;
+
+        const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("materials")
+          .upload(storagePath, file);
+
+        if (uploadError) {
+          progress[key] = `❌ Upload failed: ${uploadError.message}`;
+          setPastPaperUploadProgress({ ...progress });
+          continue;
+        }
+
+        const { data: material, error: matError } = await supabase
+          .from("materials")
+          .insert({
+            title: file.name.replace(/\.[^.]+$/, ""),
+            file_name: file.name,
+            file_type: file.type || "application/octet-stream",
+            file_size: file.size,
+            unit_id: selectedUnitId,
+            uploaded_by: user.id,
+            storage_path: storagePath,
+            embedding_status: "processing",
+            document_type: "past_paper",
+          } as any)
+          .select("id")
+          .single();
+
+        if (matError) {
+          progress[key] = `❌ Error: ${matError.message}`;
+          setPastPaperUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "🧠 Analyzing past paper...";
+        setPastPaperUploadProgress({ ...progress });
+
+        const { error: embedError } = await supabase.functions.invoke("process-document", {
+          body: {
+            materialId: material?.id,
+            title: file.name,
+            unitCode: selectedUnitData.unit_code,
+            storagePath,
+            fileType: file.type,
+            documentType: "past_paper",
+            skipHashCheck: true,
+          },
+        });
+
+        if (embedError) {
+          progress[key] = `❌ Analysis failed: ${embedError.message}`;
+          setPastPaperUploadProgress({ ...progress });
+          continue;
+        }
+
+        progress[key] = "✅ Analyzed";
+        setPastPaperUploadProgress({ ...progress });
+      } catch (err) {
+        progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+        setPastPaperUploadProgress({ ...progress });
+      }
+    }
+
+    setPastPaperUploading(false);
+    setPastPaperUploadProgress({});
+    // Refresh count
+    const { count } = await supabase
+      .from("materials")
+      .select("id", { count: "exact", head: true })
+      .eq("unit_id", selectedUnitId)
+      .eq("document_type", "past_paper");
+    setPastPaperCount(count || 0);
+    toast.success("Past papers analyzed! Exam Mode is ready. 📝");
   };
 
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -1160,6 +1271,41 @@ const ChatPage = () => {
                       ))}
                     </div>
                   )}
+                  {/* Past Paper Upload */}
+                  <input
+                    ref={pastPaperInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.pptx,.txt"
+                    className="hidden"
+                    onChange={(e) => { handlePastPaperUpload(e.target.files); e.target.value = ""; }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed border-2 text-xs"
+                    disabled={pastPaperUploading}
+                    onClick={() => pastPaperInputRef.current?.click()}
+                  >
+                    {pastPaperUploading ? (
+                      <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Analyzing...</>
+                    ) : (
+                      <><FileQuestion className="w-3 h-3 mr-1" /> Upload Past Papers</>
+                    )}
+                  </Button>
+                  {pastPaperCount > 0 && (
+                    <p className="text-xs text-muted-foreground text-center">{pastPaperCount} past paper{pastPaperCount !== 1 ? 's' : ''} uploaded</p>
+                  )}
+                  {pastPaperCount === 0 && !pastPaperUploading && (
+                    <p className="text-[10px] text-sidebar-foreground/40 text-center">Upload past papers to unlock Exam Mode analysis</p>
+                  )}
+                  {Object.entries(pastPaperUploadProgress).length > 0 && (
+                    <div className="space-y-1">
+                      {Object.entries(pastPaperUploadProgress).map(([key, status]) => (
+                        <p key={key} className="text-xs text-muted-foreground truncate">{status}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
         }
               {filteredChats.length === 0 ?
@@ -1663,6 +1809,7 @@ const ChatPage = () => {
                         {[
                           { icon: BookOpen, label: "Teach Me", isTeachMe: true, prompt: `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.` },
                           { icon: PenLine, label: "Exam Prep", prompt: `Help me prepare for my ${selectedUnit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.` },
+                          ...(pastPaperCount > 0 ? [{ icon: FileQuestion, label: "Exam Mode", isExamMode: true, prompt: `[EXAM_MODE] Analyze ALL past papers uploaded for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.` }] : []),
                           { icon: ListChecks, label: "Quiz Me", prompt: `Quiz me on ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.` },
                           { icon: FileText, label: "Summarize", prompt: `Give me a complete summary of all the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Organize by topic.` },
                         ].map((s, i) => (

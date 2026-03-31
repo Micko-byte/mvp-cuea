@@ -44,7 +44,7 @@ interface Profile {
 interface UserRole { user_id: string; role: string; }
 interface Course { id: string; name: string; code: string; faculty: string; description: string | null; is_active: boolean; }
 interface Unit { id: string; name: string; code: string; course_id: string; semester: number; year: number; lecturer: string | null; is_active: boolean; }
-interface Material { id: string; title: string; file_name: string; file_type: string; file_size: number; storage_path: string | null; unit_id: string; uploaded_by: string; downloads: number; created_at: string; }
+interface Material { id: string; title: string; file_name: string; file_type: string; file_size: number; storage_path: string | null; unit_id: string; uploaded_by: string; downloads: number; created_at: string; document_type?: string; chunk_count?: number; embedding_status?: string; }
 
 const AdminPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading } = useAuth();
@@ -93,6 +93,7 @@ const AdminPage = () => {
 
   const [userSearch, setUserSearch] = useState("");
   const [docSearch, setDocSearch] = useState("");
+  const [docTypeFilter, setDocTypeFilter] = useState<"all" | "notes" | "past_paper">("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
 
   const [addCourseOpen, setAddCourseOpen] = useState(false);
@@ -405,7 +406,11 @@ const AdminPage = () => {
   };
 
   const filteredUsers = profiles.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase()));
-  const filteredDocs = materials.filter(d => d.title.toLowerCase().includes(docSearch.toLowerCase()) || d.file_name.toLowerCase().includes(docSearch.toLowerCase()));
+  const filteredDocs = materials.filter(d => {
+    const matchesSearch = d.title.toLowerCase().includes(docSearch.toLowerCase()) || d.file_name.toLowerCase().includes(docSearch.toLowerCase());
+    const matchesType = docTypeFilter === "all" || (d.document_type || "notes") === docTypeFilter;
+    return matchesSearch && matchesType;
+  });
   const filteredPayments = paymentFilter === "all" ? payments : payments.filter(p => p.status === paymentFilter);
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.code || unitId;
 
@@ -710,9 +715,22 @@ const AdminPage = () => {
             <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
               <div className="p-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div><h3 className="font-display font-semibold text-foreground">Document Library</h3><p className="text-sm text-muted-foreground mt-0.5">{materials.length} documents</p></div>
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Search documents..." value={docSearch} onChange={(e) => setDocSearch(e.target.value)} className="pl-9" />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+                    {([["all", "All"], ["notes", "Notes"], ["past_paper", "Past Papers"]] as const).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => setDocTypeFilter(val)}
+                        className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${docTypeFilter === val ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="relative flex-1 sm:w-48">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Search..." value={docSearch} onChange={(e) => setDocSearch(e.target.value)} className="pl-9" />
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -721,8 +739,9 @@ const AdminPage = () => {
                     <tr className="bg-muted/50">
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Document</th>
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Unit</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Type</th>
+                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Chunks</th>
                       <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden md:table-cell">Size</th>
-                      <th className="text-left text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3 hidden lg:table-cell">Downloads</th>
                       <th className="text-right text-xs uppercase tracking-wider font-semibold text-muted-foreground px-6 py-3">Actions</th>
                     </tr>
                   </thead>
@@ -736,8 +755,9 @@ const AdminPage = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 hidden md:table-cell"><span className="text-xs font-mono bg-muted px-2 py-1 rounded text-muted-foreground">{getUnitName(d.unit_id)}</span></td>
+                        <td className="px-6 py-4 hidden md:table-cell"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${(d.document_type || 'notes') === 'past_paper' ? 'bg-amber-500/10 text-amber-600' : 'bg-primary/10 text-primary'}`}>{(d.document_type || 'notes') === 'past_paper' ? 'Past Paper' : 'Notes'}</span></td>
+                        <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{d.chunk_count ?? '—'}</td>
                         <td className="px-6 py-4 text-sm text-muted-foreground hidden md:table-cell">{formatFileSize(d.file_size)}</td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground hidden lg:table-cell">{d.downloads}</td>
                         <td className="px-6 py-4 text-right">
                           <button onClick={() => handleDeleteMaterial(d.id, d.storage_path)} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
                         </td>

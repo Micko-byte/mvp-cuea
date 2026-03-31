@@ -213,8 +213,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { materialId: parsedMaterialId, title, unitCode, storagePath, fileType, content: directContent } = await req.json();
+    const { materialId: parsedMaterialId, title, unitCode, storagePath, fileType, content: directContent, documentType, skipHashCheck } = await req.json();
     materialId = parsedMaterialId;
+    const docType = documentType || "notes";
 
     if (!materialId) {
       return new Response(JSON.stringify({ error: "materialId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -355,6 +356,8 @@ serve(async (req) => {
           unit_id: materialRecord.unit_id,
           uploaded_by: materialRecord.uploaded_by,
           chunk_index: i + idx,
+          document_type: docType,
+          ...(docType === "past_paper" ? { year: (materialRecord as any).year_detected || null } : {}),
         },
       }));
 
@@ -378,8 +381,8 @@ serve(async (req) => {
       })
       .eq("id", materialId);
 
-    // Award 10,000 bonus tokens if this is the first material for this unit
-    try {
+    // Award 10,000 bonus tokens if this is the first material for this unit (notes only, not past papers)
+    if (docType !== "past_paper") try {
       const { count } = await supabaseAdmin
         .from("materials")
         .select("id", { count: "exact", head: true })

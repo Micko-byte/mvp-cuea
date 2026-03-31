@@ -283,7 +283,7 @@ serve(async (req) => {
     }
     const userId = user.id;
 
-    const { messages, chatId, unitId, teachMeMode } = await req.json();
+    const { messages, chatId, unitId, teachMeMode, examMode } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -572,6 +572,72 @@ serve(async (req) => {
       }
     }
 
+    // --- Exam Mode: fetch past papers and notes separately ---
+    let examModeContext = "";
+    const isExamMode = examMode || lastUserMessage.includes("[EXAM_MODE]");
+    if (isExamMode && unitId && OPENAI_API_KEY) {
+      try {
+        // Fetch all past paper chunks for this unit (by metadata document_type)
+        const { data: allDocs } = await supabaseAdmin
+          .from("document_embeddings")
+          .select("content, metadata")
+          .eq("material_id", unitId)
+          .limit(200);
+
+        // Since we can't filter by metadata in a simple query, fetch via materials
+        const { data: pastPaperMaterials } = await supabaseAdmin
+          .from("materials")
+          .select("id")
+          .eq("unit_id", unitId)
+          .eq("document_type", "past_paper");
+        
+        const { data: notesMaterials } = await supabaseAdmin
+          .from("materials")
+          .select("id")
+          .eq("unit_id", unitId)
+          .eq("document_type", "notes");
+
+        const ppIds = new Set((pastPaperMaterials || []).map((m: any) => m.id));
+        const noteIds = new Set((notesMaterials || []).map((m: any) => m.id));
+
+        // Fetch chunks for past papers
+        let ppContext = "";
+        if (ppIds.size > 0) {
+          const { data: ppChunks } = await supabaseAdmin
+            .from("document_embeddings")
+            .select("content, metadata")
+            .in("material_id", Array.from(ppIds))
+            .limit(60);
+          if (ppChunks && ppChunks.length > 0) {
+            ppContext = "\n\n## PAST PAPERS:\n" + ppChunks.map((c: any) => {
+              const meta = c.metadata || {};
+              return `[Past Paper: ${meta.title || 'Unknown'}${meta.year ? ` (${meta.year})` : ''}]\n${c.content}`;
+            }).join("\n---\n");
+          }
+        }
+
+        // Fetch chunks for notes
+        let notesContext = "";
+        if (noteIds.size > 0) {
+          const { data: noteChunks } = await supabaseAdmin
+            .from("document_embeddings")
+            .select("content, metadata")
+            .in("material_id", Array.from(noteIds))
+            .limit(60);
+          if (noteChunks && noteChunks.length > 0) {
+            notesContext = "\n\n## COURSE NOTES:\n" + noteChunks.map((c: any) => {
+              const meta = c.metadata || {};
+              return `[Notes: ${meta.title || 'Unknown'}]\n${c.content}`;
+            }).join("\n---\n");
+          }
+        }
+
+        examModeContext = ppContext + notesContext;
+      } catch (e) {
+        console.warn("Exam mode context fetch error:", e);
+      }
+    }
+
     // --- Math detection: upgrade model ---
     // --- Math detection: upgrade model ---
     const mathPatterns = /(\b(calculus|integral|derivative|equation|matrix|algebra|theorem|proof|polynomial|trigonometry|logarithm|differential|eigenvalue|laplace|fourier)\b|[∫∑∏√±≈≠≤≥∞∂∇]|\\frac|\\sqrt|\d+\s*[\+\-\*\/\^]\s*\d+)/i;
@@ -590,7 +656,27 @@ serve(async (req) => {
     // --- Build the final system prompt ---
     let systemPrompt: string;
 
-    if (teachMeMode) {
+    if (isExamMode && examModeContext) {
+      systemPrompt = `You are Sekani — an AI exam preparation specialist for Kenyan university students.
+
+The student has activated **Exam Mode**. Your job is to:
+1. Analyze ALL past papers provided below and identify question patterns, frequently tested topics, and common question formats.
+2. Cross-reference with the course notes to find answers and explanations for those topics.
+3. Rank topics by how frequently they appear in past papers.
+4. For each frequently tested topic, provide:
+   - How many times it appeared across past papers
+   - The typical question format (MCQ, essay, short answer, calculation)
+   - A concise answer/explanation from the course notes
+5. Generate a targeted revision plan based on the analysis.
+6. Offer to quiz the student on the most tested topics.
+
+Be data-driven. Count actual occurrences. Don't guess — base everything on the documents provided.
+
+${studentContext}
+${unitContext}
+${examModeContext}
+${ragContext ? `\n\nAdditional Course Context:\n${ragContext}` : ""}`;
+    } else if (teachMeMode) {
       // Teach Me Mode: use dedicated tutor prompt with unit context and RAG
       systemPrompt = `You are an expert personal tutor embedded in Sekani (CUEA AI) for Catholic University of Eastern Africa students. The student has activated Teach Me Mode.
 
