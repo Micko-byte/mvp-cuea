@@ -1271,6 +1271,41 @@ const ChatPage = () => {
                       ))}
                     </div>
                   )}
+                  {/* Past Paper Upload */}
+                  <input
+                    ref={pastPaperInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.pptx,.txt"
+                    className="hidden"
+                    onChange={(e) => { handlePastPaperUpload(e.target.files); e.target.value = ""; }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-dashed border-2 text-xs"
+                    disabled={pastPaperUploading}
+                    onClick={() => pastPaperInputRef.current?.click()}
+                  >
+                    {pastPaperUploading ? (
+                      <><Loader2 className="w-3 h-3 animate-spin mr-1" /> Analyzing...</>
+                    ) : (
+                      <><FileQuestion className="w-3 h-3 mr-1" /> Upload Past Papers</>
+                    )}
+                  </Button>
+                  {pastPaperCount > 0 && (
+                    <p className="text-xs text-muted-foreground text-center">{pastPaperCount} past paper{pastPaperCount !== 1 ? 's' : ''} uploaded</p>
+                  )}
+                  {pastPaperCount === 0 && !pastPaperUploading && (
+                    <p className="text-[10px] text-sidebar-foreground/40 text-center">Upload past papers to unlock Exam Mode analysis</p>
+                  )}
+                  {Object.entries(pastPaperUploadProgress).length > 0 && (
+                    <div className="space-y-1">
+                      {Object.entries(pastPaperUploadProgress).map(([key, status]) => (
+                        <p key={key} className="text-xs text-muted-foreground truncate">{status}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
         }
               {filteredChats.length === 0 ?
