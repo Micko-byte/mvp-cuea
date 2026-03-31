@@ -594,6 +594,7 @@ export type Database = {
           eli5_triggers: number
           focus_mode: boolean
           id: string
+          metadata: Json | null
           status: string
           thread_id: string
           topic_outline: Json
@@ -609,6 +610,7 @@ export type Database = {
           eli5_triggers?: number
           focus_mode?: boolean
           id?: string
+          metadata?: Json | null
           status?: string
           thread_id: string
           topic_outline?: Json
@@ -624,6 +626,7 @@ export type Database = {
           eli5_triggers?: number
           focus_mode?: boolean
           id?: string
+          metadata?: Json | null
           status?: string
           thread_id?: string
           topic_outline?: Json
