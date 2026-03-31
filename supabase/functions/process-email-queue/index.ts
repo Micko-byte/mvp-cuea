@@ -25,6 +25,10 @@ async function sendResendEmail(
     to: [payload.to],
     subject: payload.subject,
     html: payload.html,
+    headers: {
+      "List-Unsubscribe": `<mailto:unsubscribe@notifyai.org?subject=unsubscribe>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
   };
 
   if (payload.text) {
