@@ -1,9 +1,14 @@
 export interface TopicItem {
   index: number;
   name: string;
-  status: 'locked' | 'active' | 'done';
+  status: 'locked' | 'active' | 'done' | 'skipped' | 'reinforced';
   checkPassed?: boolean;
   eli5Used?: boolean;
+  depthLevel?: 'light' | 'medium' | 'deep';
+  examPriority?: 'high' | 'medium' | 'low';
+  strengthLevel?: number; // 1-5 from student_memory
+  daysSinceLastSeen?: number;
+  reviewDue?: boolean;
 }
 
 export interface CheckpointScore {
@@ -11,6 +16,17 @@ export interface CheckpointScore {
   score: number;
   total: number;
   passed: boolean;
+  // Diagnostic fields
+  strong?: string;
+  weak?: string;
+  misconception?: string;
+  fix?: string;
+}
+
+export interface SessionRecap {
+  topicsDone: string[];
+  weakTopics: string[];
+  nextStart: string;
 }
 
 export interface TeachMeSession {
@@ -27,4 +43,5 @@ export interface TeachMeSession {
   status: 'active' | 'completed';
   createdAt: string;
   updatedAt: string;
+  metadata?: Record<string, any>;
 }
