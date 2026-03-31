@@ -90,6 +90,9 @@ const AdminPage = () => {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastSending, setBroadcastSending] = useState(false);
   const [broadcastHistory, setBroadcastHistory] = useState<any[]>([]);
+  const [broadcastTarget, setBroadcastTarget] = useState<"all" | "selected">("all");
+  const [selectedRecipients, setSelectedRecipients] = useState<Set<string>>(new Set());
+  const [recipientSearch, setRecipientSearch] = useState("");
 
   const [userSearch, setUserSearch] = useState("");
   const [docSearch, setDocSearch] = useState("");
