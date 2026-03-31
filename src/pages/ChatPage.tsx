@@ -244,6 +244,20 @@ const ChatPage = () => {
     loadUnits();
   }, [user]);
 
+  // Load past paper count for selected unit
+  useEffect(() => {
+    if (!selectedUnitId) { setPastPaperCount(0); return; }
+    const loadCount = async () => {
+      const { count } = await supabase
+        .from("materials")
+        .select("id", { count: "exact", head: true })
+        .eq("unit_id", selectedUnitId)
+        .eq("document_type", "past_paper");
+      setPastPaperCount(count || 0);
+    };
+    loadCount();
+  }, [selectedUnitId]);
+
   // Load active broadcast
   useEffect(() => {
     if (!isAuthenticated) return;
