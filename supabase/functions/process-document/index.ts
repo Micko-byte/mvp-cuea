@@ -356,6 +356,8 @@ serve(async (req) => {
           unit_id: materialRecord.unit_id,
           uploaded_by: materialRecord.uploaded_by,
           chunk_index: i + idx,
+          document_type: docType,
+          ...(docType === "past_paper" ? { year: (materialRecord as any).year_detected || null } : {}),
         },
       }));
 
