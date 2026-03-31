@@ -572,6 +572,72 @@ serve(async (req) => {
       }
     }
 
+    // --- Exam Mode: fetch past papers and notes separately ---
+    let examModeContext = "";
+    const isExamMode = examMode || lastUserMessage.includes("[EXAM_MODE]");
+    if (isExamMode && unitId && OPENAI_API_KEY) {
+      try {
+        // Fetch all past paper chunks for this unit (by metadata document_type)
+        const { data: allDocs } = await supabaseAdmin
+          .from("document_embeddings")
+          .select("content, metadata")
+          .eq("material_id", unitId)
+          .limit(200);
+
+        // Since we can't filter by metadata in a simple query, fetch via materials
+        const { data: pastPaperMaterials } = await supabaseAdmin
+          .from("materials")
+          .select("id")
+          .eq("unit_id", unitId)
+          .eq("document_type", "past_paper");
+        
+        const { data: notesMaterials } = await supabaseAdmin
+          .from("materials")
+          .select("id")
+          .eq("unit_id", unitId)
+          .eq("document_type", "notes");
+
+        const ppIds = new Set((pastPaperMaterials || []).map((m: any) => m.id));
+        const noteIds = new Set((notesMaterials || []).map((m: any) => m.id));
+
+        // Fetch chunks for past papers
+        let ppContext = "";
+        if (ppIds.size > 0) {
+          const { data: ppChunks } = await supabaseAdmin
+            .from("document_embeddings")
+            .select("content, metadata")
+            .in("material_id", Array.from(ppIds))
+            .limit(60);
+          if (ppChunks && ppChunks.length > 0) {
+            ppContext = "\n\n## PAST PAPERS:\n" + ppChunks.map((c: any) => {
+              const meta = c.metadata || {};
+              return `[Past Paper: ${meta.title || 'Unknown'}${meta.year ? ` (${meta.year})` : ''}]\n${c.content}`;
+            }).join("\n---\n");
+          }
+        }
+
+        // Fetch chunks for notes
+        let notesContext = "";
+        if (noteIds.size > 0) {
+          const { data: noteChunks } = await supabaseAdmin
+            .from("document_embeddings")
+            .select("content, metadata")
+            .in("material_id", Array.from(noteIds))
+            .limit(60);
+          if (noteChunks && noteChunks.length > 0) {
+            notesContext = "\n\n## COURSE NOTES:\n" + noteChunks.map((c: any) => {
+              const meta = c.metadata || {};
+              return `[Notes: ${meta.title || 'Unknown'}]\n${c.content}`;
+            }).join("\n---\n");
+          }
+        }
+
+        examModeContext = ppContext + notesContext;
+      } catch (e) {
+        console.warn("Exam mode context fetch error:", e);
+      }
+    }
+
     // --- Math detection: upgrade model ---
     // --- Math detection: upgrade model ---
     const mathPatterns = /(\b(calculus|integral|derivative|equation|matrix|algebra|theorem|proof|polynomial|trigonometry|logarithm|differential|eigenvalue|laplace|fourier)\b|[∫∑∏√±≈≠≤≥∞∂∇]|\\frac|\\sqrt|\d+\s*[\+\-\*\/\^]\s*\d+)/i;
