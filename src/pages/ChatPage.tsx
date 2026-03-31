@@ -1717,7 +1717,15 @@ const ChatPage = () => {
                   document.body.classList.remove('focus-mode');
                   return;
                 }
-                // Turning on
+                // Turning on — require a unit with notes
+                if (!selectedUnit) {
+                  toast.error("Select a unit first to use Teach Me Mode");
+                  return;
+                }
+                if (notesCount === 0) {
+                  toast.error("Upload course notes for this unit first so Sekani can teach you from them.");
+                  return;
+                }
                 setTeachMeActive(true);
                 
                 // Try to load existing session
@@ -1727,10 +1735,8 @@ const ChatPage = () => {
                 }
                 
                 // Auto-send initial message to start Teach Me
-                const unitName = selectedUnit ? selectedUnit.unit_name : null;
-                const initialPrompt = unitName
-                  ? `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`
-                  : `Start Teach Me Mode. Ask me what unit I want to study.`;
+                const unitName = selectedUnit.unit_name;
+                const initialPrompt = `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`;
                 
                 let chat = activeChat;
                 if (!chat) {
