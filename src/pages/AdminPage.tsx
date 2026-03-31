@@ -79,6 +79,11 @@ const AdminPage = () => {
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
   const [settingsSaving, setSettingsSaving] = useState(false);
 
+  // Global credit adjustment
+  const [globalCreditAmount, setGlobalCreditAmount] = useState("");
+  const [globalCreditType, setGlobalCreditType] = useState<"add" | "subtract">("add");
+  const [globalCreditApplying, setGlobalCreditApplying] = useState(false);
+
   // Broadcast
   const [broadcastType, setBroadcastType] = useState<"downtime" | "back_online" | "custom">("downtime");
   const [broadcastSubject, setBroadcastSubject] = useState("");
@@ -216,6 +221,32 @@ const AdminPage = () => {
     setEditTokenDialog(null);
     setTokenAdjustAmount("");
     fetchData();
+  };
+
+  const handleGlobalCreditAdjust = async () => {
+    const amount = parseInt(globalCreditAmount);
+    if (isNaN(amount) || amount <= 0) { toast.error("Enter a valid positive number"); return; }
+    setGlobalCreditApplying(true);
+    try {
+      const tokensValue = globalCreditType === "subtract" ? amount : -amount;
+      const rows = profiles.map(p => ({
+        user_id: p.user_id,
+        tokens_used: tokensValue,
+        model: globalCreditType === "add" ? "admin_global_bonus" : "admin_global_deduction",
+      }));
+      // Insert in batches of 100
+      for (let i = 0; i < rows.length; i += 100) {
+        const batch = rows.slice(i, i + 100);
+        const { error } = await supabase.from("token_usage").insert(batch);
+        if (error) { toast.error(`Batch failed: ${error.message}`); setGlobalCreditApplying(false); return; }
+      }
+      toast.success(`${globalCreditType === "add" ? "Added" : "Deducted"} ${amount.toLocaleString()} tokens for all ${profiles.length} users`);
+      setGlobalCreditAmount("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to apply global adjustment");
+    }
+    setGlobalCreditApplying(false);
   };
 
   const viewUserDetails = async (u: Profile) => {
@@ -847,6 +878,43 @@ const AdminPage = () => {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">Admins bypass all limits. These apply to students only.</p>
+            </div>
+
+            <div className="bg-card rounded-xl border border-border p-6 shadow-card space-y-5">
+              <h3 className="font-display font-semibold text-foreground flex items-center gap-2"><Database className="w-5 h-5 text-primary" /> Global Credit Adjustment</h3>
+              <p className="text-sm text-muted-foreground">Add or deduct tokens for <strong className="text-foreground">all {profiles.length} users</strong> at once.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select value={globalCreditType} onValueChange={(v: "add" | "subtract") => setGlobalCreditType(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="add">Add Tokens</SelectItem>
+                      <SelectItem value="subtract">Deduct Tokens</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Amount (per user)</Label>
+                  <Input
+                    type="number"
+                    value={globalCreditAmount}
+                    onChange={e => setGlobalCreditAmount(e.target.value)}
+                    placeholder="e.g. 10000"
+                  />
+                </div>
+                <Button
+                  onClick={handleGlobalCreditAdjust}
+                  disabled={globalCreditApplying || !globalCreditAmount}
+                  className="bg-gradient-maroon hover:opacity-90"
+                >
+                  {globalCreditApplying ? <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Applying...</> : <><Zap className="w-4 h-4 mr-1" /> Apply to All Users</>}
+                </Button>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">This will {globalCreditType === "add" ? "add" : "deduct"} tokens for every registered user. This action cannot be undone.</p>
+              </div>
             </div>
 
             <div className="bg-card rounded-xl border border-border p-6 shadow-card space-y-5">
