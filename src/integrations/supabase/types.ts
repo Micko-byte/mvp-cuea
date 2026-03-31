@@ -330,6 +330,7 @@ export type Database = {
         Row: {
           chunk_count: number | null
           created_at: string
+          document_type: string
           downloads: number
           embedding_status: string | null
           file_name: string
@@ -345,6 +346,7 @@ export type Database = {
         Insert: {
           chunk_count?: number | null
           created_at?: string
+          document_type?: string
           downloads?: number
           embedding_status?: string | null
           file_name: string
@@ -360,6 +362,7 @@ export type Database = {
         Update: {
           chunk_count?: number | null
           created_at?: string
+          document_type?: string
           downloads?: number
           embedding_status?: string | null
           file_name?: string
