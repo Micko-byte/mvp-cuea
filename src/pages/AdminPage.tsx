@@ -223,6 +223,32 @@ const AdminPage = () => {
     fetchData();
   };
 
+  const handleGlobalCreditAdjust = async () => {
+    const amount = parseInt(globalCreditAmount);
+    if (isNaN(amount) || amount <= 0) { toast.error("Enter a valid positive number"); return; }
+    setGlobalCreditApplying(true);
+    try {
+      const tokensValue = globalCreditType === "subtract" ? amount : -amount;
+      const rows = profiles.map(p => ({
+        user_id: p.user_id,
+        tokens_used: tokensValue,
+        model: globalCreditType === "add" ? "admin_global_bonus" : "admin_global_deduction",
+      }));
+      // Insert in batches of 100
+      for (let i = 0; i < rows.length; i += 100) {
+        const batch = rows.slice(i, i + 100);
+        const { error } = await supabase.from("token_usage").insert(batch);
+        if (error) { toast.error(`Batch failed: ${error.message}`); setGlobalCreditApplying(false); return; }
+      }
+      toast.success(`${globalCreditType === "add" ? "Added" : "Deducted"} ${amount.toLocaleString()} tokens for all ${profiles.length} users`);
+      setGlobalCreditAmount("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to apply global adjustment");
+    }
+    setGlobalCreditApplying(false);
+  };
+
   const viewUserDetails = async (u: Profile) => {
     setSelectedUser(u);
     const userId = u.user_id;
