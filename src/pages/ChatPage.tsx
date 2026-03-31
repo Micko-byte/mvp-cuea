@@ -1826,6 +1826,10 @@ const ChatPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.25 + i * 0.08 }}
                             onClick={async () => {
+                              if ((s as any).needsNotes && notesCount === 0) {
+                                toast.error("Upload course notes for this unit first. Use 'Train AI with Notes' in the sidebar.");
+                                return;
+                              }
                               if ((s as any).isTeachMe) {
                                 setTeachMeActive(true);
                                 let chat = activeChat;
