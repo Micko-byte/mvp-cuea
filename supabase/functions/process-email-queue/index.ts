@@ -32,13 +32,16 @@ async function sendResendEmail(
   }
 
   // Pass message_id as idempotency key so Resend deduplicates on retries
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${resendApiKey}`,
-    "Content-Type": "application/json",
+  const body: Record<string, unknown> = {
+    from: payload.from,
+    to: [payload.to],
+    subject: payload.subject,
+    html: payload.html,
+    headers: {
+      "List-Unsubscribe": `<mailto:unsubscribe@notifyai.org?subject=unsubscribe>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
   };
-  if (payload.message_id) {
-    headers["Idempotency-Key"] = payload.message_id;
-  }
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
