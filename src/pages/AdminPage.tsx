@@ -406,7 +406,11 @@ const AdminPage = () => {
   };
 
   const filteredUsers = profiles.filter(u => u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase()));
-  const filteredDocs = materials.filter(d => d.title.toLowerCase().includes(docSearch.toLowerCase()) || d.file_name.toLowerCase().includes(docSearch.toLowerCase()));
+  const filteredDocs = materials.filter(d => {
+    const matchesSearch = d.title.toLowerCase().includes(docSearch.toLowerCase()) || d.file_name.toLowerCase().includes(docSearch.toLowerCase());
+    const matchesType = docTypeFilter === "all" || (d.document_type || "notes") === docTypeFilter;
+    return matchesSearch && matchesType;
+  });
   const filteredPayments = paymentFilter === "all" ? payments : payments.filter(p => p.status === paymentFilter);
   const getUnitName = (unitId: string) => units.find(u => u.id === unitId)?.code || unitId;
 
