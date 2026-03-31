@@ -381,8 +381,8 @@ serve(async (req) => {
       })
       .eq("id", materialId);
 
-    // Award 10,000 bonus tokens if this is the first material for this unit
-    try {
+    // Award 10,000 bonus tokens if this is the first material for this unit (notes only, not past papers)
+    if (docType !== "past_paper") try {
       const { count } = await supabaseAdmin
         .from("materials")
         .select("id", { count: "exact", head: true })
