@@ -189,7 +189,8 @@ const ChatPage = () => {
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
   const [broadcastDismissed, setBroadcastDismissed] = useState(false);
-  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // placeholder to keep line refs
+  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // past paper upload ref
+  const pastPaperInputRef = useRef<HTMLInputElement>(null);
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
