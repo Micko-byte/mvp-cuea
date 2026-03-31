@@ -715,9 +715,22 @@ const AdminPage = () => {
             <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
               <div className="p-5 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div><h3 className="font-display font-semibold text-foreground">Document Library</h3><p className="text-sm text-muted-foreground mt-0.5">{materials.length} documents</p></div>
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input placeholder="Search documents..." value={docSearch} onChange={(e) => setDocSearch(e.target.value)} className="pl-9" />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
+                    {([["all", "All"], ["notes", "Notes"], ["past_paper", "Past Papers"]] as const).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => setDocTypeFilter(val)}
+                        className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${docTypeFilter === val ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="relative flex-1 sm:w-48">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Search..." value={docSearch} onChange={(e) => setDocSearch(e.target.value)} className="pl-9" />
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
