@@ -44,7 +44,7 @@ interface Profile {
 interface UserRole { user_id: string; role: string; }
 interface Course { id: string; name: string; code: string; faculty: string; description: string | null; is_active: boolean; }
 interface Unit { id: string; name: string; code: string; course_id: string; semester: number; year: number; lecturer: string | null; is_active: boolean; }
-interface Material { id: string; title: string; file_name: string; file_type: string; file_size: number; storage_path: string | null; unit_id: string; uploaded_by: string; downloads: number; created_at: string; }
+interface Material { id: string; title: string; file_name: string; file_type: string; file_size: number; storage_path: string | null; unit_id: string; uploaded_by: string; downloads: number; created_at: string; document_type?: string; chunk_count?: number; embedding_status?: string; }
 
 const AdminPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading } = useAuth();
