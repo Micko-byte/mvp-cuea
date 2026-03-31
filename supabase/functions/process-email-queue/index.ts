@@ -1,5 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 const MAX_RETRIES = 5;
 const DEFAULT_BATCH_SIZE = 10;
 const DEFAULT_SEND_DELAY_MS = 200;
@@ -7,92 +10,24 @@ const DEFAULT_AUTH_TTL_MINUTES = 15;
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60;
 
 // ---------------------------------------------------------------------------
-// Resend API send helper
+// Helper: Parse JWT claims
 // ---------------------------------------------------------------------------
-async function sendResendEmail(
-  payload: {
-    to: string;
-    from: string;
-    subject: string;
-    html: string;
-    text?: string;
-    message_id?: string;
-  },
-  resendApiKey: string,
-): Promise<void> {
-  async function sendResendEmail(
-    payload: {
-      to: string;
-      from: string;
-      subject: string;
-      html: string;
-      text?: string;
-      message_id?: string;
-    },
-    resendApiKey: string,
-  ): Promise<void> {
-    const unsubscribeToken = payload.message_id ?? crypto.randomUUID();
-    const unsubscribeUrl = `https://your-domain.com/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
-
-    const body: Record<string, unknown> = {
-      from: payload.from,
-      to: [payload.to],
-      subject: payload.subject,
-      html: payload.html,
-      ...(payload.text ? { text: payload.text } : {}),
-      headers: {
-        "List-Unsubscribe": `<${unsubscribeUrl}>`,
-        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      },
-    };
-
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    };
-
-    if (payload.message_id) {
-      headers["Idempotency-Key"] = payload.message_id;
-    }
-
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => res.statusText);
-      const err = new Error(`Email API error: ${res.status} ${errorText}`) as Error & { status: number };
-      err.status = res.status;
-      throw err;
-    }
-  }
-
-  if (payload.text) {
-    body.text = payload.text;
-  }
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-      ...(payload.message_id ? { "Idempotency-Key": payload.message_id } : {}),
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => res.statusText);
-    const err = new Error(`Email API error: ${res.status} ${errorText}`) as Error & { status: number };
-    err.status = res.status;
-    throw err;
+function parseJwtClaims(token: string): Record<string, unknown> | null {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = parts[1]
+      .replaceAll("-", "+")
+      .replaceAll("_", "/")
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
+    return JSON.parse(atob(payload)) as Record<string, unknown>;
+  } catch {
+    return null;
   }
 }
 
 // ---------------------------------------------------------------------------
-// Error helpers
+// Helper: Check errors
 // ---------------------------------------------------------------------------
 function isRateLimited(error: unknown): boolean {
   if (error && typeof error === "object" && "status" in error) {
@@ -109,23 +44,12 @@ function isForbidden(error: unknown): boolean {
 }
 
 function getRetryAfterSeconds(_error: unknown): number {
-  return 60;
+  return 60; // default retry-after for rate limit
 }
 
-function parseJwtClaims(token: string): Record<string, unknown> | null {
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-  try {
-    const payload = parts[1]
-      .replaceAll("-", "+")
-      .replaceAll("_", "/")
-      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
-    return JSON.parse(atob(payload)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
+// ---------------------------------------------------------------------------
+// Move message to Dead-Letter Queue
+// ---------------------------------------------------------------------------
 async function moveToDlq(
   supabase: ReturnType<typeof createClient>,
   queue: string,
@@ -140,19 +64,84 @@ async function moveToDlq(
     status: "dlq",
     error_message: reason,
   });
+
   const { error } = await supabase.rpc("move_to_dlq", {
     source_queue: queue,
     dlq_name: `${queue}_dlq`,
     message_id: msg.msg_id,
     payload,
   });
+
   if (error) {
     console.error("Failed to move message to DLQ", { queue, msg_id: msg.msg_id, reason, error });
   }
 }
 
 // ---------------------------------------------------------------------------
-// Entry point
+// Send email via Resend API
+// ---------------------------------------------------------------------------
+async function sendResendEmail(
+  supabase: ReturnType<typeof createClient>,
+  payload: {
+    to: string;
+    from: string;
+    subject: string;
+    html: string;
+    text?: string;
+    message_id?: string;
+    user_id?: string;
+  },
+  resendApiKey: string,
+): Promise<void> {
+  // Fetch user-specific unsubscribe token if available
+  let unsubscribeToken: string | undefined = undefined;
+  if (payload.user_id) {
+    const { data: tokenRow, error: tokenError } = await supabase
+      .from("email_unsubscribe_tokens")
+      .select("token")
+      .eq("user_id", payload.user_id)
+      .single();
+    if (!tokenError && tokenRow?.token) unsubscribeToken = tokenRow.token;
+  }
+
+  if (!unsubscribeToken) unsubscribeToken = payload.message_id ?? crypto.randomUUID();
+
+  const unsubscribeUrl = `https://your-domain.com/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+
+  const body: Record<string, unknown> = {
+    from: payload.from,
+    to: [payload.to],
+    subject: payload.subject,
+    html: payload.html,
+    ...(payload.text ? { text: payload.text } : {}),
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+  };
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${resendApiKey}`,
+    "Content-Type": "application/json",
+    ...(payload.message_id ? { "Idempotency-Key": payload.message_id } : {}),
+  };
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => res.statusText);
+    const err = new Error(`Email API error: ${res.status} ${errorText}`) as Error & { status: number };
+    err.status = res.status;
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main Deno handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req) => {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -175,7 +164,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Only service-role callers can trigger queue processing
   const token = authHeader.slice("Bearer ".length).trim();
   const claims = parseJwtClaims(token);
   if (claims?.role !== "service_role") {
@@ -187,7 +175,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // 1. Check rate-limit cooldown and read queue config
+  // Load queue state
   const { data: state } = await supabase
     .from("email_send_state")
     .select("retry_after_until, batch_size, send_delay_ms, auth_email_ttl_minutes, transactional_email_ttl_minutes")
@@ -208,7 +196,6 @@ Deno.serve(async (req) => {
 
   let totalProcessed = 0;
 
-  // 2. Process auth_emails first (priority), then transactional_emails
   for (const queue of ["auth_emails", "transactional_emails"]) {
     const { data: messages, error: readError } = await supabase.rpc("read_email_batch", {
       queue_name: queue,
@@ -220,10 +207,9 @@ Deno.serve(async (req) => {
       console.error("Failed to read email batch", { queue, error: readError });
       continue;
     }
-
     if (!messages?.length) continue;
 
-    // Build failed-attempts map from email_send_log
+    // Build failed-attempts map
     const messageIds = Array.from(
       new Set(
         messages
@@ -236,20 +222,16 @@ Deno.serve(async (req) => {
 
     const failedAttemptsByMessageId = new Map<string, number>();
     if (messageIds.length > 0) {
-      const { data: failedRows, error: failedRowsError } = await supabase
+      const { data: failedRows } = await supabase
         .from("email_send_log")
         .select("message_id")
         .in("message_id", messageIds)
         .eq("status", "failed");
 
-      if (failedRowsError) {
-        console.error("Failed to load failed-attempt counters", { queue, error: failedRowsError });
-      } else {
-        for (const row of failedRows ?? []) {
-          const messageId = row?.message_id;
-          if (typeof messageId !== "string" || !messageId) continue;
-          failedAttemptsByMessageId.set(messageId, (failedAttemptsByMessageId.get(messageId) ?? 0) + 1);
-        }
+      for (const row of failedRows ?? []) {
+        const messageId = row?.message_id;
+        if (typeof messageId !== "string" || !messageId) continue;
+        failedAttemptsByMessageId.set(messageId, (failedAttemptsByMessageId.get(messageId) ?? 0) + 1);
       }
     }
 
@@ -261,34 +243,23 @@ Deno.serve(async (req) => {
           ? (failedAttemptsByMessageId.get(payload.message_id) ?? 0)
           : 0;
 
-      // Drop expired messages (TTL exceeded)
+      // Drop expired messages
       if (payload.queued_at) {
         const ageMs = Date.now() - new Date(payload.queued_at).getTime();
         const maxAgeMs = ttlMinutes[queue] * 60 * 1000;
         if (ageMs > maxAgeMs) {
-          console.warn("Email expired (TTL exceeded)", {
-            queue,
-            msg_id: msg.msg_id,
-            queued_at: payload.queued_at,
-            ttl_minutes: ttlMinutes[queue],
-          });
           await moveToDlq(supabase, queue, msg, `TTL exceeded (${ttlMinutes[queue]} minutes)`);
           continue;
         }
       }
 
-      // Move to DLQ if max retries reached
+      // Max retries
       if (failedAttempts >= MAX_RETRIES) {
-        await moveToDlq(
-          supabase,
-          queue,
-          msg,
-          `Max retries (${MAX_RETRIES}) exceeded (attempted ${failedAttempts} times)`,
-        );
+        await moveToDlq(supabase, queue, msg, `Max retries (${MAX_RETRIES}) exceeded`);
         continue;
       }
 
-      // Skip if another worker already sent this message
+      // Skip duplicates
       if (payload.message_id) {
         const { data: alreadySent } = await supabase
           .from("email_send_log")
@@ -296,31 +267,19 @@ Deno.serve(async (req) => {
           .eq("message_id", payload.message_id)
           .eq("status", "sent")
           .maybeSingle();
-
         if (alreadySent) {
-          console.warn("Skipping duplicate send (already sent)", {
-            queue,
-            msg_id: msg.msg_id,
-            message_id: payload.message_id,
-          });
           const { error: dupDelError } = await supabase.rpc("delete_email", {
             queue_name: queue,
             message_id: msg.msg_id,
           });
-          if (dupDelError) {
-            console.error("Failed to delete duplicate message from queue", {
-              queue,
-              msg_id: msg.msg_id,
-              error: dupDelError,
-            });
-          }
           continue;
         }
       }
 
       try {
-        // ── Send via Resend ──────────────────────────────────────────────
+        // Send email
         await sendResendEmail(
+          supabase,
           {
             to: payload.to,
             from: payload.from,
@@ -328,6 +287,7 @@ Deno.serve(async (req) => {
             html: payload.html,
             text: payload.text,
             message_id: payload.message_id,
+            user_id: payload.user_id,
           },
           resendApiKey,
         );
@@ -341,23 +301,14 @@ Deno.serve(async (req) => {
         });
 
         // Delete from queue
-        const { error: delError } = await supabase.rpc("delete_email", {
+        await supabase.rpc("delete_email", {
           queue_name: queue,
           message_id: msg.msg_id,
         });
-        if (delError) {
-          console.error("Failed to delete sent message from queue", { queue, msg_id: msg.msg_id, error: delError });
-        }
+
         totalProcessed++;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        console.error("Email send failed", {
-          queue,
-          msg_id: msg.msg_id,
-          read_ct: msg.read_ct,
-          failed_attempts: failedAttempts,
-          error: errorMsg,
-        });
 
         if (isRateLimited(error)) {
           await supabase.from("email_send_log").insert({
@@ -367,7 +318,6 @@ Deno.serve(async (req) => {
             status: "rate_limited",
             error_message: errorMsg.slice(0, 1000),
           });
-
           const retryAfterSecs = getRetryAfterSeconds(error);
           await supabase
             .from("email_send_state")
@@ -376,7 +326,6 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", 1);
-
           return new Response(JSON.stringify({ processed: totalProcessed, stopped: "rate_limited" }), {
             headers: { "Content-Type": "application/json" },
           });
@@ -389,7 +338,7 @@ Deno.serve(async (req) => {
           });
         }
 
-        // Log non-429/403 failures for retry tracking
+        // Log other failures
         await supabase.from("email_send_log").insert({
           message_id: payload.message_id,
           template_name: payload.label || queue,
@@ -400,13 +349,10 @@ Deno.serve(async (req) => {
         if (payload?.message_id && typeof payload.message_id === "string") {
           failedAttemptsByMessageId.set(payload.message_id, failedAttempts + 1);
         }
-        // Message stays invisible until VT expires, then retried
       }
 
-      // Small delay between sends to smooth bursts
-      if (i < messages.length - 1) {
-        await new Promise((r) => setTimeout(r, sendDelayMs));
-      }
+      // Small delay
+      if (i < messages.length - 1) await new Promise((r) => setTimeout(r, sendDelayMs));
     }
   }
 
