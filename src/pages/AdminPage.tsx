@@ -79,6 +79,11 @@ const AdminPage = () => {
   const [systemSettings, setSystemSettings] = useState<Record<string, any>>({});
   const [settingsSaving, setSettingsSaving] = useState(false);
 
+  // Global credit adjustment
+  const [globalCreditAmount, setGlobalCreditAmount] = useState("");
+  const [globalCreditType, setGlobalCreditType] = useState<"add" | "subtract">("add");
+  const [globalCreditApplying, setGlobalCreditApplying] = useState(false);
+
   // Broadcast
   const [broadcastType, setBroadcastType] = useState<"downtime" | "back_online" | "custom">("downtime");
   const [broadcastSubject, setBroadcastSubject] = useState("");
