@@ -1809,6 +1809,7 @@ const ChatPage = () => {
                         {[
                           { icon: BookOpen, label: "Teach Me", isTeachMe: true, prompt: `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.` },
                           { icon: PenLine, label: "Exam Prep", prompt: `Help me prepare for my ${selectedUnit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.` },
+                          ...(pastPaperCount > 0 ? [{ icon: FileQuestion, label: "Exam Mode", isExamMode: true, prompt: `[EXAM_MODE] Analyze ALL past papers uploaded for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.` }] : []),
                           { icon: ListChecks, label: "Quiz Me", prompt: `Quiz me on ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.` },
                           { icon: FileText, label: "Summarize", prompt: `Give me a complete summary of all the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Organize by topic.` },
                         ].map((s, i) => (
