@@ -245,18 +245,18 @@ const ChatPage = () => {
     loadUnits();
   }, [user]);
 
-  // Load past paper count for selected unit
+  // Load notes & past paper count for selected unit
   useEffect(() => {
-    if (!selectedUnitId) { setPastPaperCount(0); return; }
-    const loadCount = async () => {
-      const { count } = await supabase
-        .from("materials")
-        .select("id", { count: "exact", head: true })
-        .eq("unit_id", selectedUnitId)
-        .eq("document_type", "past_paper");
-      setPastPaperCount(count || 0);
+    if (!selectedUnitId) { setPastPaperCount(0); setNotesCount(0); return; }
+    const loadCounts = async () => {
+      const [ppRes, notesRes] = await Promise.all([
+        supabase.from("materials").select("id", { count: "exact", head: true }).eq("unit_id", selectedUnitId).eq("document_type", "past_paper"),
+        supabase.from("materials").select("id", { count: "exact", head: true }).eq("unit_id", selectedUnitId).eq("document_type", "notes"),
+      ]);
+      setPastPaperCount(ppRes.count || 0);
+      setNotesCount(notesRes.count || 0);
     };
-    loadCount();
+    loadCounts();
   }, [selectedUnitId]);
 
   // Load active broadcast
