@@ -1917,7 +1917,7 @@ const ChatPage = () => {
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.2 }}
-                              className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0"
+                              className="flex flex-wrap justify-center gap-2 mt-5 max-w-[680px] w-full px-4 md:px-0"
                             >
                               {[
                                 {
