@@ -631,6 +631,20 @@ const AdminPage = () => {
                           <td className="px-6 py-4 text-right flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setEditTokenDialog({ userId: u.user_id, email: u.email })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Tokens"><Zap className="w-3.5 h-3.5" /></button>
                             <button onClick={() => setEditRoleDialog({ userId: u.user_id, currentRole: userRole })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Role"><Edit className="w-3.5 h-3.5" /></button>
+                            <button
+                              onClick={async () => {
+                                const confirmed = window.confirm('Delete this user permanently? This cannot be undone.');
+                                if (!confirmed) return;
+                                try {
+                                  const { error } = await supabase.functions.invoke('delete-user', { body: { userId: u.user_id } });
+                                  if (error) { toast.error('Failed to delete user: ' + error.message); return; }
+                                  setProfiles(prev => prev.filter(p => p.user_id !== u.user_id));
+                                  toast.success('User deleted.');
+                                } catch (err: any) { toast.error(err.message || 'Delete failed'); }
+                              }}
+                              className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
+                              title="Delete user"
+                            ><Trash2 className="w-3.5 h-3.5" /></button>
                           </td>
                         </tr>
                       );

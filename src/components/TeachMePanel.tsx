@@ -66,12 +66,17 @@ export function TeachMePanel({ session, onToggleFocusMode, onEndSession, onRevie
 
   return (
     <motion.aside
-      initial={{ x: 300, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
+      initial={{ x: 300, opacity: 0, y: 0 }}
+      animate={{ x: 0, opacity: 1, y: 0 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="teach-me-panel w-[300px] h-full bg-card border-l border-border flex flex-col overflow-hidden shrink-0"
+      className="teach-me-panel bg-card border-l border-border flex flex-col overflow-hidden shrink-0
+        fixed bottom-0 inset-x-0 z-50 h-[70vh] rounded-t-2xl border-t md:relative md:inset-auto md:z-auto md:h-full md:w-[300px] md:rounded-none md:border-t-0"
     >
+      {/* Mobile drag handle */}
+      <div className="flex justify-center py-2 md:hidden">
+        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+      </div>
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">

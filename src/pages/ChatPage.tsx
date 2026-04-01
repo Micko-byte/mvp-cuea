@@ -1981,10 +1981,10 @@ const ChatPage = () => {
                                       handleSuggestion(s.prompt);
                                     }
                                   }}
-                                  className="inline-flex items-center gap-2 px-4 py-2.5 glass-card hover:-translate-y-0.5 transition-all"
-                                  style={{ borderRadius: "30px" }}
-                                >
-                                  <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
+                                   className="inline-flex items-center gap-2 px-3 py-2 glass-card hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap"
+                                   style={{ borderRadius: "30px" }}
+                                 >
+                                   <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
                                   <span className="font-display font-semibold text-sm text-foreground whitespace-nowrap">
                                     {s.label}
                                   </span>
