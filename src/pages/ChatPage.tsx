@@ -1879,7 +1879,7 @@ const ChatPage = () => {
 
               return (
                 <>
-                  <div className="flex-1 overflow-y-auto">
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-scroll-area">
                     <AnimatePresence mode="wait">
                       {isNewChat ? (
                         <motion.div
