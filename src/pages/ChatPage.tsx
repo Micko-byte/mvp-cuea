@@ -2109,10 +2109,21 @@ const ChatPage = () => {
                                                   </a>
                                                 );
                                               },
+                                              table: ({ children }: any) => (
+                                                <div className="my-3 overflow-x-auto rounded-lg border border-border">
+                                                  <table className="min-w-full divide-y divide-border text-sm">{children}</table>
+                                                </div>
+                                              ),
+                                              thead: ({ children }: any) => <thead className="bg-muted/50">{children}</thead>,
+                                              tbody: ({ children }: any) => <tbody className="divide-y divide-border">{children}</tbody>,
+                                              tr: ({ children }: any) => <tr className="hover:bg-muted/30 transition-colors">{children}</tr>,
+                                              th: ({ children }: any) => <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{children}</th>,
+                                              td: ({ children }: any) => <td className="px-3 py-2 text-sm text-foreground">{children}</td>,
                                               code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || "");
                                                 const lang = match ? match[1] : "";
                                                 const codeStr = String(children).replace(/\n$/, "");
+                                                if (lang === "mermaid") return <MermaidBlock code={codeStr} />;
                                                 const isBlock = codeStr.includes("\n") || !!lang;
                                                 const canPreview = [
                                                   "html",
