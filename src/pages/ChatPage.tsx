@@ -2435,24 +2435,39 @@ const ChatPage = () => {
             <ArtifactViewer />
           </div>
         )}
-        {/* Teach Me Panel */}
+        {/* Teach Me Panel — bottom sheet on mobile, side panel on desktop */}
         <AnimatePresence>
           {teachMeActive && teachMe.session && !viewerOpen && (
-            <TeachMePanel
-              session={teachMe.session}
-              onToggleFocusMode={() => {
-                if (teachMe.session) {
-                  teachMe.toggleFocusMode(teachMe.session.id);
-                  document.body.classList.toggle("focus-mode", !teachMe.session.focusMode);
-                }
-              }}
-              onEndSession={() => {
-                if (teachMe.session) teachMe.markComplete(teachMe.session.id);
-                setTeachMeActive(false);
-                teachMe.endSession();
-                document.body.classList.remove("focus-mode");
-              }}
-            />
+            <>
+              {/* Mobile backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 z-40 md:hidden"
+                onClick={() => {
+                  if (teachMe.session) teachMe.markComplete(teachMe.session.id);
+                  setTeachMeActive(false);
+                  teachMe.endSession();
+                  document.body.classList.remove("focus-mode");
+                }}
+              />
+              <TeachMePanel
+                session={teachMe.session}
+                onToggleFocusMode={() => {
+                  if (teachMe.session) {
+                    teachMe.toggleFocusMode(teachMe.session.id);
+                    document.body.classList.toggle("focus-mode", !teachMe.session.focusMode);
+                  }
+                }}
+                onEndSession={() => {
+                  if (teachMe.session) teachMe.markComplete(teachMe.session.id);
+                  setTeachMeActive(false);
+                  teachMe.endSession();
+                  document.body.classList.remove("focus-mode");
+                }}
+              />
+            </>
           )}
         </AnimatePresence>
       </div>
