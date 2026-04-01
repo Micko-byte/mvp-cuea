@@ -284,19 +284,17 @@ const ChatPage = () => {
     loadCounts();
   }, [selectedUnitId]);
 
-  // Load active broadcast
+  // Scroll-to-bottom detection
   useEffect(() => {
-    if (!isAuthenticated) return;
-    const loadBroadcast = async () => {
-      const { data } = await supabase.from("system_settings").select("value").eq("key", "active_broadcast").single();
-      if (data?.value && (data.value as any).active) {
-        setActiveBroadcast(data.value);
-      }
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+      setShowScrollButton(!atBottom);
     };
-    loadBroadcast();
-    const interval = setInterval(loadBroadcast, 60000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [activeChat?.id]);
 
   useEffect(() => {
     const handler = () => setShowPaymentDialog(true);
