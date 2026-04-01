@@ -2398,15 +2398,26 @@ const ChatPage = () => {
                   </div>
 
                   {!isNewChat && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35 }}
-                      className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none"
-                      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-                    >
-                      {chatInput}
-                    </motion.div>
+                    <div className="relative">
+                      {showScrollButton && (
+                        <button
+                          onClick={() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })}
+                          className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                          title="Scroll to bottom"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      )}
+                      <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none"
+                        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+                      >
+                        {chatInput}
+                      </motion.div>
+                    </div>
                   )}
                 </>
               );
