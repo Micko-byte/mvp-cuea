@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
+import { MermaidBlock } from "@/components/MermaidBlock";
 import rehypeKatex from "rehype-katex";
 import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
 import sekaniLogo from "@/assets/sekani-logo.png";
@@ -199,8 +201,8 @@ const ChatPage = () => {
   const [editingMsgText, setEditingMsgText] = useState("");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
-  const [activeBroadcast, setActiveBroadcast] = useState<any>(null);
-  const [broadcastDismissed, setBroadcastDismissed] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // past paper upload ref
   const pastPaperInputRef = useRef<HTMLInputElement>(null);
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
@@ -282,19 +284,17 @@ const ChatPage = () => {
     loadCounts();
   }, [selectedUnitId]);
 
-  // Load active broadcast
+  // Scroll-to-bottom detection
   useEffect(() => {
-    if (!isAuthenticated) return;
-    const loadBroadcast = async () => {
-      const { data } = await supabase.from("system_settings").select("value").eq("key", "active_broadcast").single();
-      if (data?.value && (data.value as any).active) {
-        setActiveBroadcast(data.value);
-      }
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+      setShowScrollButton(!atBottom);
     };
-    loadBroadcast();
-    const interval = setInterval(loadBroadcast, 60000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [activeChat?.id]);
 
   useEffect(() => {
     const handler = () => setShowPaymentDialog(true);
@@ -1797,19 +1797,6 @@ const ChatPage = () => {
           className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`}
           style={chatBgStyle}
         >
-          {/* Broadcast Banner */}
-          {activeBroadcast && !broadcastDismissed && (
-            <div
-              className={`px-4 py-3 flex items-center gap-3 text-sm ${activeBroadcast.broadcastType === "downtime" ? "bg-destructive/15 text-destructive" : activeBroadcast.broadcastType === "back_online" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : "bg-primary/15 text-primary"}`}
-            >
-              <span className="font-semibold shrink-0">{activeBroadcast.subject}</span>
-              <span className="truncate">{activeBroadcast.message}</span>
-              <button onClick={() => setBroadcastDismissed(true)} className="ml-auto shrink-0 p-1 hover:opacity-70">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
           {/* Header */}
           <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent">
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
@@ -1892,7 +1879,7 @@ const ChatPage = () => {
 
               return (
                 <>
-                  <div className="flex-1 overflow-y-auto">
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-scroll-area">
                     <AnimatePresence mode="wait">
                       {isNewChat ? (
                         <motion.div
@@ -1930,7 +1917,7 @@ const ChatPage = () => {
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.2 }}
-                              className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0"
+                              className="flex flex-wrap justify-center gap-2 mt-5 max-w-[680px] w-full px-4 md:px-0"
                             >
                               {[
                                 {
@@ -1994,10 +1981,10 @@ const ChatPage = () => {
                                       handleSuggestion(s.prompt);
                                     }
                                   }}
-                                  className="inline-flex items-center gap-2 px-4 py-2.5 glass-card hover:-translate-y-0.5 transition-all"
-                                  style={{ borderRadius: "30px" }}
-                                >
-                                  <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
+                                   className="inline-flex items-center gap-2 px-3 py-2 glass-card hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap"
+                                   style={{ borderRadius: "30px" }}
+                                 >
+                                   <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
                                   <span className="font-display font-semibold text-sm text-foreground whitespace-nowrap">
                                     {s.label}
                                   </span>
@@ -2071,7 +2058,7 @@ const ChatPage = () => {
                                       {msg.sender === "bot" ? (
                                         <div className="prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
                                           <ReactMarkdown
-                                            remarkPlugins={[remarkMath]}
+                                            remarkPlugins={[remarkMath, remarkGfm]}
                                             rehypePlugins={[rehypeKatex]}
                                             components={{
                                               a({ href, children, ...props }) {
@@ -2122,10 +2109,21 @@ const ChatPage = () => {
                                                   </a>
                                                 );
                                               },
+                                              table: ({ children }: any) => (
+                                                <div className="my-3 overflow-x-auto rounded-lg border border-border">
+                                                  <table className="min-w-full divide-y divide-border text-sm">{children}</table>
+                                                </div>
+                                              ),
+                                              thead: ({ children }: any) => <thead className="bg-muted/50">{children}</thead>,
+                                              tbody: ({ children }: any) => <tbody className="divide-y divide-border">{children}</tbody>,
+                                              tr: ({ children }: any) => <tr className="hover:bg-muted/30 transition-colors">{children}</tr>,
+                                              th: ({ children }: any) => <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{children}</th>,
+                                              td: ({ children }: any) => <td className="px-3 py-2 text-sm text-foreground">{children}</td>,
                                               code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || "");
                                                 const lang = match ? match[1] : "";
                                                 const codeStr = String(children).replace(/\n$/, "");
+                                                if (lang === "mermaid") return <MermaidBlock code={codeStr} />;
                                                 const isBlock = codeStr.includes("\n") || !!lang;
                                                 const canPreview = [
                                                   "html",
@@ -2400,15 +2398,26 @@ const ChatPage = () => {
                   </div>
 
                   {!isNewChat && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.35 }}
-                      className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none"
-                      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-                    >
-                      {chatInput}
-                    </motion.div>
+                    <div className="relative">
+                      {showScrollButton && (
+                        <button
+                          onClick={() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })}
+                          className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                          title="Scroll to bottom"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      )}
+                      <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none"
+                        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+                      >
+                        {chatInput}
+                      </motion.div>
+                    </div>
                   )}
                 </>
               );
@@ -2426,24 +2435,39 @@ const ChatPage = () => {
             <ArtifactViewer />
           </div>
         )}
-        {/* Teach Me Panel */}
+        {/* Teach Me Panel — bottom sheet on mobile, side panel on desktop */}
         <AnimatePresence>
           {teachMeActive && teachMe.session && !viewerOpen && (
-            <TeachMePanel
-              session={teachMe.session}
-              onToggleFocusMode={() => {
-                if (teachMe.session) {
-                  teachMe.toggleFocusMode(teachMe.session.id);
-                  document.body.classList.toggle("focus-mode", !teachMe.session.focusMode);
-                }
-              }}
-              onEndSession={() => {
-                if (teachMe.session) teachMe.markComplete(teachMe.session.id);
-                setTeachMeActive(false);
-                teachMe.endSession();
-                document.body.classList.remove("focus-mode");
-              }}
-            />
+            <>
+              {/* Mobile backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 z-40 md:hidden"
+                onClick={() => {
+                  if (teachMe.session) teachMe.markComplete(teachMe.session.id);
+                  setTeachMeActive(false);
+                  teachMe.endSession();
+                  document.body.classList.remove("focus-mode");
+                }}
+              />
+              <TeachMePanel
+                session={teachMe.session}
+                onToggleFocusMode={() => {
+                  if (teachMe.session) {
+                    teachMe.toggleFocusMode(teachMe.session.id);
+                    document.body.classList.toggle("focus-mode", !teachMe.session.focusMode);
+                  }
+                }}
+                onEndSession={() => {
+                  if (teachMe.session) teachMe.markComplete(teachMe.session.id);
+                  setTeachMeActive(false);
+                  teachMe.endSession();
+                  document.body.classList.remove("focus-mode");
+                }}
+              />
+            </>
           )}
         </AnimatePresence>
       </div>
