@@ -1,832 +1,2601 @@
-# Sekani — Soma na Sekani
-
-> **"Your AI study partner, powered by your notes."**
-> A full-stack AI study assistant built by the **Soma na Sekani** team — building smart academic AI companions for Kenyan university students.
-
-**Live URL**: [https://mvp-cuea.lovable.app](https://mvp-cuea.lovable.app)
-
----
-
-## Table of Contents
-
-1. [System Overview](#system-overview)
-2. [Architecture](#architecture)
-3. [Technology Stack](#technology-stack)
-4. [Database Schema](#database-schema)
-5. [Authentication & Authorization](#authentication--authorization)
-6. [Frontend Pages & Routes](#frontend-pages--routes)
-7. [AI Chat System](#ai-chat-system)
-8. [RAG (Retrieval-Augmented Generation)](#rag-retrieval-augmented-generation)
-9. [Teach Me Mode](#teach-me-mode)
-10. [Voice Input (Transcription)](#voice-input-transcription)
-11. [Document Generation](#document-generation)
-12. [File Attachments & Embedding](#file-attachments--embedding)
-13. [Student-Led Knowledge Base Training](#student-led-knowledge-base-training)
-14. [Payment System (Paystack)](#payment-system-paystack)
-15. [Personalization Engine](#personalization-engine)
-16. [Artifact Viewer](#artifact-viewer)
-17. [Admin Dashboard](#admin-dashboard)
-18. [Edge Functions](#edge-functions)
-19. [Email System](#email-system)
-20. [Caching (Redis)](#caching-redis)
-21. [Security & RLS Policies](#security--rls-policies)
-22. [PWA Support](#pwa-support)
-23. [Environment Variables & Secrets](#environment-variables--secrets)
-24. [Deployment](#deployment)
-25. [File Structure](#file-structure)
-
----
-
-## System Overview
-
-Sekani is a purpose-built AI study assistant serving Kenyan university students. It is **not** officially affiliated with any university — instead, students contribute their own notes and the AI learns from them. Key capabilities:
-
-- **AI-powered chat** with curriculum-aware responses (configurable models via admin dashboard)
-- **RAG knowledge base** using pgvector embeddings from student-uploaded course materials
-- **Teach Me Mode** — structured topic-by-topic learning with progress tracking, checkpoints, and focus mode
-- **Voice input** via OpenAI `gpt-4o-mini-transcribe` — tap mic, speak, stop, review transcript, then send
-- **Document generation** (PDF, DOCX, PPTX, XLSX) directly in chat
-- **Multi-file attachments** with automatic knowledge base embedding (images via vision, documents via text extraction)
-- **Unit-specific chat isolation** — separate conversations per enrolled course unit
-- **Student-led training** — students upload notes to train the AI for their units, earning bonus tokens
-- **Freemium monetization** via Paystack (M-Pesa + Card):
-  - Individual plan: **KES 129/month** (unlimited tokens)
-  - Group plan (5 users): **KES 499/month** (unlimited tokens)
-  - Free tier: **50,000 tokens/day**
-- **Admin dashboard** for user management, course/unit configuration, document uploads, AI model configuration, global credit adjustment, broadcast messaging, and analytics
-- **Personalization** — themes, fonts, chat backgrounds, AI nicknames
-- **Code artifact viewer** with live HTML/JS preview
-- **PWA** installable on mobile devices
-- **Academic calendar** for tracking university events
-- **Exam prep & past paper analysis** — AI scans past papers to identify most-tested topics
-- **Student memory** — persistent memory of topics the student has studied
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    FRONTEND (React + Vite)               │
-│                                                          │
-│  Index (Landing) → LoginPage → ChatPage → AdminPage      │
-│  PersonalizationPage │ ArtifactsPage │ ResetPasswordPage  │
-│  TermsPage                                                │
-│                                                          │
-│  Contexts: AuthContext, ChatContext, ArtifactContext,      │
-│            PersonalizationContext                          │
-└────────────────────────┬────────────────────────────────┘
-                         │ HTTPS / Supabase SDK
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│                  SUPABASE (Lovable Cloud)                 │
-│                                                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │  PostgreSQL   │  │  Auth (JWT)  │  │   Storage     │  │
-│  │  + pgvector   │  │  + Email     │  │  (materials)  │  │
-│  └──────────────┘  └──────────────┘  └───────────────┘  │
-│                                                          │
-│  Edge Functions:                                         │
-│  • chat                — AI chat with streaming + RAG    │
-│  • transcribe          — Voice → text (gpt-4o-mini)      │
-│  • embed-document      — Chat attachment embedding       │
-│  • process-document    — Document extraction + embedding  │
-│  • paystack-initialize — Payment initialization          │
-│  • paystack-webhook    — Payment confirmation            │
-│  • paystack-callback   — Card payment redirect           │
-│  • send-broadcast      — Email broadcast to all users    │
-│  • process-email-queue — Email queue processor           │
-│  • auth-email-hook     — Custom auth email templates     │
-└────────────────────────┬────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│              EXTERNAL SERVICES                           │
-│  • OpenAI API (Chat, Embeddings, Transcription)          │
-│  • Paystack API (M-Pesa + Card payments)                 │
-│  • Upstash Redis (Settings cache, rate limiting)         │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## Technology Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 18, TypeScript, Vite 5 |
-| **Styling** | Tailwind CSS 3, shadcn/ui, Framer Motion |
-| **State** | React Context (Auth, Chat, Artifact, Personalization), TanStack React Query |
-| **Routing** | React Router v6 |
-| **Backend** | Supabase (Lovable Cloud) — PostgreSQL, Auth, Storage, Edge Functions (Deno) |
-| **AI** | OpenAI (configurable models via admin), text-embedding-3-large (768d) |
-| **Transcription** | OpenAI gpt-4o-mini-transcribe |
-| **Payments** | Paystack (M-Pesa mobile money + Card) |
-| **Caching** | Upstash Redis (settings cache, rate limiting) |
-| **Document Gen** | jsPDF, docx, pptxgenjs, xlsx, file-saver |
-| **Markdown** | react-markdown, remark-math, rehype-katex (LaTeX) |
-| **PWA** | vite-plugin-pwa |
-
----
-
-## Database Schema
-
-### Core Tables
-
-| Table | Purpose |
-|-------|---------|
-| `profiles` | User profile data (name, email, admission number, program, course, course_name, year, semester, avatar_url) |
-| `user_roles` | Role assignments using `app_role` enum: `admin`, `student`, `lecturer` |
-| `courses` | Academic courses (code, name, faculty, description, is_active) |
-| `units` | Course units (code, name, course_id, semester, year, lecturer, openai_vector_store_id, is_active) |
-| `student_units` | Many-to-many enrollment: which students are in which units |
-| `chats` | Chat sessions with `chat_type` (`general` / `unit`) and optional `unit_id` |
-| `chat_messages` | Individual messages (role: `user` / `assistant`, content, timestamps) |
-| `materials` | Uploaded documents metadata (title, file_name, file_type, file_size, storage_path, unit_id, uploaded_by, embedding_status, chunk_count) |
-| `document_embeddings` | Vector embeddings for RAG (content, embedding as `vector(768)`, metadata JSONB, material_id) |
-| `document_hashes` | Content hashes for deduplication of uploaded documents |
-| `token_usage` | Token consumption tracking per user (tokens_used, model, created_at) |
-| `payments` | Payment records (amount, status, plan_type, email, group_emails, paystack_reference, currency: KES) |
-| `academic_calendar` | Events (event_name, start_date, end_date, category, trimester, is_student_created, created_by) |
-| `system_settings` | Key-value configuration store (token limits, model names, feature toggles) |
-| `teach_me_sessions` | Teach Me Mode progress (topic_outline, current_topic_index, completed_topics, checkpoint_scores, eli5_triggers, focus_mode, status) |
-| `student_memory` | Persistent memory of topics studied (memory_type, subject, content, strength_level, last_seen_at) |
-| `email_send_log` | Email delivery tracking |
-| `email_send_state` | Email queue processing state |
-| `email_unsubscribe_tokens` | Unsubscribe token management |
-| `suppressed_emails` | Suppressed email addresses |
-
-### Key Database Functions
-
-| Function | Purpose |
-|----------|---------|
-| `has_role(_user_id, _role)` | Security definer function to check user roles without RLS recursion |
-| `get_daily_token_usage(_user_id)` | Returns total tokens used today by a user |
-| `match_documents(query_embedding, threshold, count)` | pgvector cosine similarity search for RAG |
-| `match_documents_for_units(query_embedding, allowed_unit_ids, threshold, count)` | Unit-scoped pgvector search |
-| `handle_new_user()` | Trigger on `auth.users` — creates profile + assigns `student` role |
-| `handle_first_admin()` | Trigger — first user auto-provisioned as admin if none exists |
-| `update_updated_at_column()` | Generic timestamp update trigger |
-| `enqueue_email(queue_name, payload)` | PGMQ email queue helper |
-| `read_email_batch(queue_name, batch_size, vt)` | PGMQ batch reader |
-| `delete_email(queue_name, message_id)` | PGMQ message deletion |
-| `move_to_dlq(source_queue, dlq_name, message_id, payload)` | Move failed emails to dead letter queue |
-
----
-
-## Authentication & Authorization
-
-### Flow
-
-1. **Signup** (3-step form):
-   - Step 1: Name, admission number, email, password
-   - Step 2: Select course, year, semester from database
-   - Step 3: Select units for enrollment → **Email verification** sent
-
-2. **Login**: Email + password → JWT token → auto-redirect (admin → `/admin`, student → `/chat`)
-
-3. **Password Reset**: Email link → `/reset-password` page
-
-4. **Pending Unit Enrollment**: Units selected during signup are stored in `localStorage` as `pendingUnitEnrollments` and enrolled on first login via `enrollPendingUnits()`
-
-### Roles
-
-| Role | Access |
-|------|--------|
-| `student` | Chat, personalization, artifacts, own profile, unit training uploads |
-| `admin` | Full admin dashboard, all student data, document uploads, role management, global credit adjustment, broadcast, AI configuration |
-| `lecturer` | Same as student (expandable) |
-
-### Auto-provisioning
-
-- First user to sign up gets `admin` role automatically (via `handle_first_admin()` trigger)
-- Subsequent users get `student` role by default (via `handle_new_user()` trigger)
-
-### Security
-
-- RLS policies on all tables enforce `auth.uid() = user_id`
-- `has_role()` SECURITY DEFINER function prevents RLS recursion
-- Admin checks use `has_role(_user_id, 'admin')` in edge functions
-- JWT tokens passed via `Authorization: Bearer <token>` header
-
----
-
-## Frontend Pages & Routes
-
-| Route | Component | Description |
-|-------|-----------|-------------|
-| `/` | `Index` | Marketing landing page (features, pricing, testimonials, university section) |
-| `/login` | `LoginPage` | Login / 3-step signup |
-| `/chat` | `ChatPage` | Main AI chat interface (primary page) |
-| `/admin` | `AdminPage` | Admin dashboard |
-| `/artifacts` | `ArtifactsPage` | Code artifact gallery |
-| `/personalization` | `PersonalizationPage` | Theme, font, chat background, nickname settings |
-| `/reset-password` | `ResetPasswordPage` | Password reset form |
-| `/terms` | `TermsPage` | Terms of service |
-| `*` | `NotFound` | 404 page |
-
-### Context Providers (wrapped in `App.tsx`)
-
-```
-QueryClientProvider → AuthProvider → PersonalizationProvider → ChatProvider → ArtifactProvider
-```
-
----
-
-## AI Chat System
-
-### Architecture
-
-**Frontend** (`ChatContext.tsx` + `ChatPage.tsx`):
-1. User sends message → persisted to `chat_messages` table
-2. Constructs message history with multimodal support (images as base64 `image_url`)
-3. Calls `chat` edge function via streaming `fetch`
-4. Parses SSE stream → updates UI in real-time
-5. Persists assistant response to `chat_messages`
-
-**Backend** (`supabase/functions/chat/index.ts`):
-1. Authenticates user via JWT
-2. Loads system settings from Redis cache (5 min TTL) or database
-3. Checks token limits:
-   - Free: **50,000 tokens/day** (configurable via `system_settings`)
-   - Paid: **Unlimited** (Individual or Group plan)
-   - Global: **5,000,000 tokens/day** (configurable)
-   - Admins bypass all limits
-4. Rate limiting via Redis (configurable requests/minute)
-5. Fetches user profile, enrolled units, academic calendar
-6. Runs **RAG pipeline** (see next section)
-7. Constructs system prompt with:
-   - Sekani persona (identity, personality, modes of operation)
-   - Institutional knowledge (platform info)
-   - Student context (name, program, course, year)
-   - Enrolled units list
-   - Unit-specific context (if unit chat)
-   - Academic calendar events (upcoming 15)
-   - RAG results from course materials
-8. Calls OpenAI API with streaming (model configurable per chat type: general, unit, vision)
-9. Tracks estimated token usage in `token_usage` table
-
-### Chat Modes
-
-| Mode | Description |
-|------|-------------|
-| **General** | Open-ended — answers any topic (general knowledge + RAG when relevant) |
-| **Unit-specific** | Isolated to a course unit — RAG filtered by unit, focused system prompt |
-
-### Sekani's Modes of Operation (Auto-detected)
-
-| Mode | Trigger | Behavior |
-|------|---------|----------|
-| 📚 Study Mode | "Teach me this unit", "Start from beginning" | Build topic roadmap from notes, teach one topic at a time |
-| 📝 Exam Prep | "Help me revise", "Test me", "Most tested topics" | Exam questions, past paper analysis, cheat sheets |
-| ❓ Q&A Mode | Direct questions | Answer from notes (unit) or general knowledge |
-| 🧠 Quiz Mode | "Quiz me" | One question at a time, evaluate answers |
-| 🌐 General Knowledge | Non-academic questions | Answer like a smart search engine |
-
-### Features
-
-- **Streaming responses** with typing indicator
-- **Voice input** via OpenAI transcription (see Voice Input section)
-- **Message editing** and **retry** (regenerate)
-- **Copy to clipboard**, **thumbs up/down** feedback
-- **Chat renaming** and **deletion** (individual + delete all)
-- **Date-grouped chat history** (Today, Yesterday, Previous 7/30 Days, Older)
-- **Swipe gestures** for mobile sidebar
-- **LaTeX math rendering** via KaTeX
-- **Code highlighting** with "Open as Artifact" action
-- **Document download links** within responses
-- **Active broadcast banner** from admin
-
----
-
-## RAG (Retrieval-Augmented Generation)
-
-### Pipeline
-
-1. **Embedding**: Documents chunked (1000 chars, 200 overlap) → embedded via `text-embedding-3-large` (768 dimensions)
-2. **Storage**: Vectors stored in `document_embeddings` table with pgvector
-3. **Query**: User message → embedded → `match_documents_for_units()` RPC (cosine similarity, threshold 0.5)
-4. **Keyword re-ranking**: Results are re-ranked by keyword overlap with the user's query (keywords extracted, stop words removed)
-5. **Deduplication**: Duplicate chunks (same title + content prefix) are filtered out
-6. **Filtering**:
-   - Unit chat: Only documents matching `unit_id`
-   - General chat (student): Only documents matching enrolled unit IDs
-   - Admin: No filtering (access all)
-7. **Context injection**: Top N chunks injected into system prompt (configurable via `max_rag_chunks` setting, default 8)
-
-### Embedding Sources
-
-| Source | Trigger | Edge Function |
-|--------|---------|---------------|
-| Admin document upload | Admin uploads in dashboard | `process-document` |
-| Student unit training | Student uploads notes for their unit | `process-document` |
-| Chat file attachment | Student attaches file in chat | `embed-document` |
-
----
-
-## Teach Me Mode
-
-**Files**: `src/hooks/useTeachMeSession.ts`, `src/components/TeachMePanel.tsx`, `src/lib/teachMePrompt.ts`, `src/types/teachMe.ts`
-
-A structured, topic-by-topic learning mode that persists across page reloads.
-
-### How It Works
-
-1. Student activates "Teach Me" for a unit
-2. AI analyzes uploaded notes and generates a topic outline (via control tags in responses)
-3. Topics displayed in a sidebar panel with progress tracking
-4. AI teaches one topic at a time with:
-   - Clear explanations
-   - Key definitions
-   - Examples from notes
-   - Why it matters for exams
-5. After each topic, a checkpoint quiz tests understanding
-6. Progress saved to `teach_me_sessions` table in the database
-
-### Features
-
-| Feature | Description |
-|---------|-------------|
-| **Topic Outline** | Auto-generated from notes, displayed as a progress sidebar |
-| **Checkpoint Quizzes** | After every few topics, AI tests understanding (scored) |
-| **ELI5 Mode** | "Explain like I'm 5" — simplify any topic |
-| **Focus Mode** | Hides sidebar distractions during study |
-| **Persistence** | Session survives page reload (restored from database) |
-| **Progress Tracking** | Topics marked as active/done/locked with visual indicators |
-
-### Control Tags
-
-The AI uses special control tags in responses that the frontend parses:
-
-| Tag | Purpose |
-|-----|---------|
-| `[TOPIC_OUTLINE]...[/TOPIC_OUTLINE]` | Define the topic roadmap |
-| `[TOPIC_DONE:N]` | Mark topic N as completed |
-| `[ELI5_TRIGGERED:N]` | Record ELI5 was used for topic N |
-| `[CHECKPOINT]...[/CHECKPOINT]` | Checkpoint quiz result |
-| `[UNIT_COMPLETE]` | All topics finished |
-
----
-
-## Voice Input (Transcription)
-
-**Edge Function**: `supabase/functions/transcribe/index.ts`
-
-Voice input uses OpenAI's `gpt-4o-mini-transcribe` model for high-quality transcription.
-
-### Flow
-
-1. User taps the **microphone button** → browser `MediaRecorder` starts recording (WebM/Opus)
-2. User speaks freely — recording continues until manually stopped (no auto-stop on pause)
-3. User taps **Stop** → recording ends
-4. Audio blob sent to `transcribe` edge function via `FormData`
-5. Edge function forwards to OpenAI `/v1/audio/transcriptions`
-6. Transcript returned and shown in a **preview card**
-7. User can **confirm** (✓) to paste into input, or **discard** (✗)
-
-### UI States
-
-| State | Display |
-|-------|---------|
-| Idle | Mic button |
-| Recording | Animated audio visualizer bars + "Speak freely — tap Stop when done" |
-| Transcribing | Spinner + "Transcribing..." |
-| Preview | Transcript card with confirm/discard buttons |
-
----
-
-## Document Generation
-
-**File**: `src/utils/documentGenerator.ts`
-
-Generates documents from AI-created markdown content directly in the browser:
-
-| Format | Library | Function |
-|--------|---------|----------|
-| PDF | `jsPDF` | `generatePDF(content, title)` |
-| DOCX | `docx` + `file-saver` | `generateDOCX(content, title)` |
-| PPTX | `pptxgenjs` | `generatePPTX(content, title)` |
-| XLSX | `xlsx` + `file-saver` | `generateXLSX(content, title)` |
-
-### How It Works
-
-1. AI generates markdown content with download links: `[📥 Download PDF](download:pdf)`
-2. `ChatPage.tsx` intercepts these links in the markdown renderer
-3. Extracts the full message content (minus the download links)
-4. Passes content to the appropriate generator function
-5. Browser downloads the file
-
-### Markdown Parser
-
-The `parseMarkdown()` function converts markdown into structured blocks (h1-h3, paragraph, bullet, code, table) that each generator renders in its native format.
-
----
-
-## File Attachments & Embedding
-
-### Attachment Flow (`ChatContext.tsx` + `ChatPage.tsx`)
-
-Three separate file inputs for distinct handling:
-- **Camera**: Direct camera capture (`cameraInputRef`)
-- **Photo library**: Multi-image selection (`photoInputRef`)
-- **Documents**: File picker for PDFs, DOCX, etc. (`docInputRef`)
-
-### Processing by File Type
-
-| File Type | Processing | AI Handling |
-|-----------|-----------|-------------|
-| **Images** (JPG, PNG, etc.) | Converted to base64 | Sent as `image_url` parts to vision model |
-| **Text** (TXT, CSV, MD) | Read via `file.text()` | Content injected into message |
-| **Word** (DOCX) | Extracted via `mammoth` library | Content injected + optionally embedded |
-| **Excel** (XLSX, XLS) | Parsed via `xlsx` library | Sheet data as CSV injected |
-| **PDF** | Base64 encoded | Sent to AI with note about limited browser extraction |
-
-### Background Embedding
-
-When a text-based attachment has ≥20 characters of extractable text, it is automatically embedded into the knowledge base via the `embed-document` edge function, tagged with the current `unit_id` for context-aware RAG retrieval.
-
----
-
-## Student-Led Knowledge Base Training
-
-A core architectural principle: **students train the AI** by uploading their own notes.
-
-### Flow
-
-1. Student selects a unit from their enrolled units
-2. Uploads one or more files (PDF, DOCX, PPTX, TXT, etc.)
-3. Files stored in `materials` Storage bucket under `uploads/{user_id}/{timestamp}_{filename}`
-4. Metadata saved to `materials` table with `embedding_status: "processing"`
-5. `process-document` edge function called:
-   - Downloads file from Storage
-   - Extracts text (PDF via pdfjs-serverless with fallback, DOCX via mammoth, PPTX via JSZip XML, DOC via binary extraction, TXT/CSV/MD direct)
-   - Validates text quality (minimum 120 chars, word count, letter ratio)
-   - Chunks text (1000 chars, 200 overlap)
-   - Generates embeddings via OpenAI `text-embedding-3-large` (768d)
-   - Inserts into `document_embeddings` with metadata (title, unit_code, unit_id, uploaded_by)
-6. Updates `materials.embedding_status` to `"completed"` with chunk count
-
-### Training Reward
-
-The **first user** to successfully train (upload and embed) a document for a specific unit receives **10,000 bonus tokens** as a reward for contributing to the shared knowledge base.
-
-### RLS for Student Uploads
-
-RLS policies allow authenticated students to:
-- Insert their own materials (`auth.uid() = uploaded_by`)
-- Update their own materials
-- Delete their own materials
-
----
-
-## Payment System (Paystack)
-
-### Pricing
-
-| Plan | Price | Token Limit | Users |
-|------|-------|-------------|-------|
-| **Free** | KES 0 | 50,000 tokens/day | 1 |
-| **Individual** | KES 129/month | Unlimited | 1 |
-| **Group** | KES 499/month | Unlimited | 5 |
-
-Group plans require email validation for all 5 members, with the payer automatically assigned as member one.
-
-### Payment Methods
-
-| Method | Flow |
-|--------|------|
-| **M-Pesa** | Phone number → Paystack charge → STK push → poll `payments` table for status |
-| **Card** | Redirect to Paystack checkout → callback verifies → redirect back to app |
-
-### Edge Functions
-
-| Function | Purpose |
-|----------|---------|
-| `paystack-initialize` | Creates payment (M-Pesa charge or card redirect URL) |
-| `paystack-webhook` | Receives Paystack `charge.success` webhook → updates payment status |
-| `paystack-callback` | Handles card payment redirect → verifies with Paystack API → redirects to app |
-
-### Payment Flow
-
-```
-User → paystack-initialize → Paystack API
-                                │
-         ┌──────────────────────┼──────────────────┐
-         │ M-Pesa               │ Card              │
-         │ STK Push to phone    │ Redirect to       │
-         │ Poll payments table  │ Paystack checkout  │
-         │                      │                    │
-         │ paystack-webhook ◄───┘                    │
-         │ updates status       paystack-callback ◄──┘
-         │                      verifies + redirects
-         └──────────────────────────────────────────┘
-```
-
----
-
-## Personalization Engine
-
-**File**: `src/contexts/PersonalizationContext.tsx`
-
-Stored in `localStorage` under key `cuea-personalization`.
-
-| Feature | Options |
-|---------|---------|
-| **Font** | System UI, DM Sans, Inter, Poppins, Roboto, Lora, JetBrains Mono |
-| **Theme** | Light, Dark, Maroon, Ocean, Forest, Lavender, Amber |
-| **Chat Background** | None, Purple Wave, Sunset, Teal, Night Sky, Rose, Geometric |
-| **AI Nickname** | Free text — AI greets user by this name |
-
-### Theme Implementation
-
-Custom themes inject CSS custom properties (HSL values) onto `:root` at runtime, overriding the default design system tokens (`--background`, `--foreground`, `--primary`, etc.).
-
-Chat backgrounds include adaptive bubble colors (`userBubble`, `botBubble`, `userText`, `botText`) that change per background for readability.
-
----
-
-## Artifact Viewer
-
-**File**: `src/contexts/ArtifactContext.tsx`, `src/components/ArtifactViewer.tsx`
-
-When the AI generates code blocks, users can open them as "artifacts":
-
-| Type | Behavior |
-|------|----------|
-| `html` | Live preview in sandboxed iframe |
-| `code` | Syntax-highlighted code view |
-| `svg` | SVG rendering |
-| `markdown` | Rendered markdown |
-| `table` | CSV/table display |
-
-Artifacts are stored in-memory (not persisted) with preview/code toggle.
-
----
-
-## Admin Dashboard
-
-**File**: `src/pages/AdminPage.tsx`
-
-### Navigation Sections
-
-| Section | Features |
-|---------|----------|
-| **Overview** | Stats cards (Total Users, Paid Users, Revenue KES, Tokens Today), Quick Stats, Recent Users |
-| **Users** | Searchable user table, role management (student/admin/lecturer), per-user token adjustment (add/deduct), detailed user view (chats, materials, payments, token usage) |
-| **Courses & Units** | CRUD for courses and units, bulk unit import (CODE - Name format per line) |
-| **Documents** | File upload to Storage → automatic text extraction + embedding, delete documents |
-| **Payments** | Revenue analytics (total, monthly, daily chart), filterable transaction table, CSV export |
-| **AI Config** | Token limits (free, paid, global), model configuration (general, unit, vision), RAG chunk count, rate limiting, **global credit adjustment** (add/deduct tokens for all users at once), feature toggles (image gen, moderation, TTS, Whisper) |
-| **Broadcast** | Emergency email broadcast (downtime, back online, custom) to all registered users, clear active broadcast |
-| **Analytics** | User counts, role distribution, token usage, system stats (courses, units, materials, chats) |
-| **Settings** | System information display |
-
-### Global Credit Adjustment
-
-Admins can add or deduct tokens for **all users at once** from the AI Config section. This inserts a `token_usage` row for each user in batches of 100.
-
-### Document Upload Flow (Admin)
-
-1. Admin selects unit → uploads file(s)
-2. File stored in `materials` Storage bucket under `{unit_id}/{timestamp}_{filename}`
-3. Metadata saved to `materials` table
-4. `process-document` edge function called:
-   - Downloads from Storage
-   - Extracts text (PDF, DOCX, PPTX, DOC, TXT)
-   - Chunks text (1000 chars, 200 overlap)
-   - Generates embeddings via OpenAI
-   - Inserts into `document_embeddings` with `material_id` and `unit_code` metadata
-5. Toast shows chunk count and text length
-
----
-
-## Edge Functions
-
-All deployed as Supabase Edge Functions (Deno runtime). Located in `supabase/functions/`.
-
-| Function | Auth | Purpose |
-|----------|------|---------|
-| `chat` | JWT (via header) | AI chat with streaming, RAG, token limits, rate limiting |
-| `transcribe` | None | Voice audio → text via OpenAI gpt-4o-mini-transcribe |
-| `embed-document` | JWT | Embed chat attachments into knowledge base |
-| `process-document` | JWT + ownership/admin check | Extract text from uploaded files + embed |
-| `paystack-initialize` | JWT | Initialize M-Pesa or card payment |
-| `paystack-webhook` | Paystack signature | Handle payment success webhooks |
-| `paystack-callback` | None (redirect) | Verify card payment + redirect to app |
-| `send-broadcast` | JWT + admin | Send email broadcast to all users |
-| `process-email-queue` | Service role | Process queued emails via PGMQ |
-| `auth-email-hook` | Internal | Custom HTML email templates for auth emails |
-
----
-
-## Email System
-
-The platform has a custom email infrastructure:
-
-### Components
-
-| Component | Purpose |
-|-----------|---------|
-| `auth-email-hook` | Custom HTML templates for signup confirmation, password reset, magic link, invite, email change, reauthentication |
-| `send-broadcast` | Admin broadcast emails to all registered users |
-| `process-email-queue` | PGMQ-based email queue processor with retry logic and dead letter queue |
-
-### Email Templates
-
-Located in `supabase/functions/_shared/email-templates/`:
-- `signup.tsx` — Welcome / email confirmation
-- `recovery.tsx` — Password reset
-- `magic-link.tsx` — Magic link login
-- `invite.tsx` — User invitation
-- `email-change.tsx` — Email change confirmation
-- `reauthentication.tsx` — Reauthentication
-
-### Queue Architecture
-
-Uses PostgreSQL Message Queue (PGMQ) with:
-- `enqueue_email()` — Add to queue
-- `read_email_batch()` — Read batch with visibility timeout
-- `delete_email()` — Acknowledge processed
-- `move_to_dlq()` — Dead letter queue for failed messages
-- Configurable batch size, send delay, and TTL via `email_send_state` table
-- `email_send_log` tracks delivery status
-- `suppressed_emails` prevents sending to opted-out addresses
-- `email_unsubscribe_tokens` manages unsubscribe links
-
----
-
-## Caching (Redis)
-
-**Provider**: Upstash Redis (REST API)
-
-### Usage
-
-| Cache Key | TTL | Purpose |
-|-----------|-----|---------|
-| `system_settings:all` | 5 minutes | System settings (token limits, models, feature flags) |
-| `rate_limit:{user_id}` | 60 seconds | Per-user request rate limiting |
-
-### Implementation
-
-Redis is accessed via Upstash REST API (no client library needed). Falls back gracefully to database if Redis is unavailable.
-
-```typescript
-const redis = createRedis(); // REST-based helper
-const cached = await redis.get("system_settings:all");
-if (!cached) {
-  // Fetch from database, cache for 5 min
-  await redis.set("system_settings:all", settings, 300);
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useChat, type ProcessedFile } from "@/contexts/ChatContext";
+import { useArtifacts, detectArtifactType } from "@/contexts/ArtifactContext";
+import { useTeachMeSession } from "@/hooks/useTeachMeSession";
+import { parseControlTags, stripControlTags } from "@/lib/teachMePrompt";
+import { generateDocument, type DocType } from "@/utils/documentGenerator";
+import { usePersonalization } from "@/contexts/PersonalizationContext";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
+import { MermaidBlock } from "@/components/MermaidBlock";
+import rehypeKatex from "rehype-katex";
+import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
+import sekaniLogo from "@/assets/sekani-logo.png";
+import { Download } from "lucide-react";
+import {
+Plus,
+ArrowUp,
+BookOpen,
+Calendar,
+FileText,
+ListChecks,
+LogOut,
+Trash2,
+Sparkles,
+ChevronDown,
+Paperclip,
+Settings,
+FolderOpen,
+Loader2,
+Shield,
+Image as ImageIcon,
+File,
+LayoutGrid,
+X,
+Code2,
+ChevronUp,
+Camera,
+FileQuestion,
+User,
+CircleHelp,
+Mic,
+Globe,
+MessageSquare,
+Search,
+PenLine,
+Pencil,
+Check,
+PanelRight,
+PanelLeft,
+Copy,
+ThumbsUp,
+ThumbsDown,
+RotateCcw,
+Pen,
+Play,
+Upload,
+MoreVertical,
+ChevronRight,
+GraduationCap,
+ClipboardList,
+ArrowLeft,
+CheckCircle2,
+Circle,
+Lock,
+Trophy,
+} from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import ArtifactsPage from "@/pages/ArtifactsPage";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { AcademicCalendar } from "@/components/AcademicCalendar";
+import ArtifactViewer from "@/components/ArtifactViewer";
+import { TeachMePanel } from "@/components/TeachMePanel";
+import { getTimeBasedGreeting } from "@/utils/greetings";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const SUGGESTIONS = [
+{ icon: ListChecks, label: "Assignments", prompt: "What assignments do I have pending this week?" },
+{ icon: Calendar, label: "Schedule", prompt: "Show me my class schedule for this week" },
+{ icon: Search, label: "Notes", prompt: "Help me find lecture notes for my current units" },
+{ icon: PenLine, label: "Exams", prompt: "Help me prepare for my upcoming exams with study tips" },
+];
+
+function getDateGroup(timestamp: number): string {
+const now = new Date();
+const date = new Date(timestamp);
+const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const yesterday = new Date(today.getTime() - 86400000);
+const weekAgo = new Date(today.getTime() - 7 _ 86400000);
+const monthAgo = new Date(today.getTime() - 30 _ 86400000);
+if (date >= today) return "Today";
+if (date >= yesterday) return "Yesterday";
+if (date >= weekAgo) return "Previous 7 Days";
+if (date >= monthAgo) return "Previous 30 Days";
+return "Older";
 }
-```
 
----
+const DATE_GROUP_ORDER = ["Today", "Yesterday", "Previous 7 Days", "Previous 30 Days", "Older"];
 
-## Security & RLS Policies
+// Minimum / default / maximum width for the resizable right panel (px)
+const RIGHT_PANEL_MIN = 200;
+const RIGHT_PANEL_DEFAULT = 260;
+const RIGHT_PANEL_MAX = 480;
 
-### Row Level Security
+interface EnrolledUnit {
+unit_id: string;
+unit_code: string;
+unit_name: string;
+lecturer: string | null;
+}
 
-All tables have RLS enabled with policies enforcing:
-- Users can only read/write their own data (`auth.uid() = user_id`)
-- Admin access via `has_role(auth.uid(), 'admin')` security definer function
-- Public read access on `courses`, `units` for unauthenticated browsing
-- Authenticated read access on `academic_calendar`, `materials`, `document_embeddings`, `system_settings`
-- Service role access on email-related tables (`email_send_log`, `email_send_state`, `email_unsubscribe_tokens`, `suppressed_emails`)
+// ─── Mode popup types ─────────────────────────────────────────────────────────
+type ActiveMode = "teachme" | "examprep" | "exammode" | null;
 
-### Edge Function Security
+interface ModePopupProps {
+mode: ActiveMode;
+unit: EnrolledUnit;
+onClose: () => void;
+onSendMessage: (msg: string) => Promise<void>;
+notesCount: number;
+pastPaperCount: number;
+}
 
-- JWT tokens validated via `supabase.auth.getUser()`
-- Admin-only functions check role via `has_role` RPC
-- Document processing validates material ownership (`uploaded_by === user.id`) or admin status
-- Paystack webhook validates HMAC-SHA512 signature
-- Service role key used only server-side for admin operations
-- Rate limiting enforced per-user via Redis
+// ─── Mode Popup ───────────────────────────────────────────────────────────────
+const ModePopup = ({ mode, unit, onClose, onSendMessage, notesCount, pastPaperCount }: ModePopupProps) => {
+const [started, setStarted] = useState(false);
+const [topics, setTopics] = useState<{ label: string; status: "done" | "active" | "locked" }[]>([]);
 
-### Token Limit Enforcement
+const config = useMemo(() => {
+if (mode === "teachme")
+return {
+icon: BookOpen,
+color: "text-emerald-600",
+bg: "bg-emerald-50 dark:bg-emerald-950/30",
+border: "border-emerald-200 dark:border-emerald-800",
+badgeBg: "bg-emerald-600",
+title: "Teach Me Mode",
+subtitle: `${unit.unit_code} — ${unit.unit_name}`,
+description: "Sekani will walk you through each topic, explain concepts, then quiz you before moving on.",
+cta: "Start Learning",
+prompt: `Start Teach Me Mode for the unit: ${unit.unit_name}. Give me a topic outline and begin teaching.`,
+trackerTitle: "Learning Progress",
+emptyTopics: ["Introduction", "Core Concepts", "Applications", "Review & Quiz"],
+};
+if (mode === "examprep")
+return {
+icon: PenLine,
+color: "text-blue-600",
+bg: "bg-blue-50 dark:bg-blue-950/30",
+border: "border-blue-200 dark:border-blue-800",
+badgeBg: "bg-blue-600",
+title: "Exam Prep Mode",
+subtitle: `${unit.unit_code} — ${unit.unit_name}`,
+description: "Get a structured revision plan, key topics, and likely exam questions based on your notes.",
+cta: "Start Prep",
+prompt: `Help me prepare for my ${unit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.`,
+trackerTitle: "Revision Topics",
+emptyTopics: ["Key Concepts", "Likely Questions", "Revision Summary", "Final Tips"],
+};
+return {
+icon: ClipboardList,
+color: "text-amber-600",
+bg: "bg-amber-50 dark:bg-amber-950/30",
+border: "border-amber-200 dark:border-amber-800",
+badgeBg: "bg-amber-600",
+title: "Exam Mode",
+subtitle: `${unit.unit_code} — ${unit.unit_name}`,
+description: "Analyze past papers to identify the most frequently tested topics and question patterns.",
+cta: "Analyze Papers",
+prompt: `[EXAM_MODE] Analyze ALL past papers uploaded for ${unit.unit_code} — ${unit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.`,
+trackerTitle: "Analysis Steps",
+emptyTopics: ["Frequent Topics", "Question Patterns", "Focus Areas", "Revision Plan"],
+};
+}, [mode, unit]);
 
-| Limit | Default | Configurable |
-|-------|---------|-------------|
-| Free daily | 50,000 | ✅ via `system_settings.token_limit_free` |
-| Paid daily | Unlimited | ✅ via `system_settings.token_limit_paid` |
-| Global daily (all users) | 5,000,000 | ✅ via `system_settings.daily_global_limit` |
-| Admin | Bypasses all limits | — |
+const handleStart = async () => {
+setStarted(true);
+// Seed tracker with placeholder topics
+setTopics(
+config.emptyTopics.map((label, i) => ({
+label,
+status: i === 0 ? "active" : "locked",
+}))
+);
+await onSendMessage(config.prompt);
+};
 
----
+const Icon = config.icon;
 
-## PWA Support
+return (
+<motion.div
+initial={{ opacity: 0 }}
+animate={{ opacity: 1 }}
+exit={{ opacity: 0 }}
+className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+onClick={(e) => e.target === e.currentTarget && onClose()} >
+<motion.div
+initial={{ scale: 0.92, y: 24, opacity: 0 }}
+animate={{ scale: 1, y: 0, opacity: 1 }}
+exit={{ scale: 0.92, y: 24, opacity: 0 }}
+transition={{ type: "spring", damping: 22, stiffness: 260 }}
+className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+style={{ maxHeight: "90vh" }} >
+{/_ Header _/}
+<div className={`${config.bg} ${config.border} border-b px-5 py-4 flex items-center gap-3`}>
+<button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors flex-shrink-0"
+          >
+<ArrowLeft className="w-4 h-4" />
+</button>
+<div className={`w-8 h-8 rounded-xl ${config.badgeBg} flex items-center justify-center flex-shrink-0`}>
+<Icon className="w-4 h-4 text-white" />
+</div>
+<div className="flex-1 min-w-0">
+<h2 className="font-bold text-sm text-foreground">{config.title}</h2>
+<p className="text-xs text-muted-foreground truncate">{config.subtitle}</p>
+</div>
+</div>
 
-- **Config**: `vite.config.ts` with `vite-plugin-pwa`
-- **Icons**: `public/pwa-192x192.png`, `public/pwa-512x512.png`
-- **Install Banner**: `src/components/PWAInstallBanner.tsx` + `src/hooks/usePWAInstall.ts`
-- Enables "Add to Home Screen" on mobile devices
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 72px)" }}>
+          {!started ? (
+            /* ── Pre-start screen ── */
+            <div className="p-6 space-y-5">
+              <div className={`${config.bg} ${config.border} border rounded-xl p-4`}>
+                <p className="text-sm text-foreground leading-relaxed">{config.description}</p>
+              </div>
 
----
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted/50 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{notesCount}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Notes uploaded</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-foreground">{pastPaperCount}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Past papers</p>
+                </div>
+              </div>
 
-## Environment Variables & Secrets
+              {/* Topic tracker preview */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  {config.trackerTitle}
+                </p>
+                <div className="space-y-2">
+                  {config.emptyTopics.map((topic, i) => (
+                    <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-muted/30">
+                      <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[9px] font-bold text-muted-foreground/50">{i + 1}</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground/60">{topic}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                  Topics will be populated once Sekani analyzes your materials
+                </p>
+              </div>
 
-### Frontend (`.env` — auto-managed)
+              <Button onClick={handleStart} className="w-full font-semibold" size="lg">
+                <Icon className="w-4 h-4 mr-2" />
+                {config.cta}
+              </Button>
+            </div>
+          ) : (
+            /* ── Active tracker ── */
+            <div className="p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${config.badgeBg} animate-pulse`} />
+                <p className="text-sm font-medium text-foreground">Session active — check the chat</p>
+              </div>
 
-| Variable | Purpose |
-|----------|---------|
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/public key |
-| `VITE_SUPABASE_PROJECT_ID` | Project identifier |
+              {/* Topic progress */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  {config.trackerTitle}
+                </p>
+                <div className="space-y-1.5">
+                  {topics.map((topic, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border transition-all ${
+                        topic.status === "done"
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
+                          : topic.status === "active"
+                            ? `${config.bg} ${config.border}`
+                            : "bg-muted/20 border-border"
+                      }`}
+                    >
+                      {topic.status === "done" ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      ) : topic.status === "active" ? (
+                        <div className={`w-4 h-4 rounded-full ${config.badgeBg} flex-shrink-0 animate-pulse`} />
+                      ) : (
+                        <Lock className="w-4 h-4 text-muted-foreground/30 flex-shrink-0" />
+                      )}
+                      <span
+                        className={`text-sm ${
+                          topic.status === "done"
+                            ? "text-emerald-700 dark:text-emerald-400 line-through"
+                            : topic.status === "active"
+                              ? "text-foreground font-medium"
+                              : "text-muted-foreground/50"
+                        }`}
+                      >
+                        {topic.label}
+                      </span>
+                      {topic.status === "done" && (
+                        <Trophy className="w-3 h-3 text-emerald-500 ml-auto flex-shrink-0" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-### Backend Secrets (Edge Functions)
+              <Button variant="outline" onClick={onClose} className="w-full" size="sm">
+                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+                Back to Chat
+              </Button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
 
-| Secret | Purpose |
-|--------|---------|
-| `SUPABASE_SERVICE_ROLE_KEY` | Admin-level database access |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_ANON_KEY` | Public key for user-scoped access |
-| `OPENAI_API_KEY` | OpenAI API for chat, embeddings, and transcription |
-| `Live_Secret_Key` | Paystack secret key for payments |
-| `Live_Public_Key` | Paystack public key |
-| `LOVABLE_API_KEY` | Lovable AI Gateway access |
-| `GEMINI_API_KEY` | Google Gemini (reserved) |
-| `UPSTASH_REDIS_REST_URL` | Redis cache endpoint |
-| `UPSTASH_REDIS_REST_TOKEN` | Redis authentication token |
+);
+};
 
----
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-## Deployment
+const TypingIndicator = () => (
+<motion.div
+initial={{ opacity: 0, y: 10 }}
+animate={{ opacity: 1, y: 0 }}
+exit={{ opacity: 0 }}
+className="flex justify-start"
 
-- **Frontend**: Deployed via Lovable Cloud at [https://mvp-cuea.lovable.app](https://mvp-cuea.lovable.app)
-- **Backend**: Edge functions auto-deploy on code changes
-- **Database**: Managed PostgreSQL via Lovable Cloud
-- **Storage**: Supabase Storage buckets:
-  - `materials` (private) — course documents and student uploads
-  - `email-assets` (public) — email template assets
+>
 
-### To publish updates:
+    <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-md">
+      <div className="flex items-center gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-2 h-2 rounded-full bg-muted-foreground/50"
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+          />
+        ))}
+        <span className="text-xs text-muted-foreground ml-2">Sekani is thinking...</span>
+      </div>
+    </div>
 
-1. Make changes in Lovable editor
-2. Click **Publish** → **Update** to deploy frontend
-3. Backend changes (edge functions, migrations) deploy automatically
+</motion.div>
+);
 
----
+const VoiceInputVisualizer = () => (
 
-## File Structure
+  <div className="flex h-8 items-end gap-1" aria-hidden="true">
+    {[0, 1, 2, 3, 4].map((i) => (
+      <motion.div
+        key={i}
+        className="w-1.5 rounded-full bg-primary"
+        animate={{ height: [10, 24 - i * 2, 14 + (i % 2) * 8, 20 - (i % 3) * 3, 10] }}
+        transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
+      />
+    ))}
+  </div>
+);
 
-```
-src/
-├── App.tsx                          # Root component, routes, providers
-├── App.css                          # Global styles
-├── index.css                        # Design system tokens (CSS variables)
-├── main.tsx                         # Entry point
-├── contexts/
-│   ├── AuthContext.tsx               # Authentication + role management + pending enrollment
-│   ├── ChatContext.tsx               # Chat state + AI messaging + file processing
-│   ├── ArtifactContext.tsx           # Code artifact viewer state
-│   └── PersonalizationContext.tsx    # Theme, font, background preferences
-├── pages/
-│   ├── ChatPage.tsx                  # Main chat UI (voice, teach me, uploads, payments)
-│   ├── AdminPage.tsx                 # Admin dashboard (all sections)
-│   ├── LoginPage.tsx                 # Auth flow (login + signup)
-│   ├── PersonalizationPage.tsx       # Settings page
-│   ├── ArtifactsPage.tsx             # Artifact gallery
-│   ├── ResetPasswordPage.tsx         # Password reset
-│   ├── TermsPage.tsx                 # Terms of service
-│   └── NotFound.tsx                  # 404 page
-├── hooks/
-│   ├── useTeachMeSession.ts          # Teach Me session CRUD + progress
-│   ├── usePWAInstall.ts              # PWA install prompt
-│   └── use-mobile.tsx                # Mobile viewport detection
-├── lib/
-│   ├── teachMePrompt.ts             # Teach Me control tag parser
-│   └── utils.ts                     # Utility functions (cn, etc.)
-├── types/
-│   └── teachMe.ts                   # Teach Me TypeScript interfaces
-├── utils/
-│   ├── documentGenerator.ts          # PDF/DOCX/PPTX/XLSX generation
-│   └── greetings.ts                  # Time-based greetings
-├── components/
-│   ├── AcademicCalendar.tsx          # Calendar widget
-│   ├── ArtifactViewer.tsx            # Code preview component
-│   ├── ConfirmDialog.tsx             # Reusable confirmation dialog
-│   ├── NavLink.tsx                   # Navigation link component
-│   ├── PWAInstallBanner.tsx          # PWA install prompt
-│   ├── TeachMePanel.tsx              # Teach Me sidebar panel
-│   └── ui/                           # shadcn/ui components (40+ components)
-└── integrations/supabase/
-    ├── client.ts                     # Supabase client (auto-generated)
-    └── types.ts                      # Database types (auto-generated)
+// ─── Main Component ───────────────────────────────────────────────────────────
 
-supabase/
-├── config.toml                       # Edge function configuration
-└── functions/
-    ├── _shared/email-templates/      # Custom email templates (6 templates)
-    ├── auth-email-hook/              # Auth email hook (custom templates)
-    ├── chat/index.ts                 # AI chat (streaming, RAG, limits, Redis)
-    ├── transcribe/index.ts           # Voice transcription (gpt-4o-mini-transcribe)
-    ├── embed-document/index.ts       # Chat attachment embedding
-    ├── process-document/index.ts     # Document extraction + embedding
-    ├── paystack-initialize/index.ts  # Payment initialization
-    ├── paystack-webhook/index.ts     # Payment webhook handler
-    ├── paystack-callback/index.ts    # Card payment callback
-    ├── send-broadcast/index.ts       # Admin email broadcast
-    └── process-email-queue/          # Email queue processor
-```
+const ChatPage = () => {
+const { user, profile, role, logout, isAuthenticated, isLoading: authLoading, refreshProfile } = useAuth();
+const {
+chats,
+activeChat,
+isStreaming,
+createChat,
+setActiveChat,
+sendMessage,
+deleteChat,
+deleteAllChats,
+renameChat,
+loadChats,
+} = useChat();
+const { viewerOpen, addArtifact, createFromCodeBlock } = useArtifacts();
+const { nickname, getChatBg } = usePersonalization();
+const teachMe = useTeachMeSession();
+const [teachMeActive, setTeachMeActive] = useState(false);
+const navigate = useNavigate();
 
----
+// UI state
+const [input, setInput] = useState("");
+const [sidebarExpanded, setSidebarExpanded] = useState(true);
+const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+const [mobileUnitsOpen, setMobileUnitsOpen] = useState(false);
+const [settingsOpen, setSettingsOpen] = useState(false);
+const [attachedFiles, setAttachedFiles] = useState<ProcessedFile[]>([]);
+const [calendarOpen, setCalendarOpen] = useState(false);
+const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+const [isListening, setIsListening] = useState(false);
+const [voiceDraft, setVoiceDraft] = useState("");
+const [showVoicePreview, setShowVoicePreview] = useState(false);
+const [showArtifacts, setShowArtifacts] = useState(false);
+const [deleteChatId, setDeleteChatId] = useState<string | null>(null);
+const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+const [paymentLoading, setPaymentLoading] = useState(false);
+const [paymentPhone, setPaymentPhone] = useState("");
+const [paymentVerifying, setPaymentVerifying] = useState(false);
+const paymentCancelledRef = useRef(false);
+const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
+const [paymentPlan, setPaymentPlan] = useState<"individual" | "group">("individual");
+const [groupEmails, setGroupEmails] = useState<string[]>(["", "", "", "", ""]);
+const [unitUploading, setUnitUploading] = useState(false);
+const [unitUploadProgress, setUnitUploadProgress] = useState<Record<string, string>>({});
+const [pastPaperUploading, setPastPaperUploading] = useState(false);
+const [pastPaperUploadProgress, setPastPaperUploadProgress] = useState<Record<string, string>>({});
+const [pastPaperCount, setPastPaperCount] = useState(0);
+const [notesCount, setNotesCount] = useState(0);
+const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
+const [renameValue, setRenameValue] = useState("");
+const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+const [editingMsgText, setEditingMsgText] = useState("");
+const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
+const [showScrollButton, setShowScrollButton] = useState(false);
+const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
 
-*Built by the Soma na Sekani team — building smart academic AI companions for students across Kenya.* 🎓
+// ── Right panel resizing ──
+const [rightPanelWidth, setRightPanelWidth] = useState(RIGHT_PANEL_DEFAULT);
+const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+const isResizingRef = useRef(false);
+const resizeStartXRef = useRef(0);
+const resizeStartWidthRef = useRef(RIGHT_PANEL_DEFAULT);
+
+// ── Mode popup ──
+const [activeMode, setActiveMode] = useState<ActiveMode>(null);
+
+// Refs
+const chatContainerRef = useRef<HTMLDivElement>(null);
+const pastPaperInputRef = useRef<HTMLInputElement>(null);
+const unitUploadInputRef = useRef<HTMLInputElement>(null);
+const profileMenuRef = useRef<HTMLDivElement>(null);
+const renameInputRef = useRef<HTMLInputElement>(null);
+const messagesEndRef = useRef<HTMLDivElement>(null);
+const inputRef = useRef<HTMLTextAreaElement>(null);
+const cameraInputRef = useRef<HTMLInputElement>(null);
+const photoInputRef = useRef<HTMLInputElement>(null);
+const docInputRef = useRef<HTMLInputElement>(null);
+const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+const audioChunksRef = useRef<Blob[]>([]);
+const [isTranscribing, setIsTranscribing] = useState(false);
+
+const greeting = useMemo(() => getTimeBasedGreeting(), []);
+const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+const micSupported = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+
+// ─── Effects ────────────────────────────────────────────────────────────────
+
+useEffect(() => {
+if (!authLoading && !isAuthenticated) navigate("/login");
+}, [isAuthenticated, authLoading, navigate]);
+
+useEffect(() => {
+if (isAuthenticated) loadChats();
+}, [isAuthenticated, loadChats]);
+
+useEffect(() => {
+if (!user) return;
+const loadUnits = async () => {
+const { data } = await supabase
+.from("student_units")
+.select("unit_id, units(code, name, lecturer)")
+.eq("user_id", user.id);
+if (data) {
+setEnrolledUnits(
+data.map((su: any) => ({
+unit_id: su.unit_id,
+unit_code: su.units?.code || "",
+unit_name: su.units?.name || "",
+lecturer: su.units?.lecturer || null,
+}))
+);
+}
+};
+loadUnits();
+}, [user]);
+
+useEffect(() => {
+if (!selectedUnitId) {
+setPastPaperCount(0);
+setNotesCount(0);
+return;
+}
+const loadCounts = async () => {
+const [ppRes, notesRes] = await Promise.all([
+supabase
+.from("materials")
+.select("id", { count: "exact", head: true })
+.eq("unit_id", selectedUnitId)
+.eq("document_type", "past_paper"),
+supabase
+.from("materials")
+.select("id", { count: "exact", head: true })
+.eq("unit_id", selectedUnitId)
+.eq("document_type", "notes"),
+]);
+setPastPaperCount(ppRes.count || 0);
+setNotesCount(notesRes.count || 0);
+};
+loadCounts();
+}, [selectedUnitId]);
+
+useEffect(() => {
+const el = chatContainerRef.current;
+if (!el) return;
+const onScroll = () => {
+const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+setShowScrollButton(!atBottom);
+};
+el.addEventListener("scroll", onScroll, { passive: true });
+return () => el.removeEventListener("scroll", onScroll);
+}, [activeChat?.id]);
+
+useEffect(() => {
+const handler = () => setShowPaymentDialog(true);
+window.addEventListener("show-payment-prompt", handler);
+return () => window.removeEventListener("show-payment-prompt", handler);
+}, []);
+
+useEffect(() => {
+return () => {
+mediaRecorderRef.current?.stop();
+};
+}, []);
+
+useEffect(() => {
+const params = new URLSearchParams(window.location.search);
+const payment = params.get("payment");
+if (payment === "success") {
+toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
+window.history.replaceState({}, "", window.location.pathname);
+} else if (payment === "failed") {
+toast.error("Payment was not completed. Please try again.");
+window.history.replaceState({}, "", window.location.pathname);
+}
+}, []);
+
+useEffect(() => {
+messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [activeChat?.messages, isStreaming]);
+
+useEffect(() => {
+if (!profileMenuOpen) return;
+const handler = (e: MouseEvent) => {
+if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node))
+setProfileMenuOpen(false);
+};
+document.addEventListener("mousedown", handler);
+return () => document.removeEventListener("mousedown", handler);
+}, [profileMenuOpen]);
+
+// Parse Teach Me control tags
+useEffect(() => {
+if (!teachMeActive || !activeChat || isStreaming) return;
+const msgs = activeChat.messages;
+const lastMsg = msgs[msgs.length - 1];
+if (!lastMsg || lastMsg.sender !== "bot") return;
+const tags = parseControlTags(lastMsg.text);
+if (tags.topicOutline && !teachMe.session) {
+const outline = tags.topicOutline.map((t: any, i: number) => ({
+...t,
+status: i === 0 ? "active" : "locked",
+}));
+const unitName = selectedUnit?.unit_name || activeChat.title || "Unit";
+teachMe.createSession(activeChat.id, unitName, outline);
+}
+if (teachMe.session) {
+if (tags.topicDone !== null) teachMe.updateTopicProgress(teachMe.session.id, tags.topicDone, "done");
+if (tags.eli5Triggered !== null)
+teachMe.updateTopicProgress(teachMe.session.id, tags.eli5Triggered, "active", true);
+if (tags.checkpoint) {
+teachMe.addCheckpointScore(teachMe.session.id, {
+afterTopic: tags.checkpoint.afterTopic,
+score: tags.checkpoint.score,
+total: tags.checkpoint.total,
+passed: tags.checkpoint.score >= 3,
+});
+}
+if (tags.unitComplete) {
+teachMe.markComplete(teachMe.session.id);
+toast.success("🎓 Unit complete! Amazing work!");
+}
+}
+}, [activeChat?.messages, isStreaming, teachMeActive]);
+
+useEffect(() => {
+if (renamingChatId) renameInputRef.current?.focus();
+}, [renamingChatId]);
+
+useEffect(() => {
+if (!activeChat) return;
+const restoreTeachMe = async () => {
+const existing = await teachMe.loadSession(activeChat.id);
+if (existing && existing.status === "active") {
+setTeachMeActive(true);
+if (existing.focusMode) document.body.classList.add("focus-mode");
+} else {
+if (teachMeActive && !teachMe.session) {
+setTeachMeActive(false);
+document.body.classList.remove("focus-mode");
+}
+}
+};
+restoreTeachMe();
+}, [activeChat?.id]);
+
+// ── Resize drag handlers ──────────────────────────────────────────────────
+
+const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+e.preventDefault();
+isResizingRef.current = true;
+resizeStartXRef.current = e.clientX;
+resizeStartWidthRef.current = rightPanelWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      // Dragging left = increasing panel width (drag handle is on the LEFT edge of right panel)
+      const delta = resizeStartXRef.current - ev.clientX;
+      const newWidth = Math.min(RIGHT_PANEL_MAX, Math.max(RIGHT_PANEL_MIN, resizeStartWidthRef.current + delta));
+      setRightPanelWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isResizingRef.current = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+
+}, [rightPanelWidth]);
+
+// Touch swipe gestures
+const handleTouchStart = useCallback((e: TouchEvent) => {
+touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, []);
+
+const handleTouchEnd = useCallback(
+(e: TouchEvent) => {
+if (!touchStartRef.current) return;
+const touch = e.changedTouches[0];
+const dx = touch.clientX - touchStartRef.current.x;
+const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+const startX = touchStartRef.current.x;
+const screenW = window.innerWidth;
+touchStartRef.current = null;
+if (Math.abs(dx) < 50 || dy > 100) return;
+if (dx > 0 && startX < 30 && !mobileSidebarOpen) setMobileSidebarOpen(true);
+else if (dx < 0 && mobileSidebarOpen) setMobileSidebarOpen(false);
+else if (dx < 0 && startX > screenW - 30 && !mobileUnitsOpen) setMobileUnitsOpen(true);
+else if (dx > 0 && mobileUnitsOpen) setMobileUnitsOpen(false);
+},
+[mobileSidebarOpen, mobileUnitsOpen]
+);
+
+useEffect(() => {
+document.addEventListener("touchstart", handleTouchStart, { passive: true });
+document.addEventListener("touchend", handleTouchEnd, { passive: true });
+return () => {
+document.removeEventListener("touchstart", handleTouchStart);
+document.removeEventListener("touchend", handleTouchEnd);
+};
+}, [handleTouchStart, handleTouchEnd]);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const humanSize = (bytes: number) => {
+if (bytes < 1024) return `${bytes} B`;
+if (bytes < 1024 _ 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+return `${(bytes / (1024 _ 1024)).toFixed(1)} MB`;
+};
+
+const toBase64 = async (file: File) => {
+const dataUrl = await new Promise<string>((resolve, reject) => {
+const reader = new FileReader();
+reader.onload = () => resolve(String(reader.result || ""));
+reader.onerror = reject;
+reader.readAsDataURL(file);
+});
+const [, base64 = ""] = dataUrl.split(",");
+return { dataUrl, base64 };
+};
+
+const getCategory = (file: File): ProcessedFile["type"] => {
+if (file.type.startsWith("image/")) return "image";
+if (file.type === "application/pdf") return "pdf";
+if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) return "word";
+if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("spreadsheetml"))
+return "spreadsheet";
+if (
+file.type === "text/plain" ||
+file.type === "text/csv" ||
+file.type === "text/markdown" ||
+file.name.endsWith(".txt") ||
+file.name.endsWith(".csv") ||
+file.name.endsWith(".md")
+)
+return "text";
+return "file";
+};
+
+const processAttachedFile = async (file: File): Promise<ProcessedFile> => {
+const processed: ProcessedFile = { file, name: file.name, type: getCategory(file), size: humanSize(file.size) };
+if (file.type.startsWith("image/")) {
+const { base64, dataUrl } = await toBase64(file);
+processed.base64 = base64;
+processed.mediaType = file.type;
+processed.preview = dataUrl;
+return processed;
+}
+if (
+file.type === "text/plain" ||
+file.type === "text/csv" ||
+file.type === "text/markdown" ||
+file.name.endsWith(".txt") ||
+file.name.endsWith(".csv") ||
+file.name.endsWith(".md")
+) {
+const text = await file.text();
+processed.text = text;
+processed.embeddingText = text;
+return processed;
+}
+if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
+try {
+const mammoth = await import("mammoth");
+const arrayBuffer = await file.arrayBuffer();
+const result = await mammoth.extractRawText({ arrayBuffer });
+processed.text = result.value;
+processed.embeddingText = result.value;
+} catch {
+processed.text = `[Word document: ${file.name}]`;
+}
+return processed;
+}
+if (file.type === "application/pdf") {
+const { base64 } = await toBase64(file);
+processed.base64 = base64;
+processed.mediaType = "application/pdf";
+processed.text = `[PDF document: ${file.name} (${humanSize(file.size)}). For best results, copy and paste text directly.]`;
+return processed;
+}
+if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("spreadsheetml")) {
+try {
+const XLSX = await import("xlsx");
+const arrayBuffer = await file.arrayBuffer();
+const workbook = XLSX.read(arrayBuffer, { type: "array" });
+const parts: string[] = [];
+for (const sheetName of workbook.SheetNames) {
+const worksheet = workbook.Sheets[sheetName];
+parts.push(`Sheet: ${sheetName}\n${XLSX.utils.sheet_to_csv(worksheet)}`);
+}
+processed.text = parts.join("\n\n");
+processed.embeddingText = processed.text;
+} catch {
+processed.text = `[Excel file: ${file.name}]`;
+}
+return processed;
+}
+processed.text = `[Attached file: ${file.name} (${processed.type})]`;
+return processed;
+};
+
+const processFiles = async (files: File[]) => Promise.all(files.map(processAttachedFile));
+
+const handleFileSelected = async (files: FileList | null) => {
+if (!files || files.length === 0) return;
+const processed = await processFiles(Array.from(files));
+setAttachedFiles((prev) => [...prev, ...processed]);
+};
+
+const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const displayName = nickname || profile?.name || user?.email?.split("@")[0] || "Student";
+const copyToClipboard = (text: string) => {
+navigator.clipboard.writeText(text);
+toast.success("Copied to clipboard");
+};
+
+// ─── Send ────────────────────────────────────────────────────────────────────
+
+const handleSend = async (overrideText?: string) => {
+const text = (overrideText || input).trim();
+if ((!text && attachedFiles.length === 0) || isStreaming) return;
+let chat = activeChat;
+if (!chat) {
+chat = selectedUnitId ? await createChat("unit", selectedUnitId) : await createChat("general");
+if (!chat) return;
+}
+const filesToSend = attachedFiles.length > 0 ? attachedFiles : undefined;
+setInput("");
+setAttachedFiles([]);
+inputRef.current?.focus();
+await sendMessage(text, chat.id, filesToSend, teachMeActive);
+};
+
+const handleSuggestion = async (prompt: string) => {
+let chat = activeChat;
+if (!chat) {
+chat = selectedUnitId ? await createChat("unit", selectedUnitId) : await createChat("general");
+if (!chat) return;
+}
+await sendMessage(prompt, chat.id);
+};
+
+// ─── Mode popup send ──────────────────────────────────────────────────────────
+const handleModeSend = async (prompt: string) => {
+let chat = activeChat;
+if (!chat) {
+chat = selectedUnitId ? await createChat("unit", selectedUnitId) : await createChat("general");
+if (!chat) return;
+}
+await sendMessage(prompt, chat.id, undefined, activeMode === "teachme");
+};
+
+// ─── Unit selection ───────────────────────────────────────────────────────────
+
+const handleSelectUnit = async (unitId: string) => {
+setSelectedUnitId(unitId);
+setExpandedUnitId(unitId);
+setShowArtifacts(false);
+const existingUnitChat = chats.find((c) => c.chat_type === "unit" && c.unit_id === unitId);
+if (existingUnitChat) {
+setActiveChat(existingUnitChat.id);
+} else {
+await createChat("unit", unitId);
+}
+if (isMobile) setMobileUnitsOpen(false);
+};
+
+// ─── Upload handlers ──────────────────────────────────────────────────────────
+
+const handleUnitTrainUpload = async (files: FileList | null) => {
+if (!files || files.length === 0 || !selectedUnitId || !user) return;
+const selectedUnitData = enrolledUnits.find((u) => u.unit*id === selectedUnitId);
+if (!selectedUnitData) return;
+setUnitUploading(true);
+const progress: Record<string, string> = {};
+for (const file of Array.from(files)) {
+const key = `${selectedUnitId}*${file.name}`;
+      progress[key] = "Uploading...";
+      setUnitUploadProgress({ ...progress });
+      try {
+        const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from("materials").upload(storagePath, file);
+        if (uploadError) {
+          progress[key] = `❌ ${uploadError.message}`;
+          setUnitUploadProgress({ ...progress });
+          continue;
+        }
+        const { data: material, error: matError } = await supabase
+          .from("materials")
+          .insert({
+            title: file.name.replace(/\.[^.]+$/, ""),
+file_name: file.name,
+file_type: file.type || "application/octet-stream",
+file_size: file.size,
+unit_id: selectedUnitId,
+uploaded_by: user.id,
+storage_path: storagePath,
+embedding_status: "processing",
+})
+.select("id")
+.single();
+if (matError) {
+progress[key] = `❌ ${matError.message}`;
+setUnitUploadProgress({ ...progress });
+continue;
+}
+progress[key] = "🧠 Training AI...";
+setUnitUploadProgress({ ...progress });
+const { error: embedError } = await supabase.functions.invoke("process-document", {
+body: {
+materialId: material?.id,
+title: file.name,
+unitCode: selectedUnitData.unit_code,
+storagePath,
+fileType: file.type,
+},
+});
+if (embedError) {
+progress[key] = `❌ ${embedError.message}`;
+setUnitUploadProgress({ ...progress });
+continue;
+}
+progress[key] = "✅ Trained";
+setUnitUploadProgress({ ...progress });
+} catch (err) {
+progress[key] = `❌ ${err instanceof Error ? err.message : "Unknown"}`;
+setUnitUploadProgress({ ...progress });
+}
+}
+setUnitUploading(false);
+setUnitUploadProgress({});
+if (selectedUnitId) {
+const { count } = await supabase
+.from("materials")
+.select("id", { count: "exact", head: true })
+.eq("unit_id", selectedUnitId)
+.eq("document_type", "notes");
+setNotesCount(count || 0);
+}
+toast.success("Training complete! Your AI is now smarter. 🧠");
+};
+
+const handlePastPaperUpload = async (files: FileList | null) => {
+if (!files || files.length === 0 || !selectedUnitId || !user) return;
+const selectedUnitData = enrolledUnits.find((u) => u.unit*id === selectedUnitId);
+if (!selectedUnitData) return;
+setPastPaperUploading(true);
+const progress: Record<string, string> = {};
+for (const file of Array.from(files)) {
+const key = `pp*${selectedUnitId}_${file.name}`;
+      progress[key] = "Uploading...";
+      setPastPaperUploadProgress({ ...progress });
+      try {
+        const storagePath = `uploads/${user.id}/${Date.now()}\_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from("materials").upload(storagePath, file);
+        if (uploadError) {
+          progress[key] = `❌ ${uploadError.message}`;
+          setPastPaperUploadProgress({ ...progress });
+          continue;
+        }
+        const { data: material, error: matError } = await supabase
+          .from("materials")
+          .insert({
+            title: file.name.replace(/\.[^.]+$/, ""),
+file_name: file.name,
+file_type: file.type || "application/octet-stream",
+file_size: file.size,
+unit_id: selectedUnitId,
+uploaded_by: user.id,
+storage_path: storagePath,
+embedding_status: "processing",
+document_type: "past_paper",
+} as any)
+.select("id")
+.single();
+if (matError) {
+progress[key] = `❌ ${matError.message}`;
+setPastPaperUploadProgress({ ...progress });
+continue;
+}
+progress[key] = "🧠 Analyzing...";
+setPastPaperUploadProgress({ ...progress });
+const { error: embedError } = await supabase.functions.invoke("process-document", {
+body: {
+materialId: material?.id,
+title: file.name,
+unitCode: selectedUnitData.unit_code,
+storagePath,
+fileType: file.type,
+documentType: "past_paper",
+skipHashCheck: true,
+},
+});
+if (embedError) {
+progress[key] = `❌ ${embedError.message}`;
+setPastPaperUploadProgress({ ...progress });
+continue;
+}
+progress[key] = "✅ Analyzed";
+setPastPaperUploadProgress({ ...progress });
+} catch (err) {
+progress[key] = `❌ ${err instanceof Error ? err.message : "Unknown"}`;
+setPastPaperUploadProgress({ ...progress });
+}
+}
+setPastPaperUploading(false);
+setPastPaperUploadProgress({});
+const { count } = await supabase
+.from("materials")
+.select("id", { count: "exact", head: true })
+.eq("unit_id", selectedUnitId)
+.eq("document_type", "past_paper");
+setPastPaperCount(count || 0);
+toast.success("Past papers analyzed! Exam Mode is ready. 📝");
+};
+
+// ─── Voice ────────────────────────────────────────────────────────────────────
+
+const applyVoiceDraft = () => {
+const transcript = voiceDraft.trim();
+if (!transcript) return;
+setInput((prev) => (prev.trim() ? `${prev.trimEnd()} ${transcript}` : transcript));
+setVoiceDraft("");
+setShowVoicePreview(false);
+requestAnimationFrame(() => {
+const el = inputRef.current;
+if (!el) return;
+el.style.height = "auto";
+el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
+el.focus();
+});
+};
+
+const discardVoiceDraft = () => {
+setVoiceDraft("");
+setShowVoicePreview(false);
+inputRef.current?.focus();
+};
+
+const toggleVoice = async () => {
+if (!micSupported) return;
+if (isListening) {
+mediaRecorderRef.current?.stop();
+return;
+}
+setVoiceDraft("");
+setShowVoicePreview(false);
+audioChunksRef.current = [];
+try {
+const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const mediaRecorder = new MediaRecorder(stream, {
+mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
+});
+mediaRecorderRef.current = mediaRecorder;
+mediaRecorder.ondataavailable = (e) => {
+if (e.data.size > 0) audioChunksRef.current.push(e.data);
+};
+mediaRecorder.onstop = async () => {
+stream.getTracks().forEach((t) => t.stop());
+setIsListening(false);
+mediaRecorderRef.current = null;
+const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+if (audioBlob.size < 1000) {
+toast.error("Recording too short. Try again.");
+return;
+}
+setIsTranscribing(true);
+try {
+const formData = new FormData();
+formData.append("audio", audioBlob, "recording.webm");
+const { data: sessionData } = await supabase.auth.getSession();
+const token = sessionData?.session?.access_token;
+const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
+method: "POST",
+headers: {
+...(token ? { Authorization: `Bearer ${token}` } : {}),
+apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+},
+body: formData,
+});
+if (!resp.ok) {
+const err = await resp.json().catch(() => ({}));
+throw new Error(err.error || "Transcription failed");
+}
+const result = await resp.json();
+const transcript = result.text?.trim();
+if (transcript) {
+setVoiceDraft(transcript);
+setShowVoicePreview(true);
+} else toast.error("No speech detected. Try again.");
+} catch (err: any) {
+toast.error(err.message || "Transcription failed.");
+} finally {
+setIsTranscribing(false);
+}
+};
+mediaRecorder.start(250);
+setIsListening(true);
+} catch {
+toast.error("Microphone access denied.");
+}
+};
+
+// ─── Payment ──────────────────────────────────────────────────────────────────
+
+const cancelPaymentPolling = () => {
+paymentCancelledRef.current = true;
+setPaymentVerifying(false);
+setShowPaymentDialog(false);
+toast.info("Payment cancelled.");
+};
+
+const pollPaymentStatus = async (reference: string) => {
+paymentCancelledRef.current = false;
+setPaymentVerifying(true);
+const maxAttempts = 60;
+for (let i = 0; i < maxAttempts; i++) {
+if (paymentCancelledRef.current) return;
+await new Promise((r) => setTimeout(r, 5000));
+if (paymentCancelledRef.current) return;
+const { data } = await supabase.from("payments").select("status").eq("paystack_reference", reference).single();
+if (data?.status === "success") {
+setPaymentVerifying(false);
+setShowPaymentDialog(false);
+toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
+await refreshProfile();
+return;
+} else if (data?.status === "failed") {
+setPaymentVerifying(false);
+toast.error("Payment failed.");
+return;
+}
+}
+setPaymentVerifying(false);
+toast.error("Payment verification timed out.");
+};
+
+const handlePayment = async () => {
+if (paymentMethod === "card") {
+setPaymentLoading(true);
+try {
+const { data: sessionData } = await supabase.auth.getSession();
+const accessToken = sessionData.session?.access_token;
+if (!accessToken) { toast.error("Please sign in again."); return; }
+const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+Authorization: `Bearer ${accessToken}`,
+},
+body: JSON.stringify({
+method: "card",
+plan: paymentPlan,
+groupEmails: paymentPlan === "group" ? [profile?.email || "", ...groupEmails.slice(1)] : undefined,
+}),
+});
+const data = await resp.json();
+if (data.authorization_url && data.reference) {
+window.open(data.authorization_url, "\_blank");
+setPaymentLoading(false);
+toast.info("Complete payment in the new tab.");
+pollPaymentStatus(data.reference);
+} else {
+toast.error(data.error || "Failed to initialize card payment");
+setPaymentLoading(false);
+}
+} catch { toast.error("Payment initialization failed."); setPaymentLoading(false); }
+return;
+}
+const phone = paymentPhone.trim();
+if (!phone || phone.length < 10) { toast.error("Please enter a valid phone number (e.g. 0712345678)"); return; }
+setPaymentLoading(true);
+try {
+const { data: sessionData } = await supabase.auth.getSession();
+const accessToken = sessionData.session?.access_token;
+if (!accessToken) { toast.error("Please sign in again."); return; }
+const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-initialize`, {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+Authorization: `Bearer ${accessToken}`,
+},
+body: JSON.stringify({
+phone,
+plan: paymentPlan,
+groupEmails: paymentPlan === "group" ? [profile?.email || "", ...groupEmails.slice(1)] : undefined,
+}),
+});
+const data = await resp.json();
+if (data.reference) {
+setPaymentLoading(false);
+setPaymentPhone("");
+toast.success("Check your phone for the M-Pesa prompt.");
+pollPaymentStatus(data.reference);
+} else {
+toast.error(data.error || "Failed to initialize payment");
+setPaymentLoading(false);
+}
+} catch { toast.error("Payment initialization failed."); setPaymentLoading(false); }
+};
+
+const handleCreateArtifact = (content: string, language: string) => {
+const type = detectArtifactType(language, content);
+addArtifact({ title: `${language.toUpperCase() || "CODE"} Snippet`, content, language, type });
+};
+
+const handleRetry = async (msgIndex: number) => {
+if (!activeChat || isStreaming) return;
+const msgs = activeChat.messages;
+let lastUserMsg = "";
+for (let i = msgIndex - 1; i >= 0; i--) {
+if (msgs[i].sender === "user") { lastUserMsg = msgs[i].text; break; }
+}
+if (lastUserMsg) await sendMessage(lastUserMsg, activeChat.id);
+};
+
+const handleEditMessage = async (msgId: string, newText: string) => {
+if (!newText.trim() || !activeChat) return;
+setEditingMsgId(null);
+await sendMessage(newText.trim(), activeChat.id);
+};
+
+const handleRenameSubmit = async (chatId: string) => {
+if (renameValue.trim()) await renameChat(chatId, renameValue);
+setRenamingChatId(null);
+};
+
+// ─── Derived state ────────────────────────────────────────────────────────────
+
+const selectedUnit = enrolledUnits.find((u) => u.unit_id === selectedUnitId);
+
+// Left sidebar: only general chats (not unit chats)
+const generalChats = useMemo(() => chats.filter((c) => c.chat_type !== "unit"), [chats]);
+
+// Center chat history: unit chats for selected unit, or general chats
+const visibleChats = useMemo(() => {
+if (selectedUnitId) return chats.filter((c) => c.chat_type === "unit" && c.unit_id === selectedUnitId);
+return generalChats;
+}, [chats, selectedUnitId, generalChats]);
+
+const groupedChats = useMemo(() => {
+const source = selectedUnitId ? visibleChats : generalChats;
+const groups: Record<string, typeof source> = {};
+for (const chat of source) {
+const group = getDateGroup(chat.timestamp);
+if (!groups[group]) groups[group] = [];
+groups[group].push(chat);
+}
+return groups;
+}, [visibleChats, generalChats, selectedUnitId]);
+
+const chatBgStyle = (() => {
+const bg = getChatBg();
+if (bg && bg.url)
+return {
+backgroundImage: `url(${bg.url})`,
+backgroundSize: "cover" as const,
+backgroundPosition: "center" as const,
+};
+return {};
+})();
+
+if (authLoading) {
+return (
+<div className="h-screen flex items-center justify-center bg-background">
+<Loader2 className="w-8 h-8 animate-spin text-primary" />
+</div>
+);
+}
+
+const toggleSidebar = () => {
+if (isMobile) setMobileSidebarOpen(!mobileSidebarOpen);
+else setSidebarExpanded(!sidebarExpanded);
+};
+
+// ─── Chat item renderer ───────────────────────────────────────────────────────
+
+const renderChatItem = (chat: (typeof chats)[0]) => {
+const isRenaming = renamingChatId === chat.id;
+const preview = chat.messages[0]?.text?.slice(0, 50) || "Empty chat";
+return (
+<div
+key={chat.id}
+onClick={() => {
+if (!isRenaming) {
+setActiveChat(chat.id);
+setShowArtifacts(false);
+if (isMobile) setMobileSidebarOpen(false);
+}
+}}
+className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`} >
+<div className="flex-1 min-w-0">
+{isRenaming ? (
+<form
+onSubmit={(e) => { e.preventDefault(); handleRenameSubmit(chat.id); }}
+className="flex items-center gap-1" >
+<input
+ref={renameInputRef}
+value={renameValue}
+onChange={(e) => setRenameValue(e.target.value)}
+onBlur={() => handleRenameSubmit(chat.id)}
+onKeyDown={(e) => { if (e.key === "Escape") setRenamingChatId(null); }}
+className="bg-transparent border-b border-primary text-sm w-full outline-none py-0.5"
+onClick={(e) => e.stopPropagation()}
+/>
+<button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-primary">
+<Check className="w-3 h-3" />
+</button>
+</form>
+) : (
+<>
+<span className="truncate block">{chat.title}</span>
+<span className="text-xs text-sidebar-foreground/30 block mt-0.5 truncate">{preview}</span>
+</>
+)}
+</div>
+{!isRenaming && (
+<Popover>
+<PopoverTrigger asChild>
+<button
+onClick={(e) => e.stopPropagation()}
+className="p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-sidebar-accent rounded"
+title="Options" >
+<MoreVertical className="w-3.5 h-3.5" />
+</button>
+</PopoverTrigger>
+<PopoverContent side="right" align="start" className="w-36 p-1" onClick={(e) => e.stopPropagation()}>
+<button
+onClick={(e) => {
+e.stopPropagation();
+setRenamingChatId(chat.id);
+setRenameValue(chat.title);
+}}
+className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors" >
+<Pencil className="w-3.5 h-3.5" /> Rename
+</button>
+<button
+onClick={(e) => { e.stopPropagation(); setDeleteChatId(chat.id); }}
+className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-destructive/10 text-destructive transition-colors" >
+<Trash2 className="w-3.5 h-3.5" /> Delete
+</button>
+</PopoverContent>
+</Popover>
+)}
+</div>
+);
+};
+
+// ─── LEFT SIDEBAR ─────────────────────────────────────────────────────────────
+
+const sidebarContent = (
+<>
+<div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
+{sidebarExpanded || isMobile ? (
+<div className="flex items-center gap-3 mb-4">
+<img src={sekaniLogo} alt="Sekani" className="w-8 h-8" />
+<span className="font-display font-bold text-sidebar-foreground text-lg">Sekani</span>
+<button
+              onClick={toggleSidebar}
+              className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+              title="Collapse sidebar"
+            >
+<PanelRight className="w-4 h-4" />
+</button>
+</div>
+) : (
+<div className="flex flex-col items-center gap-2 mb-3">
+<img src={sekaniLogo} alt="Sekani" className="w-9 h-9" />
+<button
+              onClick={toggleSidebar}
+              className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+              title="Expand sidebar"
+            >
+<PanelLeft className="w-5 h-5" />
+</button>
+</div>
+)}
+
+        {sidebarExpanded || isMobile ? (
+          <Button
+            onClick={() => {
+              createChat("general");
+              setSelectedUnitId(null);
+              setShowArtifacts(false);
+              if (isMobile) setMobileSidebarOpen(false);
+            }}
+            className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 justify-start gap-2"
+            size="sm"
+          >
+            <Plus className="w-4 h-4" /> New Chat
+          </Button>
+        ) : (
+          <Button
+            onClick={() => createChat("general")}
+            className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 p-0 flex items-center justify-center"
+            size="icon"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+
+      {(sidebarExpanded || isMobile) && (
+        <div className="px-3 mb-1">
+          <button
+            onClick={() => { setShowArtifacts(true); if (isMobile) setMobileSidebarOpen(false); }}
+            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors ${showArtifacts ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}
+          >
+            <LayoutGrid className="w-4 h-4" /> <span>Artifacts</span>
+          </button>
+        </div>
+      )}
+      {!sidebarExpanded && !isMobile && (
+        <div className="flex flex-col items-center px-1 mb-2">
+          <button
+            onClick={() => setShowArtifacts(true)}
+            className="p-2 rounded-lg text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors"
+            title="Artifacts"
+          >
+            <LayoutGrid className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Chat history — shows unit chats when unit selected, general otherwise */}
+      <div className="flex-1 overflow-y-auto px-3 py-2">
+        {sidebarExpanded || isMobile ? (
+          visibleChats.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageSquare className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
+              <p className="text-sm text-sidebar-foreground/30">
+                {selectedUnitId ? "No unit chats yet" : "No chats yet"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1 mb-1">
+                <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40">
+                  {selectedUnitId ? `${selectedUnit?.unit_code} Chats` : "Chat History"}
+                </p>
+                <button
+                  onClick={() => setShowDeleteAllConfirm(true)}
+                  className="text-xs text-destructive/70 hover:text-destructive transition-colors"
+                >
+                  Delete All
+                </button>
+              </div>
+              {DATE_GROUP_ORDER.map((group) => {
+                const groupChats = groupedChats[group];
+                if (!groupChats || groupChats.length === 0) return null;
+                return (
+                  <div key={group}>
+                    <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-1.5">
+                      {group}
+                    </p>
+                    <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : null}
+      </div>
+
+      {/* Bottom: Profile */}
+      <div ref={profileMenuRef} className={`relative ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : "p-3"}`}>
+        <AnimatePresence>
+          {profileMenuOpen && (sidebarExpanded || isMobile) && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-full left-3 right-3 mb-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
+            >
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-popover-foreground truncate">{displayName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{profile?.email || "student"}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="py-1.5">
+                {role === "admin" && (
+                  <button
+                    onClick={() => { setProfileMenuOpen(false); navigate("/admin"); }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                  >
+                    <Shield className="w-4 h-4 text-muted-foreground" /> <span>Admin Dashboard</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => { setProfileMenuOpen(false); navigate("/personalization"); }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                >
+                  <User className="w-4 h-4 text-muted-foreground" /> <span>Personalization</span>
+                </button>
+                <button
+                  onClick={() => { setProfileMenuOpen(false); setSettingsOpen(true); }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                >
+                  <Settings className="w-4 h-4 text-muted-foreground" /> <span>Settings</span>
+                </button>
+                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
+                  <CircleHelp className="w-4 h-4 text-muted-foreground" /> <span>Help</span>
+                </button>
+                <div className="mx-3 my-2 border-t border-border" />
+                <div className="px-2 pb-1">
+                  <button
+                    onClick={() => { setProfileMenuOpen(false); setShowPaymentDialog(true); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #800000 0%, #b91c1c 100%)", color: "white" }}
+                  >
+                    <span>⚡ Upgrade to Premium</span>
+                  </button>
+                </div>
+                <div className="my-1.5" />
+                <button
+                  onClick={() => { setProfileMenuOpen(false); setShowLogoutConfirm(true); }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                >
+                  <LogOut className="w-4 h-4 text-muted-foreground" /> <span>Log out</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {sidebarExpanded || isMobile ? (
+          <button
+            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground flex-shrink-0">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
+              <p className="text-xs text-sidebar-foreground/50 truncate">{profile?.course_name || "Student"}</p>
+            </div>
+            <ChevronUp
+              className={`w-4 h-4 text-sidebar-foreground/40 transition-transform ${profileMenuOpen ? "" : "rotate-180"}`}
+            />
+          </button>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground"
+              title={displayName}
+            >
+              {displayName.charAt(0).toUpperCase()}
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+
+);
+
+// ─── RIGHT PANEL ──────────────────────────────────────────────────────────────
+
+const unitsPanelContent = (
+<div className="flex flex-col h-full">
+{/_ Panel header with toggle _/}
+<div className="p-4 border-b border-border flex-shrink-0">
+<div className="flex items-center justify-between">
+<div className="flex items-center gap-2">
+<GraduationCap className="w-4 h-4 text-primary" />
+{!rightPanelCollapsed && (
+<h2 className="font-display font-bold text-foreground text-sm">My Units</h2>
+)}
+</div>
+<div className="flex items-center gap-1">
+{isMobile ? (
+<button
+onClick={() => setMobileUnitsOpen(false)}
+className="p-1.5 rounded-md hover:bg-accent transition-colors" >
+<X className="w-4 h-4" />
+</button>
+) : (
+<button
+onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+className="p-1.5 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+title={rightPanelCollapsed ? "Expand panel" : "Collapse panel"} >
+{rightPanelCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelRight className="w-4 h-4" />}
+</button>
+)}
+</div>
+</div>
+{!rightPanelCollapsed && (
+<p className="text-xs text-muted-foreground mt-1">Select a unit to start studying</p>
+)}
+</div>
+
+      {/* Hidden file inputs */}
+      <input
+        ref={unitUploadInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.pptx,.txt,.csv,.md"
+        className="hidden"
+        onChange={(e) => { handleUnitTrainUpload(e.target.files); e.target.value = ""; }}
+      />
+      <input
+        ref={pastPaperInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.pptx,.txt"
+        className="hidden"
+        onChange={(e) => { handlePastPaperUpload(e.target.files); e.target.value = ""; }}
+      />
+
+      {/* Collapsed: just show unit icons */}
+      {rightPanelCollapsed && !isMobile ? (
+        <div className="flex-1 overflow-y-auto py-3 flex flex-col items-center gap-2 px-2">
+          {enrolledUnits.map((unit) => (
+            <button
+              key={unit.unit_id}
+              onClick={() => setRightPanelCollapsed(false)}
+              title={`${unit.unit_code} — ${unit.unit_name}`}
+              className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
+                selectedUnitId === unit.unit_id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-primary/20"
+              }`}
+            >
+              {unit.unit_code.slice(-2)}
+            </button>
+          ))}
+        </div>
+      ) : (
+        /* Expanded unit list */
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {enrolledUnits.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No units enrolled</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Your course units will appear here</p>
+            </div>
+          ) : (
+            enrolledUnits.map((unit) => {
+              const isExpanded = expandedUnitId === unit.unit_id;
+              const isSelected = selectedUnitId === unit.unit_id;
+              return (
+                <div
+                  key={unit.unit_id}
+                  className={`rounded-xl border transition-all duration-200 overflow-hidden ${isExpanded ? "border-primary/40 bg-primary/5" : "border-border bg-card hover:border-border/80"}`}
+                >
+                  {/* Unit header row */}
+                  <button
+                    onClick={() => {
+                      if (isExpanded) setExpandedUnitId(null);
+                      else handleSelectUnit(unit.unit_id);
+                    }}
+                    className="w-full flex items-center gap-3 p-3 text-left"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold ${isExpanded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                    >
+                      {unit.unit_code.slice(-2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-bold ${isExpanded ? "text-primary" : "text-muted-foreground"}`}>
+                        {unit.unit_code}
+                      </p>
+                      <p className="text-sm font-medium text-foreground truncate leading-tight">{unit.unit_name}</p>
+                      {unit.lecturer && <p className="text-xs text-muted-foreground truncate">{unit.lecturer}</p>}
+                    </div>
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {/* Expanded unit panel */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-3 pb-3 space-y-2 border-t border-primary/20">
+                          {/* Stats */}
+                          <div className="flex gap-2 pt-2">
+                            <div className="flex-1 bg-background rounded-lg p-2 text-center">
+                              <p className="text-lg font-bold text-foreground">{notesCount}</p>
+                              <p className="text-[10px] text-muted-foreground">Notes</p>
+                            </div>
+                            <div className="flex-1 bg-background rounded-lg p-2 text-center">
+                              <p className="text-lg font-bold text-foreground">{pastPaperCount}</p>
+                              <p className="text-[10px] text-muted-foreground">Papers</p>
+                            </div>
+                          </div>
+
+                          {/* Upload buttons */}
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs border-dashed h-8"
+                              disabled={unitUploading}
+                              onClick={() => unitUploadInputRef.current?.click()}
+                            >
+                              {unitUploading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Upload className="w-3 h-3 mr-1" />}
+                              {unitUploading ? "Training..." : "Add Notes"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs border-dashed h-8"
+                              disabled={pastPaperUploading}
+                              onClick={() => pastPaperInputRef.current?.click()}
+                            >
+                              {pastPaperUploading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <FileQuestion className="w-3 h-3 mr-1" />}
+                              {pastPaperUploading ? "Analyzing..." : "Past Papers"}
+                            </Button>
+                          </div>
+
+                          {/* Upload progress */}
+                          {Object.entries(unitUploadProgress).length > 0 && (
+                            <div className="space-y-0.5">
+                              {Object.entries(unitUploadProgress).map(([key, status]) => (
+                                <p key={key} className="text-xs text-muted-foreground truncate">{status}</p>
+                              ))}
+                            </div>
+                          )}
+                          {Object.entries(pastPaperUploadProgress).length > 0 && (
+                            <div className="space-y-0.5">
+                              {Object.entries(pastPaperUploadProgress).map(([key, status]) => (
+                                <p key={key} className="text-xs text-muted-foreground truncate">{status}</p>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Action buttons — each opens a mode popup */}
+                          <div className="space-y-1 pt-1">
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-0.5">
+                              Quick Actions
+                            </p>
+
+                            {[
+                              {
+                                icon: BookOpen,
+                                label: "Teach Me",
+                                color: "text-emerald-600",
+                                mode: "teachme" as ActiveMode,
+                                requiresNotes: true,
+                              },
+                              {
+                                icon: PenLine,
+                                label: "Exam Prep",
+                                color: "text-blue-600",
+                                mode: "examprep" as ActiveMode,
+                                requiresNotes: true,
+                              },
+                              {
+                                icon: FileQuestion,
+                                label: "Exam Mode",
+                                color: "text-amber-600",
+                                mode: "exammode" as ActiveMode,
+                                requiresNotes: false,
+                                requiresPapers: true,
+                              },
+                              {
+                                icon: ListChecks,
+                                label: "Quiz Me",
+                                color: "text-purple-600",
+                                mode: null,
+                                requiresNotes: true,
+                                onClickOverride: async () => {
+                                  if (notesCount === 0) { toast.error("Upload course notes first."); return; }
+                                  await handleSuggestion(`Quiz me on ${unit.unit_code} — ${unit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.`);
+                                  if (isMobile) setMobileUnitsOpen(false);
+                                },
+                              },
+                              {
+                                icon: FileText,
+                                label: "Summarize",
+                                color: "text-rose-600",
+                                mode: null,
+                                requiresNotes: true,
+                                onClickOverride: async () => {
+                                  if (notesCount === 0) { toast.error("Upload course notes first."); return; }
+                                  await handleSuggestion(`Give me a complete summary of all the uploaded notes for ${unit.unit_code} — ${unit.unit_name}. Organize by topic.`);
+                                  if (isMobile) setMobileUnitsOpen(false);
+                                },
+                              },
+                            ].map((action) => (
+                              <button
+                                key={action.label}
+                                onClick={async () => {
+                                  if (action.onClickOverride) {
+                                    await action.onClickOverride();
+                                    return;
+                                  }
+                                  if (action.requiresNotes && notesCount === 0) {
+                                    toast.error("Upload course notes first.");
+                                    return;
+                                  }
+                                  if (action.requiresPapers && pastPaperCount === 0) {
+                                    toast.info("Upload past papers first to unlock Exam Mode.");
+                                    return;
+                                  }
+                                  if (action.mode) {
+                                    // Make sure this unit is selected
+                                    if (selectedUnitId !== unit.unit_id) await handleSelectUnit(unit.unit_id);
+                                    setActiveMode(action.mode);
+                                    if (isMobile) setMobileUnitsOpen(false);
+                                  }
+                                }}
+                                className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-background transition-colors text-left"
+                              >
+                                <action.icon className={`w-4 h-4 flex-shrink-0 ${action.color}`} />
+                                <span className="font-medium text-foreground">{action.label}</span>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+
+);
+
+// ─── Chat input ───────────────────────────────────────────────────────────────
+
+const chatInput = (
+<div className="max-w-[680px] w-full mx-auto pointer-events-auto">
+{(isListening || isTranscribing) && (
+<div className="mb-2 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-3">
+<div className="flex items-center justify-between gap-3">
+<div className="flex items-center gap-3 min-w-0">
+{isTranscribing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <VoiceInputVisualizer />}
+<div className="min-w-0">
+<p className="text-sm font-medium text-foreground">{isTranscribing ? "Transcribing…" : "Listening…"}</p>
+<p className="text-xs text-muted-foreground">
+{isTranscribing ? "Converting speech to text." : "Speak freely — tap Stop when done."}
+</p>
+</div>
+</div>
+{isListening && (
+<button
+                onClick={toggleVoice}
+                className="rounded-full border border-primary/20 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              >
+Stop
+</button>
+)}
+</div>
+</div>
+)}
+
+      {showVoicePreview && !isListening && voiceDraft && (
+        <div className="mb-2 rounded-3xl border border-border bg-card px-4 py-3">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Voice preview</p>
+              <p className="mt-1 text-sm text-foreground break-words">{voiceDraft}</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={discardVoiceDraft}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="Discard"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <button
+                onClick={applyVoiceDraft}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90"
+                title="Use transcript"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {attachedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {attachedFiles.map((pf, i) => (
+            <span key={i} className="inline-flex items-center gap-1 text-xs bg-card border border-border px-2 py-1 rounded-lg">
+              {pf.preview ? (
+                <img src={pf.preview} alt="" className="w-6 h-6 rounded object-cover" />
+              ) : pf.file.type.startsWith("image/") ? (
+                <ImageIcon className="w-3 h-3" />
+              ) : (
+                <File className="w-3 h-3" />
+              )}
+              <span className="max-w-[120px] truncate">{pf.file.name}</span>
+              <button onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div
+        className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
+        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.15)" }}
+      >
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+        <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+        <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xlsx,.xls,.pptx,.ppt,.md" multiple className="hidden" onChange={(e) => { handleFileSelected(e.target.files); e.target.value = ""; }} />
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
+              <Paperclip className="w-4 h-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent side="top" align="start" className="w-52 p-1.5">
+            <button onClick={() => cameraInputRef.current?.click()} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <Camera className="w-4 h-4 text-muted-foreground" /> Take Photo
+            </button>
+            <button onClick={() => photoInputRef.current?.click()} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Upload Image
+            </button>
+            <button onClick={() => docInputRef.current?.click()} className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors">
+              <FileText className="w-4 h-4 text-muted-foreground" /> Upload File
+            </button>
+            <button
+              onClick={() => handleSuggestion("Enter Quiz Mode: Generate exam-style questions for my current unit to help me revise. Ask one question at a time, evaluate my answer, and explain the correct answer step by step.")}
+              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
+            >
+              <FileQuestion className="w-4 h-4 text-muted-foreground" /> Quizzes
+            </button>
+          </PopoverContent>
+        </Popover>
+
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            const el = e.target;
+            el.style.height = "auto";
+            el.style.height = Math.min(el.scrollHeight, 150) + "px";
+          }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
+          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
+          style={{ maxHeight: "150px" }}
+          rows={1}
+          disabled={isStreaming}
+        />
+
+        <button
+          onClick={toggleVoice}
+          disabled={!micSupported || isTranscribing}
+          className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : isTranscribing ? "text-primary animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!micSupported ? "opacity-40 cursor-not-allowed" : ""}`}
+        >
+          {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
+        </button>
+
+        <button
+          onClick={() => handleSend()}
+          disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming}
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40"
+        >
+          {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+        </button>
+      </div>
+    </div>
+
+);
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+
+// Right panel should hide when a mode popup is active (desktop)
+const showRightPanel = !viewerOpen && !teachMeActive && activeMode === null;
+
+return (
+<div className="h-screen flex bg-background overflow-hidden">
+{/_ ── LEFT SIDEBAR (desktop) ── _/}
+<aside
+className={`hidden md:flex flex-col bg-sidebar flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[260px]" : "w-[56px]"}`} >
+{sidebarContent}
+</aside>
+
+      {/* ── LEFT SIDEBAR (mobile overlay) ── */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className="fixed inset-y-0 left-0 w-[280px] z-50 bg-sidebar flex flex-col md:hidden"
+            >
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── MAIN CENTER ── */}
+      <div className="flex-1 flex min-w-0">
+        <div
+          className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`}
+          style={chatBgStyle}
+        >
+          {/* ── HEADER ── */}
+          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent gap-2">
+            <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0">
+              <PanelLeft className="w-5 h-5" />
+            </button>
+
+            <div className="flex-1 min-w-0">
+              {selectedUnit ? (
+                <h2 className="font-display font-semibold text-foreground text-sm truncate leading-tight">
+                  {selectedUnit.unit_code} — {selectedUnit.unit_name}
+                </h2>
+              ) : showArtifacts ? (
+                <h2 className="font-display font-semibold text-foreground text-sm">Artifacts</h2>
+              ) : (
+                <h2 className="font-display font-semibold text-foreground text-sm">
+                  {activeChat ? activeChat.title : "Sekani"}
+                </h2>
+              )}
+            </div>
+
+            {selectedUnit && (
+              <button
+                onClick={async () => {
+                  if (teachMeActive) {
+                    teachMe.endSession();
+                    setTeachMeActive(false);
+                    document.body.classList.remove("focus-mode");
+                    return;
+                  }
+                  if (notesCount === 0) { toast.error("Upload course notes for this unit first."); return; }
+                  setActiveMode("teachme");
+                }}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
+              >
+                <BookOpen className="w-3 h-3" />
+                <span className="hidden sm:inline">{teachMeActive ? "Teaching..." : "Teach Me"}</span>
+              </button>
+            )}
+
+            {selectedUnit ? (
+              <button
+                onClick={() => {
+                  if (pastPaperCount === 0) { toast.info("Upload past papers first to unlock Exam Mode."); return; }
+                  setActiveMode("exammode");
+                }}
+                className={`p-2 rounded-lg transition-colors flex-shrink-0 ${pastPaperCount > 0 ? "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30" : "text-muted-foreground hover:bg-foreground/10"}`}
+                title={pastPaperCount > 0 ? "Exam Mode" : "Upload past papers to unlock Exam Mode"}
+              >
+                <ClipboardList className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setCalendarOpen(!calendarOpen)}
+                className="p-2 hover:bg-foreground/10 rounded-lg text-foreground flex-shrink-0"
+                title="Academic Calendar"
+              >
+                <Calendar className="w-5 h-5" />
+              </button>
+            )}
+
+            <button
+              onClick={() => setMobileUnitsOpen(true)}
+              className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0"
+              title="My Units"
+            >
+              <GraduationCap className="w-5 h-5" />
+            </button>
+          </header>
+
+          {/* ── CONTENT ── */}
+          {showArtifacts ? (
+            <div className="flex-1 overflow-y-auto">
+              <ArtifactsPage />
+            </div>
+          ) : (
+            (() => {
+              const isNewChat = !activeChat || activeChat.messages.length === 0;
+              return (
+                <>
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-scroll-area">
+                    <AnimatePresence mode="wait">
+                      {isNewChat ? (
+                        <motion.div
+                          key="new-chat"
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: 40 }}
+                          transition={{ duration: 0.3 }}
+                          className="flex flex-col items-center justify-center h-full px-4"
+                        >
+                          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
+                            <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+                              {greeting}, {displayName.split(" ")[0]}
+                            </h2>
+                            <p className="text-muted-foreground text-sm">
+                              {selectedUnit
+                                ? `Ask anything about ${selectedUnit.unit_code} — ${selectedUnit.unit_name}`
+                                : "How can I help you with your studies today?"}
+                            </p>
+                          </motion.div>
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="w-full px-4 md:px-0">
+                            {chatInput}
+                          </motion.div>
+                          {!selectedUnit && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                              className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0"
+                            >
+                              {SUGGESTIONS.map((s, i) => (
+                                <motion.button
+                                  key={s.label}
+                                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.08 }}
+                                  onClick={() => handleSuggestion(s.prompt)}
+                                  className="inline-flex items-center gap-2 px-4 py-2.5 glass-card hover:-translate-y-0.5 transition-all"
+                                  style={{ borderRadius: "30px" }}
+                                >
+                                  <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
+                                  <span className="font-display font-semibold text-sm text-foreground whitespace-nowrap">{s.label}</span>
+                                </motion.button>
+                              ))}
+                            </motion.div>
+                          )}
+                          {!selectedUnit && isMobile && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-4">
+                              <button
+                                onClick={() => setMobileUnitsOpen(true)}
+                                className="flex items-center gap-2 text-sm text-primary border border-primary/30 rounded-full px-4 py-2 hover:bg-primary/5 transition-colors"
+                              >
+                                <GraduationCap className="w-4 h-4" /> Browse My Units
+                              </button>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="active-chat"
+                          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}
+                          className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-4"
+                        >
+                          {activeChat!.messages.map((msg, msgIndex) => (
+                            <motion.div
+                              key={msg.id}
+                              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                              className={`group/msg flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                            >
+                              <div className="flex flex-col gap-1 max-w-[85%]">
+                                {(() => {
+                                  const chatBg = getChatBg();
+                                  const hasCustomBg = chatBg && chatBg.url;
+                                  const bubbleStyle = hasCustomBg
+                                    ? msg.sender === "user"
+                                      ? { background: chatBg.userBubble, color: chatBg.userText }
+                                      : { background: chatBg.botBubble, color: chatBg.botText }
+                                    : msg.sender === "user"
+                                      ? { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
+                                      : undefined;
+                                  const bubbleClass =
+                                    msg.sender === "user"
+                                      ? `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-br-md`
+                                      : `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-bl-md ${!hasCustomBg ? "bg-muted text-foreground" : ""}`;
+                                  return (
+                                    <div className={bubbleClass} style={bubbleStyle}>
+                                      {msg.sender === "bot" && (
+                                        <div className="flex items-center gap-1.5 mb-1.5">
+                                          <img src={sekaniLogo} alt="Sekani" className="w-4 h-4" />
+                                          <span className="text-xs font-semibold text-primary">Sekani</span>
+                                        </div>
+                                      )}
+                                      {msg.sender === "bot" ? (
+                                        <div className="prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
+                                          <ReactMarkdown
+                                            remarkPlugins={[remarkMath, remarkGfm]}
+                                            rehypePlugins={[rehypeKatex]}
+                                            components={{
+                                              a({ href, children, ...props }) {
+                                                if (href?.startsWith("download:")) {
+                                                  const format = href.replace("download:", "") as "pdf" | "docx" | "pptx" | "xlsx";
+                                                  const generators: Record<string, () => void> = {
+                                                    pdf: () => generatePDF(msg.text, activeChat?.title || "Document"),
+                                                    docx: () => generateDOCX(msg.text, activeChat?.title || "Document"),
+                                                    pptx: () => generatePPTX(msg.text, activeChat?.title || "Presentation"),
+                                                    xlsx: () => generateXLSX(msg.text, activeChat?.title || "Spreadsheet"),
+                                                  };
+                                                  return (
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); generators[format]?.(); }}
+                                                      className="inline-flex items-center gap-2 px-4 py-2.5 my-1 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                                      style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))", color: "hsl(var(--primary-foreground))", boxShadow: "0 2px 8px hsl(var(--primary) / 0.3)" }}
+                                                    >
+                                                      <Download className="w-4 h-4" />
+                                                      <span>{String(children).replace("📥 ", "")}</span>
+                                                    </button>
+                                                  );
+                                                }
+                                                return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                                              },
+                                              table: ({ children }: any) => (
+                                                <div className="my-3 overflow-x-auto rounded-lg border border-border">
+                                                  <table className="min-w-full divide-y divide-border text-sm">{children}</table>
+                                                </div>
+                                              ),
+                                              thead: ({ children }: any) => <thead className="bg-muted/50">{children}</thead>,
+                                              tbody: ({ children }: any) => <tbody className="divide-y divide-border">{children}</tbody>,
+                                              tr: ({ children }: any) => <tr className="hover:bg-muted/30 transition-colors">{children}</tr>,
+                                              th: ({ children }: any) => <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{children}</th>,
+                                              td: ({ children }: any) => <td className="px-3 py-2 text-sm text-foreground">{children}</td>,
+                                              code({ className, children, ...props }) {
+                                                const match = /language-(\w+)/.exec(className || "");
+                                                const lang = match ? match[1] : "";
+                                                const codeStr = String(children).replace(/\n$/, "");
+                                                if (lang === "mermaid") return <MermaidBlock code={codeStr} />;
+                                                const isBlock = codeStr.includes("\n") || !!lang;
+                                                const canPreview = ["html", "htm", "javascript", "js", "jsx", "tsx", "svg"].includes(lang.toLowerCase());
+                                                if (isBlock) {
+                                                  return (
+                                                    <div className="relative group/code my-2">
+                                                      {lang && (
+                                                        <div className="flex items-center justify-between bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-t-lg text-xs">
+                                                          <span className="font-mono">{lang}</span>
+                                                          <div className="flex items-center gap-1 opacity-0 group-hover/code:opacity-100 transition-opacity">
+                                                            <button onClick={() => { navigator.clipboard.writeText(codeStr); toast.success("Copied!"); }} className="px-2 py-0.5 rounded hover:bg-zinc-700 transition-colors">Copy</button>
+                                                            {canPreview && (
+                                                              <button onClick={() => handleCreateArtifact(codeStr, lang)} className="px-2 py-0.5 rounded hover:bg-zinc-700 text-blue-400 transition-colors flex items-center gap-1">
+                                                                <Play className="w-3 h-3" /> Run
+                                                              </button>
+                                                            )}
+                                                            <button onClick={() => handleCreateArtifact(codeStr, lang || "text")} className="px-2 py-0.5 rounded hover:bg-zinc-700 text-emerald-400 transition-colors flex items-center gap-1">
+                                                              <Code2 className="w-3 h-3" /> Artifact
+                                                            </button>
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                      <pre className={`bg-zinc-900 text-zinc-100 ${lang ? "rounded-b-lg" : "rounded-lg"} p-3 overflow-x-auto`}>
+                                                        <code className={className} {...props}>{children}</code>
+                                                      </pre>
+                                                      {!lang && (
+                                                        <button onClick={() => handleCreateArtifact(codeStr, "text")} className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md">
+                                                          <Code2 className="w-3 h-3" /> Artifact
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                }
+                                                return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
+                                              },
+                                              img({ src, alt, ...props }) {
+                                                return (
+                                                  <div className="my-3">
+                                                    <img src={src} alt={alt || "Generated image"} className="max-w-full rounded-xl border border-border shadow-md cursor-pointer hover:opacity-90 transition-opacity" loading="lazy" onClick={() => window.open(src, "_blank")} />
+                                                    {alt && <p className="text-xs text-muted-foreground mt-1.5 text-center italic">{alt}</p>}
+                                                  </div>
+                                                );
+                                              },
+                                            }}
+                                          >
+                                            {(() => {
+                                              const raw = teachMeActive ? stripControlTags(msg.text || "...") : msg.text || "...";
+                                              return raw.replace(/\\\((.+?)\\\)/g, "$$$1$$").replace(/\\\[(.+?)\\\]/gs, "$$$$$1$$$$");
+                                            })()}
+                                          </ReactMarkdown>
+                                        </div>
+                                      ) : editingMsgId === msg.id ? (
+                                        <form onSubmit={(e) => { e.preventDefault(); handleEditMessage(msg.id, editingMsgText); }} className="flex items-center gap-2">
+                                          <input value={editingMsgText} onChange={(e) => setEditingMsgText(e.target.value)} className="flex-1 bg-transparent border-b border-primary-foreground/50 outline-none text-sm" autoFocus />
+                                          <button type="submit" className="p-0.5"><Check className="w-3.5 h-3.5" /></button>
+                                          <button type="button" onClick={() => setEditingMsgId(null)} className="p-0.5"><X className="w-3.5 h-3.5" /></button>
+                                        </form>
+                                      ) : (
+                                        <span className="break-words [word-break:break-word] [overflow-wrap:anywhere]">{msg.text}</span>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+
+                                {/* Action buttons */}
+                                <div className={`flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                                  <button onClick={() => copyToClipboard(msg.text)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Copy">
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                  {msg.sender === "user" && (
+                                    <button onClick={() => { setEditingMsgId(msg.id); setEditingMsgText(msg.text); }} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Edit">
+                                      <Pen className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                  {msg.sender === "bot" && (
+                                    <>
+                                      <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Good response"><ThumbsUp className="w-3 h-3" /></button>
+                                      <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Bad response"><ThumbsDown className="w-3 h-3" /></button>
+                                      <button onClick={() => handleRetry(msgIndex)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Retry"><RotateCcw className="w-3 h-3" /></button>
+                                    </>
+                                  )}
+                                  {msg.sender === "bot" && msg.text.length > 100 && (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Download"><Download className="w-3 h-3" /></button>
+                                      </PopoverTrigger>
+                                      <PopoverContent side="top" align="start" className="w-40 p-1.5">
+                                        <button onClick={() => generatePDF(msg.text, activeChat?.title || "Document")} className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">📄 PDF</button>
+                                        <button onClick={() => generateDOCX(msg.text, activeChat?.title || "Document")} className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">📝 Word (.docx)</button>
+                                        <button onClick={() => generatePPTX(msg.text, activeChat?.title || "Presentation")} className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">📊 PowerPoint (.pptx)</button>
+                                        <button onClick={() => generateXLSX(msg.text, activeChat?.title || "Spreadsheet")} className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors">📈 Excel (.xlsx)</button>
+                                      </PopoverContent>
+                                    </Popover>
+                                  )}
+                                </div>
+
+                                {/* Smart Suggestions */}
+                                {msg.sender === "bot" && msg.text.length > 50 && msgIndex === activeChat!.messages.length - 1 && !isStreaming && (
+                                  <div className="flex flex-wrap gap-1.5 mt-1">
+                                    <button onClick={() => handleSend("Explain that in simpler terms, like I'm a beginner")} className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium">💡 Explain simpler</button>
+                                    <button onClick={() => handleSend("Quiz me on what you just explained")} className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium">🎯 Quiz me</button>
+                                    <button onClick={() => handleSend("Give me exam-style questions on this topic")} className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium">📝 Exam questions</button>
+                                    <button onClick={() => handleSend("Summarize the key points from your last response in bullet points")} className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium">📋 Summarize</button>
+                                  </div>
+                                )}
+                                <span className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
+                                  {formatTime(msg.timestamp)}
+                                </span>
+                              </div>
+                            </motion.div>
+                          ))}
+                          <AnimatePresence>
+                            {isStreaming && activeChat!.messages[activeChat!.messages.length - 1]?.sender !== "bot" && <TypingIndicator />}
+                          </AnimatePresence>
+                          <div ref={messagesEndRef} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {!isNewChat && (
+                    <div className="relative">
+                      {showScrollButton && (
+                        <button
+                          onClick={() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })}
+                          className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      )}
+                      <motion.div
+                        initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
+                        className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none"
+                        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+                      >
+                        {chatInput}
+                      </motion.div>
+                    </div>
+                  )}
+                </>
+              );
+            })()
+          )}
+        </div>
+
+        {/* Artifact viewer */}
+        {viewerOpen && (
+          <div className="hidden md:flex w-[45%] min-w-[300px] max-w-[600px]"><ArtifactViewer /></div>
+        )}
+        {viewerOpen && (
+          <div className="flex md:hidden fixed inset-0 z-50 bg-background"><ArtifactViewer /></div>
+        )}
+
+        {/* Teach Me Panel */}
+        <AnimatePresence>
+          {teachMeActive && teachMe.session && !viewerOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 z-40 md:hidden"
+                onClick={() => { if (teachMe.session) teachMe.markComplete(teachMe.session.id); setTeachMeActive(false); teachMe.endSession(); document.body.classList.remove("focus-mode"); }}
+              />
+              <TeachMePanel
+                session={teachMe.session}
+                onToggleFocusMode={() => {
+                  if (teachMe.session) { teachMe.toggleFocusMode(teachMe.session.id); document.body.classList.toggle("focus-mode", !teachMe.session.focusMode); }
+                }}
+                onEndSession={() => {
+                  if (teachMe.session) teachMe.markComplete(teachMe.session.id);
+                  setTeachMeActive(false); teachMe.endSession(); document.body.classList.remove("focus-mode");
+                }}
+              />
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* ── RIGHT UNITS PANEL (desktop) — resizable ── */}
+        {showRightPanel && (
+          <aside
+            className="hidden md:flex flex-col flex-shrink-0 border-l border-border bg-card/50 relative"
+            style={{ width: rightPanelCollapsed ? 56 : rightPanelWidth }}
+          >
+            {/* Drag handle (left edge of the panel) */}
+            {!rightPanelCollapsed && (
+              <div
+                onMouseDown={handleResizeMouseDown}
+                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 transition-colors z-10 group"
+                title="Drag to resize"
+              >
+                <div className="absolute inset-y-0 -left-1 -right-1" />
+              </div>
+            )}
+            {unitsPanelContent}
+          </aside>
+        )}
+      </div>
+
+      {/* ── RIGHT UNITS PANEL (mobile bottom sheet) ── */}
+      <AnimatePresence>
+        {mobileUnitsOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setMobileUnitsOpen(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl border-t border-border md:hidden"
+              style={{ maxHeight: "85vh" }}
+            >
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-border" />
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 32px)" }}>
+                {unitsPanelContent}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODE POPUP (Teach Me / Exam Prep / Exam Mode) ── */}
+      <AnimatePresence>
+        {activeMode && selectedUnit && (
+          <ModePopup
+            mode={activeMode}
+            unit={selectedUnit}
+            notesCount={notesCount}
+            pastPaperCount={pastPaperCount}
+            onClose={() => setActiveMode(null)}
+            onSendMessage={handleModeSend}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── DIALOGS ── */}
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display">Settings</DialogTitle>
+          </DialogHeader>
+          <Tabs defaultValue="account">
+            <TabsList className="bg-muted w-full">
+              <TabsTrigger value="account" className="flex-1">Account</TabsTrigger>
+              <TabsTrigger value="general" className="flex-1">General</TabsTrigger>
+            </TabsList>
+            <TabsContent value="account" className="space-y-4 mt-4">
+              <div className="space-y-2"><Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Name</Label><Input value={profile?.name || ""} readOnly /></div>
+              <div className="space-y-2"><Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Email</Label><Input value={profile?.email || ""} readOnly /></div>
+              <div className="space-y-2"><Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Program</Label><Input value={profile?.program || ""} readOnly /></div>
+              <div className="space-y-2"><Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Admission #</Label><Input value={profile?.admission_number || "Not set"} readOnly /></div>
+              <div className="space-y-2"><Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Course</Label><Input value={profile?.course_name || ""} readOnly /></div>
+              <div className="space-y-2"><Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Year / Semester</Label><Input value={`Year ${profile?.year || "-"} • Semester ${profile?.semester || "-"}`} readOnly /></div>
+            </TabsContent>
+            <TabsContent value="general" className="space-y-4 mt-4">
+              <div className="flex items-center justify-between">
+                <div><p className="text-sm font-medium">Sound Notifications</p><p className="text-xs text-muted-foreground">Play sound for new messages</p></div>
+                <Switch defaultChecked />
+              </div>
+              <div className="flex items-center justify-between">
+                <div><p className="text-sm font-medium">Show Timestamps</p><p className="text-xs text-muted-foreground">Display time on messages</p></div>
+                <Switch defaultChecked />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      <AcademicCalendar open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+
+      <ConfirmDialog
+        open={!!deleteChatId}
+        onOpenChange={(open) => { if (!open) setDeleteChatId(null); }}
+        title="Delete Chat?"
+        description="This will permanently delete this conversation."
+        confirmLabel="Delete"
+        onConfirm={() => { if (deleteChatId) deleteChat(deleteChatId); setDeleteChatId(null); }}
+      />
+
+      <ConfirmDialog
+        open={showDeleteAllConfirm}
+        onOpenChange={setShowDeleteAllConfirm}
+        title="Delete All Chats?"
+        description="This will permanently delete all your conversations. This action cannot be undone."
+        confirmLabel="Delete All"
+        onConfirm={async () => { await deleteAllChats(); setShowDeleteAllConfirm(false); }}
+      />
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onOpenChange={setShowLogoutConfirm}
+        title="Log Out?"
+        description="Are you sure you want to log out?"
+        confirmLabel="Log Out"
+        onConfirm={async () => { setShowLogoutConfirm(false); await logout(); navigate("/"); }}
+      />
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={(open) => { if (!paymentVerifying) setShowPaymentDialog(open); }}>
+        <DialogContent className="backdrop-blur-xl bg-card/80 border-border/50 shadow-2xl max-w-md max-h-[90vh] overflow-y-auto">
+          {paymentVerifying ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="w-12 h-12 animate-spin text-primary" />
+              <p className="text-lg font-semibold">Authenticating Payment...</p>
+              <p className="text-sm text-muted-foreground text-center">
+                {paymentMethod === "card" ? "Complete payment in the new tab." : "Please complete the M-Pesa prompt on your phone."}<br />We'll detect it automatically.
+              </p>
+              <Button variant="outline" size="sm" onClick={cancelPaymentPolling} className="mt-4">Cancel</Button>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground text-center">You've reached your free daily limit. Upgrade to keep learning!</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setPaymentPlan("individual")} className={`border rounded-xl p-4 text-center transition-all ${paymentPlan === "individual" ? "border-2 border-primary bg-primary/5" : "border-border"}`}>
+                    <p className="text-xs font-semibold uppercase" style={{ color: paymentPlan === "individual" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" }}>Individual</p>
+                    <p className="text-2xl font-bold mt-1">KES 129</p>
+                    <p className="text-xs text-muted-foreground">1 user</p>
+                  </button>
+                  <button onClick={() => setPaymentPlan("group")} className={`border rounded-xl p-4 text-center transition-all ${paymentPlan === "group" ? "border-2 border-primary bg-primary/5" : "border-border"}`}>
+                    <p className="text-xs font-semibold uppercase" style={{ color: paymentPlan === "group" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" }}>Group</p>
+                    <p className="text-2xl font-bold mt-1">KES 499</p>
+                    <p className="text-xs text-muted-foreground">5 users</p>
+                  </button>
+                </div>
+                <div className="text-center"><p className="text-xs text-muted-foreground">Unlimited tokens • One-time payment</p></div>
+                {paymentPlan === "group" && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Group Member Emails (5 required)</Label>
+                    {groupEmails.map((ge, i) => (
+                      <Input key={i} type="email" placeholder={i === 0 ? "Your email (auto-filled)" : `Member ${i + 1} email`} value={i === 0 ? profile?.email || ge : ge} disabled={i === 0} onChange={(e) => { const updated = [...groupEmails]; updated[i] = e.target.value; setGroupEmails(updated); }} className={`text-sm ${i === 0 ? "bg-muted/50" : ""}`} />
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
+                  <button onClick={() => setPaymentMethod("mpesa")} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "mpesa" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>📱 M-Pesa</button>
+                  <button onClick={() => setPaymentMethod("card")} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "card" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}>💳 Card</button>
+                </div>
+                {paymentMethod === "mpesa" ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
+                    <Input type="tel" placeholder="e.g. 0712345678" value={paymentPhone} onChange={(e) => setPaymentPhone(e.target.value)} className="text-center text-lg tracking-wider" />
+                    <p className="text-xs text-muted-foreground text-center">Enter your M-Pesa number to receive the payment prompt</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-2">You'll be redirected to a secure Paystack page to complete your card payment.</p>
+                )}
+                <Button
+                  onClick={handlePayment}
+                  disabled={paymentLoading || (paymentMethod === "mpesa" && !paymentPhone.trim()) || (paymentPlan === "group" && groupEmails.slice(1).some((e) => !e.trim()))}
+                  className="w-full text-white font-semibold py-3"
+                  style={{ backgroundColor: "#800000" }}
+                >
+                  {paymentLoading ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...</>) : paymentMethod === "mpesa" ? `Pay KES ${paymentPlan === "group" ? "499" : "129"} via M-Pesa` : `Pay KES ${paymentPlan === "group" ? "499" : "129"} via Card`}
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+
+);
+};
+
+export default ChatPage;
