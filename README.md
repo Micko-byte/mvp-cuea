@@ -214,6 +214,7 @@ transition={{ type: "spring", damping: 22, stiffness: 260 }}
 className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
 style={{ maxHeight: "90vh" }} >
 {/_ Header _/}
+
 <div className={`${config.bg} ${config.border} border-b px-5 py-4 flex items-center gap-3`}>
 <button
             onClick={onClose}
@@ -1259,6 +1260,7 @@ return {};
 
 if (authLoading) {
 return (
+
 <div className="h-screen flex items-center justify-center bg-background">
 <Loader2 className="w-8 h-8 animate-spin text-primary" />
 </div>
@@ -1276,6 +1278,7 @@ const renderChatItem = (chat: (typeof chats)[0]) => {
 const isRenaming = renamingChatId === chat.id;
 const preview = chat.messages[0]?.text?.slice(0, 50) || "Empty chat";
 return (
+
 <div
 key={chat.id}
 onClick={() => {
@@ -1347,6 +1350,7 @@ className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-
 
 const sidebarContent = (
 <>
+
 <div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
 {sidebarExpanded || isMobile ? (
 <div className="flex items-center gap-3 mb-4">
@@ -1510,7 +1514,7 @@ const sidebarContent = (
                   <button
                     onClick={() => { setProfileMenuOpen(false); setShowPaymentDialog(true); }}
                     className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
-                    style={{ background: "linear-gradient(135deg, #800000 0%, #b91c1c 100%)", color: "white" }}
+                    style={{ background: "linear-gradient(135deg, #1D2A3A 0%, #b91c1c 100%)", color: "white" }}
                   >
                     <span>⚡ Upgrade to Premium</span>
                   </button>
@@ -1562,6 +1566,7 @@ const sidebarContent = (
 // ─── RIGHT PANEL ──────────────────────────────────────────────────────────────
 
 const unitsPanelContent = (
+
 <div className="flex flex-col h-full">
 {/_ Panel header with toggle _/}
 <div className="p-4 border-b border-border flex-shrink-0">
@@ -1837,6 +1842,7 @@ title={rightPanelCollapsed ? "Expand panel" : "Collapse panel"} >
 // ─── Chat input ───────────────────────────────────────────────────────────────
 
 const chatInput = (
+
 <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
 {(isListening || isTranscribing) && (
 <div className="mb-2 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-3">
@@ -1985,6 +1991,7 @@ Stop
 const showRightPanel = !viewerOpen && !teachMeActive && activeMode === null;
 
 return (
+
 <div className="h-screen flex bg-background overflow-hidden">
 {/_ ── LEFT SIDEBAR (desktop) ── _/}
 <aside
