@@ -61,6 +61,9 @@ import {
   Play,
   Upload,
   MoreVertical,
+  ChevronRight,
+  GraduationCap,
+  ClipboardList,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -76,6 +79,8 @@ import ArtifactViewer from "@/components/ArtifactViewer";
 import { TeachMePanel } from "@/components/TeachMePanel";
 import { getTimeBasedGreeting } from "@/utils/greetings";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const SUGGESTIONS = [
   { icon: ListChecks, label: "Assignments", prompt: "What assignments do I have pending this week?" },
   { icon: Calendar, label: "Schedule", prompt: "Show me my class schedule for this week" },
@@ -83,7 +88,6 @@ const SUGGESTIONS = [
   { icon: PenLine, label: "Exams", prompt: "Help me prepare for my upcoming exams with study tips" },
 ];
 
-// Date grouping helpers
 function getDateGroup(timestamp: number): string {
   const now = new Date();
   const date = new Date(timestamp);
@@ -91,7 +95,6 @@ function getDateGroup(timestamp: number): string {
   const yesterday = new Date(today.getTime() - 86400000);
   const weekAgo = new Date(today.getTime() - 7 * 86400000);
   const monthAgo = new Date(today.getTime() - 30 * 86400000);
-
   if (date >= today) return "Today";
   if (date >= yesterday) return "Yesterday";
   if (date >= weekAgo) return "Previous 7 Days";
@@ -107,6 +110,8 @@ interface EnrolledUnit {
   unit_name: string;
   lecturer: string | null;
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 const TypingIndicator = () => (
   <motion.div
@@ -144,6 +149,8 @@ const VoiceInputVisualizer = () => (
   </div>
 );
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 const ChatPage = () => {
   const { user, profile, role, logout, isAuthenticated, isLoading: authLoading, refreshProfile } = useAuth();
   const {
@@ -163,10 +170,12 @@ const ChatPage = () => {
   const teachMe = useTeachMeSession();
   const [teachMeActive, setTeachMeActive] = useState(false);
   const navigate = useNavigate();
+
+  // UI state
   const [input, setInput] = useState("");
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [unitsOpen, setUnitsOpen] = useState(false);
+  const [mobileUnitsOpen, setMobileUnitsOpen] = useState(false); // right panel on mobile
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<ProcessedFile[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -186,8 +195,6 @@ const ChatPage = () => {
   const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
   const [paymentPlan, setPaymentPlan] = useState<"individual" | "group">("individual");
   const [groupEmails, setGroupEmails] = useState<string[]>(["", "", "", "", ""]);
-  const [showUnitUpload, setShowUnitUpload] = useState(false);
-  const [unitUploadFiles, setUnitUploadFiles] = useState<File[]>([]);
   const [unitUploading, setUnitUploading] = useState(false);
   const [unitUploadProgress, setUnitUploadProgress] = useState<Record<string, string>>({});
   const [pastPaperUploading, setPastPaperUploading] = useState(false);
@@ -196,47 +203,43 @@ const ChatPage = () => {
   const [notesCount, setNotesCount] = useState(0);
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [mainTab, setMainTab] = useState<"general" | "units">("general");
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editingMsgText, setEditingMsgText] = useState("");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null); // for right panel accordion
+
+  // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const unitUploadInputRef2 = useRef<HTMLInputElement>(null); // past paper upload ref
   const pastPaperInputRef = useRef<HTMLInputElement>(null);
   const unitUploadInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!profileMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) setProfileMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [profileMenuOpen]);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const micSupported = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+
+  // ─── Effects ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) navigate("/login");
   }, [isAuthenticated, authLoading, navigate]);
+
   useEffect(() => {
     if (isAuthenticated) loadChats();
   }, [isAuthenticated, loadChats]);
 
-  // Load enrolled units
   useEffect(() => {
     if (!user) return;
     const loadUnits = async () => {
@@ -258,7 +261,6 @@ const ChatPage = () => {
     loadUnits();
   }, [user]);
 
-  // Load notes & past paper count for selected unit
   useEffect(() => {
     if (!selectedUnitId) {
       setPastPaperCount(0);
@@ -284,7 +286,6 @@ const ChatPage = () => {
     loadCounts();
   }, [selectedUnitId]);
 
-  // Scroll-to-bottom detection
   useEffect(() => {
     const el = chatContainerRef.current;
     if (!el) return;
@@ -324,16 +325,22 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeChat?.messages, isStreaming]);
 
-  // Parse control tags from the latest bot message for Teach Me Mode
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) setProfileMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [profileMenuOpen]);
+
+  // Parse Teach Me control tags
   useEffect(() => {
     if (!teachMeActive || !activeChat || isStreaming) return;
     const msgs = activeChat.messages;
     const lastMsg = msgs[msgs.length - 1];
     if (!lastMsg || lastMsg.sender !== "bot") return;
-
     const tags = parseControlTags(lastMsg.text);
-
-    // Topic outline detected → create session
     if (tags.topicOutline && !teachMe.session) {
       const outline = tags.topicOutline.map((t: any, i: number) => ({
         ...t,
@@ -342,14 +349,10 @@ const ChatPage = () => {
       const unitName = selectedUnit?.unit_name || activeChat.title || "Unit";
       teachMe.createSession(activeChat.id, unitName, outline);
     }
-
     if (teachMe.session) {
-      if (tags.topicDone !== null) {
-        teachMe.updateTopicProgress(teachMe.session.id, tags.topicDone, "done");
-      }
-      if (tags.eli5Triggered !== null) {
+      if (tags.topicDone !== null) teachMe.updateTopicProgress(teachMe.session.id, tags.topicDone, "done");
+      if (tags.eli5Triggered !== null)
         teachMe.updateTopicProgress(teachMe.session.id, tags.eli5Triggered, "active", true);
-      }
       if (tags.checkpoint) {
         teachMe.addCheckpointScore(teachMe.session.id, {
           afterTopic: tags.checkpoint.afterTopic,
@@ -365,23 +368,18 @@ const ChatPage = () => {
     }
   }, [activeChat?.messages, isStreaming, teachMeActive]);
 
-  // Focus rename input
   useEffect(() => {
     if (renamingChatId) renameInputRef.current?.focus();
   }, [renamingChatId]);
 
-  // Auto-restore Teach Me session when switching chats or on reload
   useEffect(() => {
     if (!activeChat) return;
     const restoreTeachMe = async () => {
       const existing = await teachMe.loadSession(activeChat.id);
       if (existing && existing.status === "active") {
         setTeachMeActive(true);
-        if (existing.focusMode) {
-          document.body.classList.add("focus-mode");
-        }
+        if (existing.focusMode) document.body.classList.add("focus-mode");
       } else {
-        // Only reset if we switched to a chat with no active session
         if (teachMeActive && !teachMe.session) {
           setTeachMeActive(false);
           document.body.classList.remove("focus-mode");
@@ -391,6 +389,7 @@ const ChatPage = () => {
     restoreTeachMe();
   }, [activeChat?.id]);
 
+  // Touch swipe gestures — left sidebar (from left edge) + right panel (from right edge)
   const handleTouchStart = useCallback((e: TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
@@ -402,12 +401,17 @@ const ChatPage = () => {
       const dx = touch.clientX - touchStartRef.current.x;
       const dy = Math.abs(touch.clientY - touchStartRef.current.y);
       const startX = touchStartRef.current.x;
+      const screenW = window.innerWidth;
       touchStartRef.current = null;
       if (Math.abs(dx) < 50 || dy > 100) return;
+      // Left sidebar: swipe right from left edge
       if (dx > 0 && startX < 30 && !mobileSidebarOpen) setMobileSidebarOpen(true);
       else if (dx < 0 && mobileSidebarOpen) setMobileSidebarOpen(false);
+      // Right units panel: swipe left from right edge
+      else if (dx < 0 && startX > screenW - 30 && !mobileUnitsOpen) setMobileUnitsOpen(true);
+      else if (dx > 0 && mobileUnitsOpen) setMobileUnitsOpen(false);
     },
-    [mobileSidebarOpen],
+    [mobileSidebarOpen, mobileUnitsOpen],
   );
 
   useEffect(() => {
@@ -418,6 +422,8 @@ const ChatPage = () => {
       document.removeEventListener("touchend", handleTouchEnd);
     };
   }, [handleTouchStart, handleTouchEnd]);
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   const humanSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -432,7 +438,6 @@ const ChatPage = () => {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-
     const [, base64 = ""] = dataUrl.split(",");
     return { dataUrl, base64 };
   };
@@ -450,20 +455,13 @@ const ChatPage = () => {
       file.name.endsWith(".txt") ||
       file.name.endsWith(".csv") ||
       file.name.endsWith(".md")
-    ) {
+    )
       return "text";
-    }
     return "file";
   };
 
   const processAttachedFile = async (file: File): Promise<ProcessedFile> => {
-    const processed: ProcessedFile = {
-      file,
-      name: file.name,
-      type: getCategory(file),
-      size: humanSize(file.size),
-    };
-
+    const processed: ProcessedFile = { file, name: file.name, type: getCategory(file), size: humanSize(file.size) };
     if (file.type.startsWith("image/")) {
       const { base64, dataUrl } = await toBase64(file);
       processed.base64 = base64;
@@ -471,7 +469,6 @@ const ChatPage = () => {
       processed.preview = dataUrl;
       return processed;
     }
-
     if (
       file.type === "text/plain" ||
       file.type === "text/csv" ||
@@ -485,7 +482,6 @@ const ChatPage = () => {
       processed.embeddingText = text;
       return processed;
     }
-
     if (file.name.endsWith(".docx") || file.type.includes("wordprocessingml")) {
       try {
         const mammoth = await import("mammoth");
@@ -494,31 +490,27 @@ const ChatPage = () => {
         processed.text = result.value;
         processed.embeddingText = result.value;
       } catch {
-        processed.text = `[Word document: ${file.name} — content extraction unavailable in browser]`;
+        processed.text = `[Word document: ${file.name}]`;
       }
       return processed;
     }
-
     if (file.type === "application/pdf") {
       const { base64 } = await toBase64(file);
       processed.base64 = base64;
       processed.mediaType = "application/pdf";
-      processed.text = `[PDF document: ${file.name} (${humanSize(file.size)}). Note: PDF text extraction is limited in the browser. The AI will do its best to help based on the filename and any context you provide. For best results with PDFs, copy and paste the text content directly into the chat.]`;
+      processed.text = `[PDF document: ${file.name} (${humanSize(file.size)}). For best results, copy and paste text directly.]`;
       return processed;
     }
-
     if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("spreadsheetml")) {
       try {
         const XLSX = await import("xlsx");
         const arrayBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: "array" });
         const parts: string[] = [];
-
         for (const sheetName of workbook.SheetNames) {
           const worksheet = workbook.Sheets[sheetName];
           parts.push(`Sheet: ${sheetName}\n${XLSX.utils.sheet_to_csv(worksheet)}`);
         }
-
         processed.text = parts.join("\n\n");
         processed.embeddingText = processed.text;
       } catch {
@@ -526,7 +518,6 @@ const ChatPage = () => {
       }
       return processed;
     }
-
     processed.text = `[Attached file: ${file.name} (${processed.type})]`;
     return processed;
   };
@@ -539,20 +530,23 @@ const ChatPage = () => {
     setAttachedFiles((prev) => [...prev, ...processed]);
   };
 
+  const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const displayName = nickname || profile?.name || user?.email?.split("@")[0] || "Student";
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
+  // ─── Send ────────────────────────────────────────────────────────────────────
+
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText || input).trim();
     if ((!text && attachedFiles.length === 0) || isStreaming) return;
-
     let chat = activeChat;
     if (!chat) {
-      if (mainTab === "units" && selectedUnitId) {
-        chat = await createChat("unit", selectedUnitId);
-      } else {
-        chat = await createChat("general");
-      }
+      chat = selectedUnitId ? await createChat("unit", selectedUnitId) : await createChat("general");
       if (!chat) return;
     }
-
     const filesToSend = attachedFiles.length > 0 ? attachedFiles : undefined;
     setInput("");
     setAttachedFiles([]);
@@ -560,30 +554,51 @@ const ChatPage = () => {
     await sendMessage(text, chat.id, filesToSend, teachMeActive);
   };
 
-  // Unit training upload handler
+  const handleSuggestion = async (prompt: string) => {
+    let chat = activeChat;
+    if (!chat) {
+      chat = selectedUnitId ? await createChat("unit", selectedUnitId) : await createChat("general");
+      if (!chat) return;
+    }
+    await sendMessage(prompt, chat.id);
+  };
+
+  // ─── Unit selection (from right panel) ───────────────────────────────────────
+
+  const handleSelectUnit = async (unitId: string) => {
+    setSelectedUnitId(unitId);
+    setExpandedUnitId(unitId);
+    setShowArtifacts(false);
+    // Create or switch to a unit chat
+    const existingUnitChat = chats.find((c) => c.chat_type === "unit" && c.unit_id === unitId);
+    if (existingUnitChat) {
+      setActiveChat(existingUnitChat.id);
+    } else {
+      await createChat("unit", unitId);
+    }
+    if (isMobile) setMobileUnitsOpen(false);
+  };
+
+  // ─── Upload handlers ──────────────────────────────────────────────────────────
+
   const handleUnitTrainUpload = async (files: FileList | null) => {
     if (!files || files.length === 0 || !selectedUnitId || !user) return;
     const selectedUnitData = enrolledUnits.find((u) => u.unit_id === selectedUnitId);
     if (!selectedUnitData) return;
-
     setUnitUploading(true);
     const progress: Record<string, string> = {};
-
     for (const file of Array.from(files)) {
       const key = `${selectedUnitId}_${file.name}`;
       progress[key] = "Uploading...";
       setUnitUploadProgress({ ...progress });
-
       try {
         const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage.from("materials").upload(storagePath, file);
-
         if (uploadError) {
-          progress[key] = `❌ Upload failed: ${uploadError.message}`;
+          progress[key] = `❌ ${uploadError.message}`;
           setUnitUploadProgress({ ...progress });
           continue;
         }
-
         const { data: material, error: matError } = await supabase
           .from("materials")
           .insert({
@@ -598,16 +613,13 @@ const ChatPage = () => {
           })
           .select("id")
           .single();
-
         if (matError) {
-          progress[key] = `❌ Error: ${matError.message}`;
+          progress[key] = `❌ ${matError.message}`;
           setUnitUploadProgress({ ...progress });
           continue;
         }
-
         progress[key] = "🧠 Training AI...";
         setUnitUploadProgress({ ...progress });
-
         const { error: embedError } = await supabase.functions.invoke("process-document", {
           body: {
             materialId: material?.id,
@@ -617,24 +629,20 @@ const ChatPage = () => {
             fileType: file.type,
           },
         });
-
         if (embedError) {
-          progress[key] = `❌ Training failed: ${embedError.message}`;
+          progress[key] = `❌ ${embedError.message}`;
           setUnitUploadProgress({ ...progress });
           continue;
         }
-
         progress[key] = "✅ Trained";
         setUnitUploadProgress({ ...progress });
       } catch (err) {
-        progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+        progress[key] = `❌ ${err instanceof Error ? err.message : "Unknown"}`;
         setUnitUploadProgress({ ...progress });
       }
     }
-
     setUnitUploading(false);
     setUnitUploadProgress({});
-    // Refresh notes count
     if (selectedUnitId) {
       const { count } = await supabase
         .from("materials")
@@ -646,34 +654,24 @@ const ChatPage = () => {
     toast.success("Training complete! Your AI is now smarter. 🧠");
   };
 
-  // Past paper upload handler
   const handlePastPaperUpload = async (files: FileList | null) => {
     if (!files || files.length === 0 || !selectedUnitId || !user) return;
     const selectedUnitData = enrolledUnits.find((u) => u.unit_id === selectedUnitId);
     if (!selectedUnitData) return;
-
     setPastPaperUploading(true);
     const progress: Record<string, string> = {};
-
     for (const file of Array.from(files)) {
       const key = `pp_${selectedUnitId}_${file.name}`;
       progress[key] = "Uploading...";
       setPastPaperUploadProgress({ ...progress });
-
       try {
-        // Extract year from filename
-        const yearMatch = file.name.match(/(20\d{2})/);
-        const detectedYear = yearMatch ? parseInt(yearMatch[1]) : null;
-
         const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage.from("materials").upload(storagePath, file);
-
         if (uploadError) {
-          progress[key] = `❌ Upload failed: ${uploadError.message}`;
+          progress[key] = `❌ ${uploadError.message}`;
           setPastPaperUploadProgress({ ...progress });
           continue;
         }
-
         const { data: material, error: matError } = await supabase
           .from("materials")
           .insert({
@@ -689,16 +687,13 @@ const ChatPage = () => {
           } as any)
           .select("id")
           .single();
-
         if (matError) {
-          progress[key] = `❌ Error: ${matError.message}`;
+          progress[key] = `❌ ${matError.message}`;
           setPastPaperUploadProgress({ ...progress });
           continue;
         }
-
-        progress[key] = "🧠 Analyzing past paper...";
+        progress[key] = "🧠 Analyzing...";
         setPastPaperUploadProgress({ ...progress });
-
         const { error: embedError } = await supabase.functions.invoke("process-document", {
           body: {
             materialId: material?.id,
@@ -710,24 +705,20 @@ const ChatPage = () => {
             skipHashCheck: true,
           },
         });
-
         if (embedError) {
-          progress[key] = `❌ Analysis failed: ${embedError.message}`;
+          progress[key] = `❌ ${embedError.message}`;
           setPastPaperUploadProgress({ ...progress });
           continue;
         }
-
         progress[key] = "✅ Analyzed";
         setPastPaperUploadProgress({ ...progress });
       } catch (err) {
-        progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+        progress[key] = `❌ ${err instanceof Error ? err.message : "Unknown"}`;
         setPastPaperUploadProgress({ ...progress });
       }
     }
-
     setPastPaperUploading(false);
     setPastPaperUploadProgress({});
-    // Refresh count
     const { count } = await supabase
       .from("materials")
       .select("id", { count: "exact", head: true })
@@ -737,20 +728,14 @@ const ChatPage = () => {
     toast.success("Past papers analyzed! Exam Mode is ready. 📝");
   };
 
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
-  const micSupported = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+  // ─── Voice ────────────────────────────────────────────────────────────────────
 
   const applyVoiceDraft = () => {
     const transcript = voiceDraft.trim();
     if (!transcript) return;
-
     setInput((prev) => (prev.trim() ? `${prev.trimEnd()} ${transcript}` : transcript));
     setVoiceDraft("");
     setShowVoicePreview(false);
-
     requestAnimationFrame(() => {
       const el = inputRef.current;
       if (!el) return;
@@ -768,49 +753,37 @@ const ChatPage = () => {
 
   const toggleVoice = async () => {
     if (!micSupported) return;
-
-    // If currently listening, stop recording and transcribe
     if (isListening) {
       mediaRecorderRef.current?.stop();
       return;
     }
-
     setVoiceDraft("");
     setShowVoicePreview(false);
     audioChunksRef.current = [];
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
       });
       mediaRecorderRef.current = mediaRecorder;
-
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
-
       mediaRecorder.onstop = async () => {
-        // Stop all tracks so mic indicator goes away
         stream.getTracks().forEach((t) => t.stop());
         setIsListening(false);
         mediaRecorderRef.current = null;
-
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         if (audioBlob.size < 1000) {
           toast.error("Recording too short. Try again.");
           return;
         }
-
-        // Send to edge function for transcription
         setIsTranscribing(true);
         try {
           const formData = new FormData();
           formData.append("audio", audioBlob, "recording.webm");
-
           const { data: sessionData } = await supabase.auth.getSession();
           const token = sessionData?.session?.access_token;
-
           const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
             method: "POST",
             headers: {
@@ -819,35 +792,30 @@ const ChatPage = () => {
             },
             body: formData,
           });
-
           if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
             throw new Error(err.error || "Transcription failed");
           }
-
           const result = await resp.json();
           const transcript = result.text?.trim();
           if (transcript) {
             setVoiceDraft(transcript);
             setShowVoicePreview(true);
-          } else {
-            toast.error("No speech detected. Try again.");
-          }
+          } else toast.error("No speech detected. Try again.");
         } catch (err: any) {
-          console.error("Transcription error:", err);
-          toast.error(err.message || "Transcription failed. Please try again.");
+          toast.error(err.message || "Transcription failed.");
         } finally {
           setIsTranscribing(false);
         }
       };
-
-      mediaRecorder.start(250); // collect chunks every 250ms
+      mediaRecorder.start(250);
       setIsListening(true);
-    } catch (err: any) {
-      console.error("Mic access error:", err);
-      toast.error("Microphone access denied. Please allow mic access.");
+    } catch {
+      toast.error("Microphone access denied.");
     }
   };
+
+  // ─── Payment ──────────────────────────────────────────────────────────────────
 
   const cancelPaymentPolling = () => {
     paymentCancelledRef.current = true;
@@ -859,7 +827,7 @@ const ChatPage = () => {
   const pollPaymentStatus = async (reference: string) => {
     paymentCancelledRef.current = false;
     setPaymentVerifying(true);
-    const maxAttempts = 60; // 5 minutes at 5s intervals
+    const maxAttempts = 60;
     for (let i = 0; i < maxAttempts; i++) {
       if (paymentCancelledRef.current) return;
       await new Promise((r) => setTimeout(r, 5000));
@@ -869,17 +837,16 @@ const ChatPage = () => {
         setPaymentVerifying(false);
         setShowPaymentDialog(false);
         toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
-        // Refresh profile to unlock premium instantly
         await refreshProfile();
         return;
       } else if (data?.status === "failed") {
         setPaymentVerifying(false);
-        toast.error("Payment failed. Please try again.");
+        toast.error("Payment failed.");
         return;
       }
     }
     setPaymentVerifying(false);
-    toast.error("Payment verification timed out. If you paid, it will be confirmed shortly.");
+    toast.error("Payment verification timed out.");
   };
 
   const handlePayment = async () => {
@@ -909,8 +876,7 @@ const ChatPage = () => {
         if (data.authorization_url && data.reference) {
           window.open(data.authorization_url, "_blank");
           setPaymentLoading(false);
-          toast.info("Complete payment in the new tab. We'll detect it automatically.");
-          // Poll for card payment too — webhook will update status
+          toast.info("Complete payment in the new tab.");
           pollPaymentStatus(data.reference);
         } else {
           toast.error(data.error || "Failed to initialize card payment");
@@ -922,7 +888,6 @@ const ChatPage = () => {
       }
       return;
     }
-
     const phone = paymentPhone.trim();
     if (!phone || phone.length < 10) {
       toast.error("Please enter a valid phone number (e.g. 0712345678)");
@@ -965,50 +930,13 @@ const ChatPage = () => {
     }
   };
 
-  const handleSuggestion = async (prompt: string) => {
-    let chat = activeChat;
-    if (!chat) {
-      chat = await createChat("general");
-      if (!chat) return;
-    }
-    await sendMessage(prompt, chat.id);
-  };
-
   const handleCreateArtifact = (content: string, language: string) => {
     const type = detectArtifactType(language, content);
     addArtifact({ title: `${language.toUpperCase() || "CODE"} Snippet`, content, language, type });
   };
 
-  const handleDocumentDownload = async (format: DocType) => {
-    if (!activeChat) return;
-    const lastBotMsg = [...activeChat.messages].reverse().find((m) => m.sender === "bot");
-    if (!lastBotMsg) return;
-    const cleanContent = lastBotMsg.text.replace(/\[.*?\]\(download:[^)]+\)/g, "").trim();
-    const title = activeChat.title || "Sekani Document";
-    try {
-      await generateDocument({ title, content: cleanContent, type: format });
-      toast.success(`${format.toUpperCase()} downloaded!`);
-    } catch (e: any) {
-      toast.error("Download failed: " + e.message);
-    }
-  };
-
-  const handleRenameSubmit = async (chatId: string) => {
-    if (renameValue.trim()) await renameChat(chatId, renameValue);
-    setRenamingChatId(null);
-  };
-
-  const formatTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const displayName = nickname || profile?.name || user?.email?.split("@")[0] || "Student";
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
-  };
-
   const handleRetry = async (msgIndex: number) => {
     if (!activeChat || isStreaming) return;
-    // Find the last user message before this bot message
     const msgs = activeChat.messages;
     let lastUserMsg = "";
     for (let i = msgIndex - 1; i >= 0; i--) {
@@ -1023,29 +951,41 @@ const ChatPage = () => {
   const handleEditMessage = async (msgId: string, newText: string) => {
     if (!newText.trim() || !activeChat) return;
     setEditingMsgId(null);
-    // Re-send the edited message as a new message
     await sendMessage(newText.trim(), activeChat.id);
   };
 
-  // Filter chats based on current tab/unit
-  const filteredChats = useMemo(() => {
-    if (mainTab === "general") return chats.filter((c) => c.chat_type !== "unit");
-    if (selectedUnitId) return chats.filter((c) => c.chat_type === "unit" && c.unit_id === selectedUnitId);
-    return [];
-  }, [chats, mainTab, selectedUnitId]);
+  const handleRenameSubmit = async (chatId: string) => {
+    if (renameValue.trim()) await renameChat(chatId, renameValue);
+    setRenamingChatId(null);
+  };
 
-  // Group chats by date
+  // ─── Derived state ────────────────────────────────────────────────────────────
+
+  const selectedUnit = enrolledUnits.find((u) => u.unit_id === selectedUnitId);
+
+  // Only general chats in left sidebar
+  const generalChats = useMemo(() => chats.filter((c) => c.chat_type !== "unit"), [chats]);
+
   const groupedChats = useMemo(() => {
-    const groups: Record<string, typeof filteredChats> = {};
-    for (const chat of filteredChats) {
+    const groups: Record<string, typeof generalChats> = {};
+    for (const chat of generalChats) {
       const group = getDateGroup(chat.timestamp);
       if (!groups[group]) groups[group] = [];
       groups[group].push(chat);
     }
     return groups;
-  }, [filteredChats]);
+  }, [generalChats]);
 
-  const selectedUnit = enrolledUnits.find((u) => u.unit_id === selectedUnitId);
+  const chatBgStyle = (() => {
+    const bg = getChatBg();
+    if (bg && bg.url)
+      return {
+        backgroundImage: `url(${bg.url})`,
+        backgroundSize: "cover" as const,
+        backgroundPosition: "center" as const,
+      };
+    return {};
+  })();
 
   if (authLoading) {
     return (
@@ -1060,10 +1000,11 @@ const ChatPage = () => {
     else setSidebarExpanded(!sidebarExpanded);
   };
 
+  // ─── Chat item renderer ───────────────────────────────────────────────────────
+
   const renderChatItem = (chat: (typeof chats)[0]) => {
     const isRenaming = renamingChatId === chat.id;
     const preview = chat.messages[0]?.text?.slice(0, 50) || "Empty chat";
-
     return (
       <div
         key={chat.id}
@@ -1096,7 +1037,6 @@ const ChatPage = () => {
                 className="bg-transparent border-b border-primary text-sm w-full outline-none py-0.5"
                 onClick={(e) => e.stopPropagation()}
               />
-
               <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-primary">
                 <Check className="w-3 h-3" />
               </button>
@@ -1146,6 +1086,8 @@ const ChatPage = () => {
     );
   };
 
+  // ─── LEFT SIDEBAR content (general chats + artifacts only) ───────────────────
+
   const sidebarContent = (
     <>
       {/* Logo + Toggle */}
@@ -1179,8 +1121,8 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           <Button
             onClick={() => {
-              if (mainTab === "units" && selectedUnitId) createChat("unit", selectedUnitId);
-              else createChat("general");
+              createChat("general");
+              setSelectedUnitId(null);
               setShowArtifacts(false);
               if (isMobile) setMobileSidebarOpen(false);
             }}
@@ -1200,215 +1142,68 @@ const ChatPage = () => {
         )}
       </div>
 
-      {/* Main Tabs: General / Units */}
+      {/* Artifacts link */}
       {(sidebarExpanded || isMobile) && (
-        <div className="px-3 space-y-2">
-          <div className="flex gap-1 bg-sidebar-accent/30 rounded-lg p-0.5">
-            <button
-              onClick={() => {
-                setMainTab("general");
-                setSelectedUnitId(null);
-                setShowArtifacts(false);
-              }}
-              className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-md transition-colors ${mainTab === "general" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:text-sidebar-foreground/70"}`}
-            >
-              <Globe className="w-3.5 h-3.5" /> General
-            </button>
-            <button
-              onClick={() => {
-                setMainTab("units");
-                setShowArtifacts(false);
-              }}
-              className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-md transition-colors ${mainTab === "units" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/50 hover:text-sidebar-foreground/70"}`}
-            >
-              <BookOpen className="w-3.5 h-3.5" /> My Units
-            </button>
-          </div>
-
-          {/* Artifacts link */}
+        <div className="px-3 mb-1">
           <button
             onClick={() => {
               setShowArtifacts(true);
               if (isMobile) setMobileSidebarOpen(false);
             }}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors"
+            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors ${showArtifacts ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}
           >
             <LayoutGrid className="w-4 h-4" /> <span>Artifacts</span>
           </button>
         </div>
       )}
+      {!sidebarExpanded && !isMobile && (
+        <div className="flex flex-col items-center px-1 mb-2">
+          <button
+            onClick={() => setShowArtifacts(true)}
+            className="p-2 rounded-lg text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors"
+            title="Artifacts"
+          >
+            <LayoutGrid className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
-      {/* Unit Cards or Chat List */}
-      <div className="flex-1 overflow-y-auto px-3 py-3">
+      {/* Chat history — general only */}
+      <div className="flex-1 overflow-y-auto px-3 py-2">
         {sidebarExpanded || isMobile ? (
-          mainTab === "units" && !selectedUnitId ? (
-            // Show unit cards
-            enrolledUnits.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpen className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
-                <p className="text-sm text-sidebar-foreground/30">No units enrolled</p>
-                <p className="text-xs text-sidebar-foreground/20 mt-1">Units from your course will appear here</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-2">
-                  Select a Unit
-                </p>
-                {enrolledUnits.map((unit) => (
-                  <button
-                    key={unit.unit_id}
-                    onClick={() => setSelectedUnitId(unit.unit_id)}
-                    className="w-full text-left p-3 rounded-xl border border-sidebar-accent/50 hover:bg-sidebar-accent/40 transition-colors"
-                  >
-                    <p className="text-xs font-bold text-primary">{unit.unit_code}</p>
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">{unit.unit_name}</p>
-                    {unit.lecturer && <p className="text-xs text-sidebar-foreground/40 mt-0.5">{unit.lecturer}</p>}
-                  </button>
-                ))}
-              </div>
-            )
+          generalChats.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageSquare className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
+              <p className="text-sm text-sidebar-foreground/30">No chats yet</p>
+            </div>
           ) : (
-            // Show chat list grouped by date
-            <>
-              {mainTab === "units" && selectedUnitId && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1 mb-1">
+                <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40">
+                  Chat History
+                </p>
                 <button
-                  onClick={() => setSelectedUnitId(null)}
-                  className="flex items-center gap-1 text-xs text-primary mb-3 hover:underline"
+                  onClick={() => setShowDeleteAllConfirm(true)}
+                  className="text-xs text-destructive/70 hover:text-destructive transition-colors"
                 >
-                  ← All Units
+                  Delete All
                 </button>
-              )}
-              {selectedUnit && (
-                <div className="mb-3 space-y-2">
-                  <div className="p-2 rounded-lg bg-sidebar-accent/30">
-                    <p className="text-xs font-bold text-primary">{selectedUnit.unit_code}</p>
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">{selectedUnit.unit_name}</p>
+              </div>
+              {DATE_GROUP_ORDER.map((group) => {
+                const groupChats = groupedChats[group];
+                if (!groupChats || groupChats.length === 0) return null;
+                return (
+                  <div key={group}>
+                    <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-1.5">
+                      {group}
+                    </p>
+                    <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
                   </div>
-                  <input
-                    ref={unitUploadInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.pptx,.txt,.csv,.md"
-                    className="hidden"
-                    onChange={(e) => {
-                      handleUnitTrainUpload(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-dashed border-2 text-xs"
-                    disabled={unitUploading}
-                    onClick={() => unitUploadInputRef.current?.click()}
-                  >
-                    {unitUploading ? (
-                      <>
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" /> Training...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-3 h-3 mr-1" /> Train AI with Notes
-                      </>
-                    )}
-                  </Button>
-                  {Object.entries(unitUploadProgress).length > 0 && (
-                    <div className="space-y-1">
-                      {Object.entries(unitUploadProgress).map(([key, status]) => (
-                        <p key={key} className="text-xs text-muted-foreground truncate">
-                          {status}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  {/* Past Paper Upload */}
-                  <input
-                    ref={pastPaperInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.pptx,.txt"
-                    className="hidden"
-                    onChange={(e) => {
-                      handlePastPaperUpload(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-dashed border-2 text-xs"
-                    disabled={pastPaperUploading}
-                    onClick={() => pastPaperInputRef.current?.click()}
-                  >
-                    {pastPaperUploading ? (
-                      <>
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" /> Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <FileQuestion className="w-3 h-3 mr-1" /> Upload Past Papers
-                      </>
-                    )}
-                  </Button>
-                  {pastPaperCount > 0 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      {pastPaperCount} past paper{pastPaperCount !== 1 ? "s" : ""} uploaded
-                    </p>
-                  )}
-                  {pastPaperCount === 0 && !pastPaperUploading && (
-                    <p className="text-[10px] text-sidebar-foreground/40 text-center">
-                      Upload past papers to unlock Exam Mode analysis
-                    </p>
-                  )}
-                  {Object.entries(pastPaperUploadProgress).length > 0 && (
-                    <div className="space-y-1">
-                      {Object.entries(pastPaperUploadProgress).map(([key, status]) => (
-                        <p key={key} className="text-xs text-muted-foreground truncate">
-                          {status}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {filteredChats.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
-                  <p className="text-sm text-sidebar-foreground/30">No chats yet</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1 mb-1">
-                    <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40">
-                      Chat History
-                    </p>
-                    <button
-                      onClick={() => setShowDeleteAllConfirm(true)}
-                      className="text-xs text-destructive/70 hover:text-destructive transition-colors"
-                      title="Delete all chats"
-                    >
-                      Delete All
-                    </button>
-                  </div>
-                  {DATE_GROUP_ORDER.map((group) => {
-                    const groupChats = groupedChats[group];
-                    if (!groupChats || groupChats.length === 0) return null;
-                    return (
-                      <div key={group}>
-                        <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-1.5">
-                          {group}
-                        </p>
-                        <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
+                );
+              })}
+            </div>
           )
-        ) : (
-          <div className="flex flex-col items-center gap-1" />
-        )}
+        ) : null}
       </div>
 
       {/* Bottom: Profile */}
@@ -1466,8 +1261,6 @@ const ChatPage = () => {
                 <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
                   <CircleHelp className="w-4 h-4 text-muted-foreground" /> <span>Help</span>
                 </button>
-
-                {/* ── UPGRADE BUTTON ── */}
                 <div className="mx-3 my-2 border-t border-border" />
                 <div className="px-2 pb-1">
                   <button
@@ -1481,8 +1274,6 @@ const ChatPage = () => {
                     <span>⚡ Upgrade to Premium</span>
                   </button>
                 </div>
-                {/* ── END UPGRADE BUTTON ── */}
-
                 <div className="my-1.5" />
                 <button
                   onClick={() => {
@@ -1529,18 +1320,288 @@ const ChatPage = () => {
     </>
   );
 
-  const chatBgStyle = (() => {
-    const bg = getChatBg();
-    if (bg && bg.url)
-      return {
-        backgroundImage: `url(${bg.url})`,
-        backgroundSize: "cover" as const,
-        backgroundPosition: "center" as const,
-      };
-    return {};
-  })();
+  // ─── RIGHT PANEL content (units + actions) ────────────────────────────────────
 
-  // Chat input component
+  const unitsPanelContent = (
+    <div className="flex flex-col h-full">
+      {/* Panel header */}
+      <div className="p-4 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="w-4 h-4 text-primary" />
+            <h2 className="font-display font-bold text-foreground text-sm">My Units</h2>
+          </div>
+          {isMobile && (
+            <button
+              onClick={() => setMobileUnitsOpen(false)}
+              className="p-1.5 rounded-md hover:bg-accent transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">Select a unit to start studying</p>
+      </div>
+
+      {/* Hidden file inputs (shared across units) */}
+      <input
+        ref={unitUploadInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.pptx,.txt,.csv,.md"
+        className="hidden"
+        onChange={(e) => {
+          handleUnitTrainUpload(e.target.files);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={pastPaperInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.pptx,.txt"
+        className="hidden"
+        onChange={(e) => {
+          handlePastPaperUpload(e.target.files);
+          e.target.value = "";
+        }}
+      />
+
+      {/* Units list */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {enrolledUnits.length === 0 ? (
+          <div className="text-center py-12">
+            <BookOpen className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">No units enrolled</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Your course units will appear here</p>
+          </div>
+        ) : (
+          enrolledUnits.map((unit) => {
+            const isExpanded = expandedUnitId === unit.unit_id;
+            const isSelected = selectedUnitId === unit.unit_id;
+            return (
+              <div
+                key={unit.unit_id}
+                className={`rounded-xl border transition-all duration-200 overflow-hidden ${isExpanded ? "border-primary/40 bg-primary/5" : "border-border bg-card hover:border-border/80"}`}
+              >
+                {/* Unit header row */}
+                <button
+                  onClick={() => {
+                    if (isExpanded) {
+                      setExpandedUnitId(null);
+                    } else {
+                      handleSelectUnit(unit.unit_id);
+                    }
+                  }}
+                  className="w-full flex items-center gap-3 p-3 text-left"
+                >
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold ${isExpanded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                  >
+                    {unit.unit_code.slice(-2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-bold ${isExpanded ? "text-primary" : "text-muted-foreground"}`}>
+                      {unit.unit_code}
+                    </p>
+                    <p className="text-sm font-medium text-foreground truncate leading-tight">{unit.unit_name}</p>
+                    {unit.lecturer && <p className="text-xs text-muted-foreground truncate">{unit.lecturer}</p>}
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {/* Expanded unit panel */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-3 pb-3 space-y-2 border-t border-primary/20">
+                        {/* Stats row */}
+                        <div className="flex gap-2 pt-2">
+                          <div className="flex-1 bg-background rounded-lg p-2 text-center">
+                            <p className="text-lg font-bold text-foreground">{notesCount}</p>
+                            <p className="text-[10px] text-muted-foreground">Notes</p>
+                          </div>
+                          <div className="flex-1 bg-background rounded-lg p-2 text-center">
+                            <p className="text-lg font-bold text-foreground">{pastPaperCount}</p>
+                            <p className="text-[10px] text-muted-foreground">Papers</p>
+                          </div>
+                        </div>
+
+                        {/* Upload buttons */}
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-dashed h-8"
+                            disabled={unitUploading}
+                            onClick={() => unitUploadInputRef.current?.click()}
+                          >
+                            {unitUploading ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : (
+                              <Upload className="w-3 h-3 mr-1" />
+                            )}
+                            {unitUploading ? "Training..." : "Add Notes"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-dashed h-8"
+                            disabled={pastPaperUploading}
+                            onClick={() => pastPaperInputRef.current?.click()}
+                          >
+                            {pastPaperUploading ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : (
+                              <FileQuestion className="w-3 h-3 mr-1" />
+                            )}
+                            {pastPaperUploading ? "Analyzing..." : "Past Papers"}
+                          </Button>
+                        </div>
+
+                        {/* Upload progress */}
+                        {Object.entries(unitUploadProgress).length > 0 && (
+                          <div className="space-y-0.5">
+                            {Object.entries(unitUploadProgress).map(([key, status]) => (
+                              <p key={key} className="text-xs text-muted-foreground truncate">
+                                {status}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                        {Object.entries(pastPaperUploadProgress).length > 0 && (
+                          <div className="space-y-0.5">
+                            {Object.entries(pastPaperUploadProgress).map(([key, status]) => (
+                              <p key={key} className="text-xs text-muted-foreground truncate">
+                                {status}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="space-y-1 pt-1">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-0.5">
+                            Quick Actions
+                          </p>
+
+                          {[
+                            {
+                              icon: BookOpen,
+                              label: "Teach Me",
+                              color: "text-emerald-600",
+                              onClick: async () => {
+                                if (notesCount === 0) {
+                                  toast.error("Upload course notes first.");
+                                  return;
+                                }
+                                setTeachMeActive(true);
+                                let chat = activeChat;
+                                if (!chat) chat = await createChat("unit", unit.unit_id);
+                                if (chat)
+                                  await sendMessage(
+                                    `Start Teach Me Mode for the unit: ${unit.unit_name}. Give me a topic outline and begin teaching.`,
+                                    chat.id,
+                                    undefined,
+                                    true,
+                                  );
+                                if (isMobile) setMobileUnitsOpen(false);
+                              },
+                            },
+                            {
+                              icon: PenLine,
+                              label: "Exam Prep",
+                              color: "text-blue-600",
+                              onClick: async () => {
+                                if (notesCount === 0) {
+                                  toast.error("Upload course notes first.");
+                                  return;
+                                }
+                                await handleSuggestion(
+                                  `Help me prepare for my ${unit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.`,
+                                );
+                                if (isMobile) setMobileUnitsOpen(false);
+                              },
+                            },
+                            ...(pastPaperCount > 0
+                              ? [
+                                  {
+                                    icon: FileQuestion,
+                                    label: "Exam Mode",
+                                    color: "text-amber-600",
+                                    onClick: async () => {
+                                      await handleSuggestion(
+                                        `[EXAM_MODE] Analyze ALL past papers uploaded for ${unit.unit_code} — ${unit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.`,
+                                      );
+                                      if (isMobile) setMobileUnitsOpen(false);
+                                    },
+                                  },
+                                ]
+                              : []),
+                            {
+                              icon: ListChecks,
+                              label: "Quiz Me",
+                              color: "text-purple-600",
+                              onClick: async () => {
+                                if (notesCount === 0) {
+                                  toast.error("Upload course notes first.");
+                                  return;
+                                }
+                                await handleSuggestion(
+                                  `Quiz me on ${unit.unit_code} — ${unit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.`,
+                                );
+                                if (isMobile) setMobileUnitsOpen(false);
+                              },
+                            },
+                            {
+                              icon: FileText,
+                              label: "Summarize",
+                              color: "text-rose-600",
+                              onClick: async () => {
+                                if (notesCount === 0) {
+                                  toast.error("Upload course notes first.");
+                                  return;
+                                }
+                                await handleSuggestion(
+                                  `Give me a complete summary of all the uploaded notes for ${unit.unit_code} — ${unit.unit_name}. Organize by topic.`,
+                                );
+                                if (isMobile) setMobileUnitsOpen(false);
+                              },
+                            },
+                          ].map((action) => (
+                            <button
+                              key={action.label}
+                              onClick={action.onClick}
+                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-background transition-colors text-left"
+                            >
+                              <action.icon className={`w-4 h-4 flex-shrink-0 ${action.color}`} />
+                              <span className="font-medium text-foreground">{action.label}</span>
+                              <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+
+  // ─── Chat input ───────────────────────────────────────────────────────────────
+
   const chatInput = (
     <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
       {(isListening || isTranscribing) && (
@@ -1551,7 +1612,7 @@ const ChatPage = () => {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">{isTranscribing ? "Transcribing…" : "Listening…"}</p>
                 <p className="text-xs text-muted-foreground">
-                  {isTranscribing ? "Converting your speech to text." : "Speak freely — tap Stop when you're done."}
+                  {isTranscribing ? "Converting speech to text." : "Speak freely — tap Stop when done."}
                 </p>
               </div>
             </div>
@@ -1566,6 +1627,7 @@ const ChatPage = () => {
           </div>
         </div>
       )}
+
       {showVoicePreview && !isListening && voiceDraft && (
         <div className="mb-2 rounded-3xl border border-border bg-card px-4 py-3">
           <div className="flex items-start gap-3">
@@ -1577,7 +1639,7 @@ const ChatPage = () => {
               <button
                 onClick={discardVoiceDraft}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                title="Discard voice note"
+                title="Discard"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1592,6 +1654,7 @@ const ChatPage = () => {
           </div>
         </div>
       )}
+
       {attachedFiles.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
           {attachedFiles.map((pf, i) => (
@@ -1617,11 +1680,11 @@ const ChatPage = () => {
           ))}
         </div>
       )}
+
       <div
         className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
-        style={{ boxShadow: "0 4px 24px rgba(0, 0, 0, 0.15)" }}
+        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.15)" }}
       >
-        {/* Three separate hidden file inputs */}
         <input
           ref={cameraInputRef}
           type="file"
@@ -1658,56 +1721,47 @@ const ChatPage = () => {
 
         <Popover>
           <PopoverTrigger asChild>
-            <button className="relative flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
+            <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
               <Paperclip className="w-4 h-4" />
-              {mainTab === "units" && selectedUnitId && (
-                <span
-                  className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"
-                  title="Files will be added to unit knowledge base"
-                />
-              )}
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-56 p-1.5">
+          <PopoverContent side="top" align="start" className="w-52 p-1.5">
             <button
               onClick={() => cameraInputRef.current?.click()}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
             >
-              <Camera className="w-4 h-4 text-muted-foreground" />{" "}
-              {mainTab === "units" && selectedUnitId ? "Camera" : "Take Photo — AI analyzes it"}
+              <Camera className="w-4 h-4 text-muted-foreground" /> Take Photo
             </button>
             <button
               onClick={() => photoInputRef.current?.click()}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
             >
-              <ImageIcon className="w-4 h-4 text-muted-foreground" />{" "}
-              {mainTab === "units" && selectedUnitId ? "Upload Image" : "Upload Image — AI analyzes it"}
+              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Upload Image
             </button>
             <button
               onClick={() => docInputRef.current?.click()}
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
             >
-              <FileText className="w-4 h-4 text-muted-foreground" />{" "}
-              {mainTab === "units" && selectedUnitId ? "Files — AI reads + saves to KB" : "Files — AI reads instantly"}
+              <FileText className="w-4 h-4 text-muted-foreground" /> Upload File
             </button>
             <button
-              onClick={() => {
+              onClick={() =>
                 handleSuggestion(
                   "Enter Quiz Mode: Generate exam-style questions for my current unit to help me revise. Ask one question at a time, evaluate my answer, and explain the correct answer step by step.",
-                );
-              }}
+                )
+              }
               className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
             >
               <FileQuestion className="w-4 h-4 text-muted-foreground" /> Quizzes
             </button>
           </PopoverContent>
         </Popover>
+
         <textarea
           ref={inputRef}
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
-            // Auto-expand height
             const el = e.target;
             el.style.height = "auto";
             el.style.height = Math.min(el.scrollHeight, 150) + "px";
@@ -1725,26 +1779,14 @@ const ChatPage = () => {
           disabled={isStreaming}
         />
 
-        <div
-          className="relative flex-shrink-0"
-          title={
-            !micSupported
-              ? "Voice input isn't supported on this browser"
-              : isTranscribing
-                ? "Transcribing…"
-                : isListening
-                  ? "Stop listening"
-                  : "Record voice"
-          }
+        <button
+          onClick={toggleVoice}
+          disabled={!micSupported || isTranscribing}
+          className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : isTranscribing ? "text-primary animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!micSupported ? "opacity-40 cursor-not-allowed" : ""}`}
         >
-          <button
-            onClick={toggleVoice}
-            disabled={!micSupported || isTranscribing}
-            className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 relative ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : isTranscribing ? "text-primary animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!micSupported ? "opacity-40 cursor-not-allowed" : ""}`}
-          >
-            {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
-          </button>
-        </div>
+          {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
+        </button>
+
         <button
           onClick={() => handleSend()}
           disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming}
@@ -1756,16 +1798,18 @@ const ChatPage = () => {
     </div>
   );
 
+  // ─── Render ───────────────────────────────────────────────────────────────────
+
   return (
     <div className="h-screen flex bg-background overflow-hidden">
-      {/* Desktop Sidebar */}
+      {/* ── LEFT SIDEBAR (desktop) ── */}
       <aside
-        className={`hidden md:flex flex-col bg-sidebar flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[280px]" : "w-[56px]"}`}
+        className={`hidden md:flex flex-col bg-sidebar flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[260px]" : "w-[56px]"}`}
       >
         {sidebarContent}
       </aside>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* ── LEFT SIDEBAR (mobile overlay) ── */}
       <AnimatePresence>
         {mobileSidebarOpen && (
           <>
@@ -1777,7 +1821,6 @@ const ChatPage = () => {
               className="fixed inset-0 bg-black/50 z-40 md:hidden"
               onClick={() => setMobileSidebarOpen(false)}
             />
-
             <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0 }}
@@ -1791,84 +1834,110 @@ const ChatPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
+      {/* ── MAIN CENTER ── */}
       <div className="flex-1 flex min-w-0">
         <div
           className={`flex-1 flex flex-col min-w-0 relative ${viewerOpen ? "hidden md:flex" : ""}`}
           style={chatBgStyle}
         >
-          {/* Header */}
-          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent">
-            <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg mr-2 md:hidden">
+          {/* ── HEADER ── */}
+          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent gap-2">
+            {/* Mobile: left sidebar toggle */}
+            <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0">
               <PanelLeft className="w-5 h-5" />
             </button>
+
+            {/* Title */}
             <div className="flex-1 min-w-0">
-              <h2 className="font-display font-semibold text-foreground text-sm truncate">
-                {showArtifacts
-                  ? "Artifacts"
-                  : selectedUnit
-                    ? `${selectedUnit.unit_code} — ${selectedUnit.unit_name}`
-                    : activeChat
-                      ? activeChat.title
-                      : "Sekani"}
-              </h2>
+              {selectedUnit ? (
+                <div>
+                  <h2 className="font-display font-semibold text-foreground text-sm truncate leading-tight">
+                    {selectedUnit.unit_code} — {selectedUnit.unit_name}
+                  </h2>
+                </div>
+              ) : showArtifacts ? (
+                <h2 className="font-display font-semibold text-foreground text-sm">Artifacts</h2>
+              ) : (
+                <h2 className="font-display font-semibold text-foreground text-sm">
+                  {activeChat ? activeChat.title : "Sekani"}
+                </h2>
+              )}
             </div>
-            <button
-              onClick={async () => {
-                if (teachMeActive) {
-                  // Turning off
-                  teachMe.endSession();
-                  setTeachMeActive(false);
-                  document.body.classList.remove("focus-mode");
-                  return;
-                }
-                // Turning on — require a unit with notes
-                if (!selectedUnit) {
-                  toast.error("Select a unit first to use Teach Me Mode");
-                  return;
-                }
-                if (notesCount === 0) {
-                  toast.error("Upload course notes for this unit first so Sekani can teach you from them.");
-                  return;
-                }
-                setTeachMeActive(true);
 
-                // Try to load existing session
-                if (activeChat) {
-                  const existing = await teachMe.loadSession(activeChat.id);
-                  if (existing) return; // Resume existing session
-                }
-
-                // Auto-send initial message to start Teach Me
-                const unitName = selectedUnit.unit_name;
-                const initialPrompt = `Start Teach Me Mode for the unit: ${unitName}. Give me a topic outline and begin teaching.`;
-
-                let chat = activeChat;
-                if (!chat) {
-                  if (mainTab === "units" && selectedUnitId) {
-                    chat = await createChat("unit", selectedUnitId);
-                  } else {
-                    chat = await createChat("general");
+            {/* Teach Me — only when unit selected */}
+            {selectedUnit && (
+              <button
+                onClick={async () => {
+                  if (teachMeActive) {
+                    teachMe.endSession();
+                    setTeachMeActive(false);
+                    document.body.classList.remove("focus-mode");
+                    return;
                   }
-                }
-                if (chat) {
-                  await sendMessage(initialPrompt, chat.id, undefined, true);
-                }
-              }}
-              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
-            >
-              <BookOpen className="w-3 h-3" />
-              {teachMeActive ? "Teaching..." : "Teach Me"}
-            </button>
+                  if (notesCount === 0) {
+                    toast.error("Upload course notes for this unit first.");
+                    return;
+                  }
+                  setTeachMeActive(true);
+                  if (activeChat) {
+                    const existing = await teachMe.loadSession(activeChat.id);
+                    if (existing) return;
+                  }
+                  let chat = activeChat;
+                  if (!chat) chat = await createChat("unit", selectedUnitId!);
+                  if (chat)
+                    await sendMessage(
+                      `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.`,
+                      chat.id,
+                      undefined,
+                      true,
+                    );
+                }}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
+              >
+                <BookOpen className="w-3 h-3" />
+                <span className="hidden sm:inline">{teachMeActive ? "Teaching..." : "Teach Me"}</span>
+              </button>
+            )}
+
+            {/* Exam button (replaces Calendar) — only when unit selected */}
+            {selectedUnit ? (
+              <button
+                onClick={() => {
+                  if (pastPaperCount === 0) {
+                    toast.info("Upload past papers first to unlock Exam Mode.");
+                    return;
+                  }
+                  handleSuggestion(
+                    `[EXAM_MODE] Analyze ALL past papers uploaded for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.`,
+                  );
+                }}
+                className={`p-2 rounded-lg transition-colors flex-shrink-0 ${pastPaperCount > 0 ? "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30" : "text-muted-foreground hover:bg-foreground/10"}`}
+                title={pastPaperCount > 0 ? "Exam Mode" : "Upload past papers to unlock Exam Mode"}
+              >
+                <ClipboardList className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setCalendarOpen(!calendarOpen)}
+                className="p-2 hover:bg-foreground/10 rounded-lg text-foreground flex-shrink-0"
+                title="Academic Calendar"
+              >
+                <Calendar className="w-5 h-5" />
+              </button>
+            )}
+
+            {/* Mobile: right units panel toggle */}
             <button
-              onClick={() => setCalendarOpen(!calendarOpen)}
-              className="p-2 hover:bg-foreground/10 rounded-lg text-foreground"
-              title="Academic Calendar"
+              onClick={() => setMobileUnitsOpen(true)}
+              className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0"
+              title="My Units"
             >
-              <Calendar className="w-5 h-5" />
+              <GraduationCap className="w-5 h-5" />
             </button>
           </header>
 
+          {/* ── CONTENT AREA ── */}
           {showArtifacts ? (
             <div className="flex-1 overflow-y-auto">
               <ArtifactsPage />
@@ -1876,7 +1945,6 @@ const ChatPage = () => {
           ) : (
             (() => {
               const isNewChat = !activeChat || activeChat.messages.length === 0;
-
               return (
                 <>
                   <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-scroll-area">
@@ -1898,7 +1966,7 @@ const ChatPage = () => {
                             <h2 className="text-2xl font-display font-bold text-foreground mb-2">
                               {greeting}, {displayName.split(" ")[0]}
                             </h2>
-                            <p className="text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               {selectedUnit
                                 ? `Ask anything about ${selectedUnit.unit_code} — ${selectedUnit.unit_name}`
                                 : "How can I help you with your studies today?"}
@@ -1912,86 +1980,8 @@ const ChatPage = () => {
                           >
                             {chatInput}
                           </motion.div>
-                          {selectedUnit ? (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.2 }}
-                              className="flex flex-wrap justify-center gap-2 mt-5 max-w-[680px] w-full px-4 md:px-0"
-                            >
-                              {[
-                                {
-                                  icon: BookOpen,
-                                  label: "Teach Me",
-                                  isTeachMe: true,
-                                  needsNotes: true,
-                                  prompt: `Start Teach Me Mode for the unit: ${selectedUnit.unit_name}. Give me a topic outline and begin teaching.`,
-                                },
-                                {
-                                  icon: PenLine,
-                                  label: "Exam Prep",
-                                  needsNotes: true,
-                                  prompt: `Help me prepare for my ${selectedUnit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.`,
-                                },
-                                ...(pastPaperCount > 0
-                                  ? [
-                                      {
-                                        icon: FileQuestion,
-                                        label: "Exam Mode",
-                                        isExamMode: true,
-                                        prompt: `[EXAM_MODE] Analyze ALL past papers uploaded for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.`,
-                                      },
-                                    ]
-                                  : []),
-                                {
-                                  icon: ListChecks,
-                                  label: "Quiz Me",
-                                  needsNotes: true,
-                                  prompt: `Quiz me on ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.`,
-                                },
-                                {
-                                  icon: FileText,
-                                  label: "Summarize",
-                                  needsNotes: true,
-                                  prompt: `Give me a complete summary of all the uploaded notes for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Organize by topic.`,
-                                },
-                              ].map((s, i) => (
-                                <motion.button
-                                  key={s.label}
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.25 + i * 0.08 }}
-                                  onClick={async () => {
-                                    if ((s as any).needsNotes && notesCount === 0) {
-                                      toast.error(
-                                        "Upload course notes for this unit first. Use 'Train AI with Notes' in the sidebar.",
-                                      );
-                                      return;
-                                    }
-                                    if ((s as any).isTeachMe) {
-                                      setTeachMeActive(true);
-                                      let chat = activeChat;
-                                      if (!chat) {
-                                        chat = await createChat("unit", selectedUnitId!);
-                                      }
-                                      if (chat) {
-                                        await sendMessage(s.prompt, chat.id, undefined, true);
-                                      }
-                                    } else {
-                                      handleSuggestion(s.prompt);
-                                    }
-                                  }}
-                                   className="inline-flex items-center gap-2 px-3 py-2 glass-card hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap"
-                                   style={{ borderRadius: "30px" }}
-                                 >
-                                   <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
-                                  <span className="font-display font-semibold text-sm text-foreground whitespace-nowrap">
-                                    {s.label}
-                                  </span>
-                                </motion.button>
-                              ))}
-                            </motion.div>
-                          ) : (
+                          {/* General suggestions (no unit selected) */}
+                          {!selectedUnit && (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -2014,6 +2004,22 @@ const ChatPage = () => {
                                   </span>
                                 </motion.button>
                               ))}
+                            </motion.div>
+                          )}
+                          {/* Unit selected but no messages — show select unit nudge on mobile */}
+                          {!selectedUnit && isMobile && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 0.4 }}
+                              className="mt-4"
+                            >
+                              <button
+                                onClick={() => setMobileUnitsOpen(true)}
+                                className="flex items-center gap-2 text-sm text-primary border border-primary/30 rounded-full px-4 py-2 hover:bg-primary/5 transition-colors"
+                              >
+                                <GraduationCap className="w-4 h-4" /> Browse My Units
+                              </button>
                             </motion.div>
                           )}
                         </motion.div>
@@ -2076,12 +2082,6 @@ const ChatPage = () => {
                                                     xlsx: () =>
                                                       generateXLSX(msg.text, activeChat?.title || "Spreadsheet"),
                                                   };
-                                                  const icons: Record<string, string> = {
-                                                    pdf: "📄",
-                                                    docx: "📝",
-                                                    pptx: "📊",
-                                                    xlsx: "📈",
-                                                  };
                                                   return (
                                                     <button
                                                       type="button"
@@ -2111,14 +2111,28 @@ const ChatPage = () => {
                                               },
                                               table: ({ children }: any) => (
                                                 <div className="my-3 overflow-x-auto rounded-lg border border-border">
-                                                  <table className="min-w-full divide-y divide-border text-sm">{children}</table>
+                                                  <table className="min-w-full divide-y divide-border text-sm">
+                                                    {children}
+                                                  </table>
                                                 </div>
                                               ),
-                                              thead: ({ children }: any) => <thead className="bg-muted/50">{children}</thead>,
-                                              tbody: ({ children }: any) => <tbody className="divide-y divide-border">{children}</tbody>,
-                                              tr: ({ children }: any) => <tr className="hover:bg-muted/30 transition-colors">{children}</tr>,
-                                              th: ({ children }: any) => <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{children}</th>,
-                                              td: ({ children }: any) => <td className="px-3 py-2 text-sm text-foreground">{children}</td>,
+                                              thead: ({ children }: any) => (
+                                                <thead className="bg-muted/50">{children}</thead>
+                                              ),
+                                              tbody: ({ children }: any) => (
+                                                <tbody className="divide-y divide-border">{children}</tbody>
+                                              ),
+                                              tr: ({ children }: any) => (
+                                                <tr className="hover:bg-muted/30 transition-colors">{children}</tr>
+                                              ),
+                                              th: ({ children }: any) => (
+                                                <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                  {children}
+                                                </th>
+                                              ),
+                                              td: ({ children }: any) => (
+                                                <td className="px-3 py-2 text-sm text-foreground">{children}</td>
+                                              ),
                                               code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || "");
                                                 const lang = match ? match[1] : "";
@@ -2220,7 +2234,6 @@ const ChatPage = () => {
                                               const raw = teachMeActive
                                                 ? stripControlTags(msg.text || "...")
                                                 : msg.text || "...";
-                                              // Convert \(...\) → $...$ and \[...\] → $$...$$
                                               return raw
                                                 .replace(/\\\((.+?)\\\)/g, "$$$1$$")
                                                 .replace(/\\\[(.+?)\\\]/gs, "$$$$$1$$$$");
@@ -2241,7 +2254,6 @@ const ChatPage = () => {
                                             className="flex-1 bg-transparent border-b border-primary-foreground/50 outline-none text-sm"
                                             autoFocus
                                           />
-
                                           <button type="submit" className="p-0.5">
                                             <Check className="w-3.5 h-3.5" />
                                           </button>
@@ -2257,6 +2269,7 @@ const ChatPage = () => {
                                     </div>
                                   );
                                 })()}
+
                                 {/* Action buttons */}
                                 <div
                                   className={`flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
@@ -2308,7 +2321,7 @@ const ChatPage = () => {
                                       <PopoverTrigger asChild>
                                         <button
                                           className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                          title="Download as document"
+                                          title="Download"
                                         >
                                           <Download className="w-3 h-3" />
                                         </button>
@@ -2342,6 +2355,7 @@ const ChatPage = () => {
                                     </Popover>
                                   )}
                                 </div>
+
                                 {/* Smart Suggestions after bot messages */}
                                 {msg.sender === "bot" &&
                                   msg.text.length > 50 &&
@@ -2401,9 +2415,13 @@ const ChatPage = () => {
                     <div className="relative">
                       {showScrollButton && (
                         <button
-                          onClick={() => chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })}
+                          onClick={() =>
+                            chatContainerRef.current?.scrollTo({
+                              top: chatContainerRef.current.scrollHeight,
+                              behavior: "smooth",
+                            })
+                          }
                           className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                          title="Scroll to bottom"
                         >
                           <ChevronDown className="w-4 h-4" />
                         </button>
@@ -2425,6 +2443,7 @@ const ChatPage = () => {
           )}
         </div>
 
+        {/* Artifact viewer */}
         {viewerOpen && (
           <div className="hidden md:flex w-[45%] min-w-[300px] max-w-[600px]">
             <ArtifactViewer />
@@ -2435,11 +2454,11 @@ const ChatPage = () => {
             <ArtifactViewer />
           </div>
         )}
-        {/* Teach Me Panel — bottom sheet on mobile, side panel on desktop */}
+
+        {/* Teach Me Panel */}
         <AnimatePresence>
           {teachMeActive && teachMe.session && !viewerOpen && (
             <>
-              {/* Mobile backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -2470,9 +2489,50 @@ const ChatPage = () => {
             </>
           )}
         </AnimatePresence>
+
+        {/* ── RIGHT UNITS PANEL (desktop) ── */}
+        {!viewerOpen && !teachMeActive && (
+          <aside className="hidden md:flex flex-col w-[260px] flex-shrink-0 border-l border-border bg-card/50">
+            {unitsPanelContent}
+          </aside>
+        )}
       </div>
 
-      {/* Settings Dialog */}
+      {/* ── RIGHT UNITS PANEL (mobile bottom sheet) ── */}
+      <AnimatePresence>
+        {mobileUnitsOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setMobileUnitsOpen(false)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl border-t border-border md:hidden"
+              style={{ maxHeight: "85vh" }}
+            >
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-border" />
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 32px)" }}>
+                {unitsPanelContent}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── DIALOGS ── */}
+
+      {/* Settings */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -2610,8 +2670,6 @@ const ChatPage = () => {
                 <p className="text-sm text-muted-foreground text-center">
                   You've reached your free daily limit. Upgrade to keep learning!
                 </p>
-
-                {/* Plan Selection */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setPaymentPlan("individual")}
@@ -2644,12 +2702,9 @@ const ChatPage = () => {
                     <p className="text-xs text-muted-foreground">5 users</p>
                   </button>
                 </div>
-
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground">Unlimited tokens • One-time payment</p>
                 </div>
-
-                {/* Group Emails */}
                 {paymentPlan === "group" && (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Group Member Emails (5 required)</Label>
@@ -2670,8 +2725,6 @@ const ChatPage = () => {
                     ))}
                   </div>
                 )}
-
-                {/* Payment Method Tabs */}
                 <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
                   <button
                     onClick={() => setPaymentMethod("mpesa")}
@@ -2686,7 +2739,6 @@ const ChatPage = () => {
                     💳 Card
                   </button>
                 </div>
-
                 {paymentMethod === "mpesa" ? (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
@@ -2698,7 +2750,7 @@ const ChatPage = () => {
                       className="text-center text-lg tracking-wider"
                     />
                     <p className="text-xs text-muted-foreground text-center">
-                      Enter your M-Pesa phone number to receive the payment prompt
+                      Enter your M-Pesa number to receive the payment prompt
                     </p>
                   </div>
                 ) : (
@@ -2706,7 +2758,6 @@ const ChatPage = () => {
                     You'll be redirected to a secure Paystack page to complete your card payment.
                   </p>
                 )}
-
                 <Button
                   onClick={handlePayment}
                   disabled={
