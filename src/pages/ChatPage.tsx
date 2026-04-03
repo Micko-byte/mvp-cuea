@@ -1169,7 +1169,7 @@ const ChatPage = () => {
       )}
 
       {/* Chat history — general only */}
-      <div className="flex-1 overflow-y-auto px-3 py-2">
+      <div className="flex-1 overflow-y-auto sidebar-scroll-area px-3 py-2">
         {sidebarExpanded || isMobile ? (
           generalChats.length === 0 ? (
             <div className="text-center py-8">
