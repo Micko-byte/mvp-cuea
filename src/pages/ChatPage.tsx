@@ -2766,7 +2766,7 @@ const ChatPage = () => {
                     (paymentPlan === "group" && groupEmails.slice(1).some((e) => !e.trim()))
                   }
                   className="w-full text-white font-semibold py-3"
-                  style={{ backgroundColor: "#800000" }}
+                  style={{ backgroundColor: "#1D2A3A" }}
                 >
                   {paymentLoading ? (
                     <>
