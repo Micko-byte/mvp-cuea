@@ -1169,7 +1169,7 @@ const ChatPage = () => {
       )}
 
       {/* Chat history — general only */}
-      <div className="flex-1 overflow-y-auto sidebar-scroll-area px-3 py-2">
+      <div className="flex-1 overflow-y-auto px-3 py-2">
         {sidebarExpanded || isMobile ? (
           generalChats.length === 0 ? (
             <div className="text-center py-8">
@@ -1269,7 +1269,7 @@ const ChatPage = () => {
                       setShowPaymentDialog(true);
                     }}
                     className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
-                    style={{ background: "linear-gradient(135deg, #800000 0%, #b91c1c 100%)", color: "white" }}
+                    style={{ background: "linear-gradient(135deg, #1D2A3A 0%, #b91c1c 100%)", color: "white" }}
                   >
                     <span>⚡ Upgrade to Premium</span>
                   </button>
@@ -1368,7 +1368,7 @@ const ChatPage = () => {
       />
 
       {/* Units list */}
-      <div className="flex-1 overflow-y-auto sidebar-scroll-area p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {enrolledUnits.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
