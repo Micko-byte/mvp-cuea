@@ -9,7 +9,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -18,8 +17,6 @@ interface RecoveryEmailProps {
   siteName: string
   confirmationUrl: string
 }
-
-const LOGO_URL = 'https://yqjorkcibfdxmuqrcpnn.supabase.co/storage/v1/object/public/email-assets/sekani-logo.png'
 
 export const RecoveryEmail = ({
   siteName,
@@ -30,7 +27,6 @@ export const RecoveryEmail = ({
     <Preview>Reset your Sekani password</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="Sekani" width="120" height="auto" style={logo} />
         <Heading style={h1}>Reset your password</Heading>
         <Text style={text}>
           We received a request to reset your password for Sekani. Click
@@ -52,12 +48,12 @@ export default RecoveryEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
-const logo = { margin: '0 0 20px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#1C2939',
+  color: '#1D2A3A',
   margin: '0 0 20px',
+  fontFamily: "'Space Grotesk', Arial, sans-serif",
 }
 const text = {
   fontSize: '14px',
@@ -66,11 +62,11 @@ const text = {
   margin: '0 0 25px',
 }
 const button = {
-  backgroundColor: '#1C2939',
+  backgroundColor: '#1D2A3A',
   color: '#ffffff',
   fontSize: '14px',
   borderRadius: '12px',
-  padding: '12px 24px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }

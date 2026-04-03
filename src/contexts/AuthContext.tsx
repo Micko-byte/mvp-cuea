@@ -60,11 +60,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "TOKEN_REFRESHED" && !session) {
+        // Refresh failed — stale token
+        supabase.auth.signOut();
+        return;
+      }
       if (session?.user) {
         setUser(session.user);
         setTimeout(() => {
           fetchProfile(session.user.id);
-          // Enroll in pending units from signup
           enrollPendingUnits(session.user.id);
         }, 0);
       } else {
@@ -75,7 +79,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        // Stale refresh token — clear local session silently
+        console.warn("Session recovery failed, signing out:", error.message);
+        supabase.auth.signOut();
+        setIsLoading(false);
+        return;
+      }
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);

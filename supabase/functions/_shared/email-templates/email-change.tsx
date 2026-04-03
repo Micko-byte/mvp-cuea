@@ -9,7 +9,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
   Text,
@@ -22,8 +21,6 @@ interface EmailChangeEmailProps {
   confirmationUrl: string
 }
 
-const LOGO_URL = 'https://yqjorkcibfdxmuqrcpnn.supabase.co/storage/v1/object/public/email-assets/sekani-logo.png'
-
 export const EmailChangeEmail = ({
   siteName,
   email,
@@ -35,7 +32,6 @@ export const EmailChangeEmail = ({
     <Preview>Confirm your email change for Sekani</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} alt="Sekani" width="120" height="auto" style={logo} />
         <Heading style={h1}>Confirm your email change</Heading>
         <Text style={text}>
           You requested to change your email address for Sekani from{' '}
@@ -67,12 +63,12 @@ export default EmailChangeEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: "'DM Sans', Arial, sans-serif" }
 const container = { padding: '20px 25px' }
-const logo = { margin: '0 0 20px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#1C2939',
+  color: '#1D2A3A',
   margin: '0 0 20px',
+  fontFamily: "'Space Grotesk', Arial, sans-serif",
 }
 const text = {
   fontSize: '14px',
@@ -80,13 +76,13 @@ const text = {
   lineHeight: '1.5',
   margin: '0 0 25px',
 }
-const link = { color: '#1C2939', textDecoration: 'underline' }
+const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#1C2939',
+  backgroundColor: '#1D2A3A',
   color: '#ffffff',
   fontSize: '14px',
   borderRadius: '12px',
-  padding: '12px 24px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
