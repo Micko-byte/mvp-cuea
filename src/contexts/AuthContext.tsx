@@ -75,7 +75,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        // Stale refresh token — clear local session silently
+        console.warn("Session recovery failed, signing out:", error.message);
+        supabase.auth.signOut();
+        setIsLoading(false);
+        return;
+      }
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
