@@ -1514,7 +1514,7 @@ const sidebarContent = (
                   <button
                     onClick={() => { setProfileMenuOpen(false); setShowPaymentDialog(true); }}
                     className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
-                    style={{ background: "linear-gradient(135deg, #1D2A3A 90%, #b91c1c 10%)", color: "white" }}
+                    style={{ background: "linear-gradient(135deg, #1D2A3A 100%, #b91c1c 0%)", color: "white" }}
                   >
                     <span>⚡ Upgrade to Premium</span>
                   </button>
