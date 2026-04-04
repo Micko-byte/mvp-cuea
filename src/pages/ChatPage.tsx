@@ -2458,19 +2458,6 @@ const ChatPage = () => {
         {/* Teach Me Panel */}
         <AnimatePresence>
           {teachMeActive && teachMe.session && !viewerOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/40 z-40 md:hidden"
-                onClick={() => {
-                  if (teachMe.session) teachMe.markComplete(teachMe.session.id);
-                  setTeachMeActive(false);
-                  teachMe.endSession();
-                  document.body.classList.remove("focus-mode");
-                }}
-              />
               <TeachMePanel
                 session={teachMe.session}
                 onToggleFocusMode={() => {
@@ -2486,7 +2473,6 @@ const ChatPage = () => {
                   document.body.classList.remove("focus-mode");
                 }}
               />
-            </>
           )}
         </AnimatePresence>
 
