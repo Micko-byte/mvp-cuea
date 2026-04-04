@@ -52,6 +52,7 @@ function DiagnosticCard({ score }: { score: CheckpointScore }) {
 }
 
 export function TeachMePanel({ session, onToggleFocusMode, onEndSession, onReviewTopic }: Props) {
+  const [mobileExpanded, setMobileExpanded] = useState(true);
   const doneCount = session.completedTopics.length;
   const total = session.topicOutline.length;
   const percent = total > 0 ? Math.round((doneCount / total) * 100) : 0;
@@ -65,45 +66,56 @@ export function TeachMePanel({ session, onToggleFocusMode, onEndSession, onRevie
     return session.checkpointScores.find(cs => cs.afterTopic === topicIndex && (cs.strong || cs.weak));
   };
 
+  const currentTopic = session.topicOutline[session.currentTopicIndex]?.name || 'Starting...';
+
   return (
     <motion.aside
       initial={{ x: 300, opacity: 0, y: 0 }}
       animate={{ x: 0, opacity: 1, y: 0 }}
       exit={{ x: 300, opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="teach-me-panel bg-card border-l border-border flex flex-col overflow-hidden shrink-0
-        fixed bottom-0 inset-x-0 z-50 h-[70vh] rounded-t-2xl border-t md:relative md:inset-auto md:z-auto md:h-full md:w-[300px] md:rounded-none md:border-t-0"
+      className={cn(
+        "teach-me-panel bg-card border-l border-border flex flex-col overflow-hidden shrink-0",
+        "fixed bottom-0 inset-x-0 z-50 rounded-t-2xl border-t",
+        "md:relative md:inset-auto md:z-auto md:h-full md:w-[300px] md:rounded-none md:border-t-0",
+        mobileExpanded ? "h-[70vh]" : "h-auto"
+      )}
     >
-      {/* Mobile drag handle */}
-      <div className="flex justify-center py-2 md:hidden">
-        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+      {/* Mobile collapsed bar — always visible on mobile */}
+      <div
+        className="flex items-center gap-3 px-4 py-3 md:hidden cursor-pointer"
+        onClick={() => setMobileExpanded(prev => !prev)}
+      >
+        <BookOpen className="w-4 h-4 text-primary shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold text-foreground truncate">{currentTopic}</span>
+            <span className="text-[10px] text-muted-foreground shrink-0 ml-2">{doneCount}/{total}</span>
+          </div>
+          <Progress value={percent} className="h-1.5" />
+        </div>
+        {mobileExpanded ? (
+          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+        )}
       </div>
-      {/* Header */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
+
+      {/* Desktop header — always visible on desktop */}
+      <div className="hidden md:flex p-4 border-b border-border items-center justify-between">
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-primary" />
           <span className="font-display font-semibold text-sm text-foreground">Teach Me Mode</span>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleFocusMode}
-            className="text-xs gap-1 h-7"
-          >
-            {session.focusMode ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-            {session.focusMode ? 'Focus: ON' : 'Focus: OFF'}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onEndSession}
-            className="h-7 w-7 md:hidden text-muted-foreground"
-            title="Minimize panel"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggleFocusMode}
+          className="text-xs gap-1 h-7"
+        >
+          {session.focusMode ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          {session.focusMode ? 'Focus: ON' : 'Focus: OFF'}
+        </Button>
       </div>
 
       {/* Unit Card */}
