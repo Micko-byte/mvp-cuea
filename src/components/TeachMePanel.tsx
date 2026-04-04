@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
-import { BookOpen, Eye, EyeOff, X, CheckCircle, Lock, AlertTriangle, RotateCcw, SkipForward, Brain, Zap, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BookOpen, Eye, EyeOff, X, CheckCircle, Lock, AlertTriangle, RotateCcw, SkipForward, Brain, Zap, Clock, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { TeachMeSession, TopicItem, CheckpointScore } from '@/types/teachMe';
