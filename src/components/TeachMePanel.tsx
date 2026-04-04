@@ -83,15 +83,26 @@ export function TeachMePanel({ session, onToggleFocusMode, onEndSession, onRevie
           <BookOpen className="w-4 h-4 text-primary" />
           <span className="font-display font-semibold text-sm text-foreground">Teach Me Mode</span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleFocusMode}
-          className="text-xs gap-1 h-7"
-        >
-          {session.focusMode ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-          {session.focusMode ? 'Focus: ON' : 'Focus: OFF'}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleFocusMode}
+            className="text-xs gap-1 h-7"
+          >
+            {session.focusMode ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+            {session.focusMode ? 'Focus: ON' : 'Focus: OFF'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onEndSession}
+            className="h-7 w-7 md:hidden text-muted-foreground"
+            title="Minimize panel"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Unit Card */}
