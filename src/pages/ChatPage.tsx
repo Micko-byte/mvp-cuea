@@ -358,8 +358,25 @@ const ChatPage = () => {
           afterTopic: tags.checkpoint.afterTopic,
           score: tags.checkpoint.score,
           total: tags.checkpoint.total,
-          passed: tags.checkpoint.score >= 3,
+          passed: tags.checkpoint.score >= 2,
+          strong: tags.checkpoint.strong?.join(', '),
+          weak: tags.checkpoint.weak?.join(', '),
         });
+      }
+      if (tags.readinessUpdate) {
+        teachMe.updateReadiness(teachMe.session.id, tags.readinessUpdate.score);
+      }
+      if (tags.streakUpdate) {
+        teachMe.updateStreak(teachMe.session.id, tags.streakUpdate.action);
+      }
+      if (tags.sessionRecap) {
+        teachMe.saveRecap(teachMe.session.id, tags.sessionRecap);
+      }
+      if (tags.predictedQSession) {
+        teachMe.updatePredictedQScore(teachMe.session.id, tags.predictedQSession.score);
+      }
+      if (tags.memoryUpdate) {
+        teachMe.upsertStudentMemory(tags.memoryUpdate.topicName, tags.memoryUpdate.unit, tags.memoryUpdate.strength);
       }
       if (tags.unitComplete) {
         teachMe.markComplete(teachMe.session.id);
@@ -1508,7 +1525,7 @@ const ChatPage = () => {
                                 if (!chat) chat = await createChat("unit", unit.unit_id);
                                 if (chat)
                                   await sendMessage(
-                                    `Start Teach Me Mode for the unit: ${unit.unit_name}. Give me a topic outline and begin teaching.`,
+                                    `Start Teach Me Mode for the unit: ${unit.unit_name}. Scan my uploaded notes and past papers, build the topic outline, and begin teaching Topic 1 immediately.`,
                                     chat.id,
                                     undefined,
                                     true,
