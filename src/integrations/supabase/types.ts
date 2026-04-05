@@ -592,15 +592,21 @@ export type Database = {
           created_at: string | null
           current_topic_index: number
           eli5_triggers: number
+          exam_readiness_score: number | null
           focus_mode: boolean
           id: string
           metadata: Json | null
+          predicted_q_score: number | null
+          session_recap: Json | null
           status: string
+          streak_days: number | null
+          strong_topics: Json | null
           thread_id: string
           topic_outline: Json
           unit_name: string
           updated_at: string | null
           user_id: string
+          weak_topics: Json | null
         }
         Insert: {
           checkpoint_scores?: Json
@@ -608,15 +614,21 @@ export type Database = {
           created_at?: string | null
           current_topic_index?: number
           eli5_triggers?: number
+          exam_readiness_score?: number | null
           focus_mode?: boolean
           id?: string
           metadata?: Json | null
+          predicted_q_score?: number | null
+          session_recap?: Json | null
           status?: string
+          streak_days?: number | null
+          strong_topics?: Json | null
           thread_id: string
           topic_outline?: Json
           unit_name: string
           updated_at?: string | null
           user_id: string
+          weak_topics?: Json | null
         }
         Update: {
           checkpoint_scores?: Json
@@ -624,15 +636,21 @@ export type Database = {
           created_at?: string | null
           current_topic_index?: number
           eli5_triggers?: number
+          exam_readiness_score?: number | null
           focus_mode?: boolean
           id?: string
           metadata?: Json | null
+          predicted_q_score?: number | null
+          session_recap?: Json | null
           status?: string
+          streak_days?: number | null
+          strong_topics?: Json | null
           thread_id?: string
           topic_outline?: Json
           unit_name?: string
           updated_at?: string | null
           user_id?: string
+          weak_topics?: Json | null
         }
         Relationships: []
       }
