@@ -1525,7 +1525,7 @@ const ChatPage = () => {
                                 if (!chat) chat = await createChat("unit", unit.unit_id);
                                 if (chat)
                                   await sendMessage(
-                                    `Start Teach Me Mode for the unit: ${unit.unit_name}. Give me a topic outline and begin teaching.`,
+                                    `Start Teach Me Mode for the unit: ${unit.unit_name}. Scan my uploaded notes and past papers, build the topic outline, and begin teaching Topic 1 immediately.`,
                                     chat.id,
                                     undefined,
                                     true,
