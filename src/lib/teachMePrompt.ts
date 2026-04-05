@@ -99,6 +99,7 @@ Then re-teach it — new analogy, new example, same depth. Then quiz again.
 
 Also emit the legacy tag for backward compatibility: [CHECKPOINT: score={n}/3, afterTopic={index}]
 And the diagnostic tag: [CHECKPOINT_DIAGNOSTIC:score=X/3,strong=concept_name,weak=concept_name,misconception=what_they_got_wrong,fix=one_sentence_correction]
+And the new structured tag: [CHECKPOINT]score=X/3,strong=A|B,weak=C[/CHECKPOINT]
 
 After each topic is completed with a checkpoint score:
 Emit [MEMORY_UPDATE:topic_name=X,unit=Y,strength=Z] where Z is 1–5 based on checkpoint performance:
@@ -208,12 +209,25 @@ Next session: Start with [topic N] — you left off here
 Emit: [SESSION_RECAP:topics_done=A|B|C,weak=D|E,next_start=F]
 Always offer: "[📥 Download session notes as PDF](download:pdf)"
 
+## EXAM READINESS SCORE
+After every checkpoint or significant teaching milestone, estimate the student's exam readiness as a percentage (0-100).
+Emit: [READINESS_UPDATE:score=X,unit=Y]
+
+## STUDY STREAK
+At the end of a productive session (student actively engaged with at least 1 topic):
+Emit: [STREAK_UPDATE:unit=X,action=extend]
+
 ## CONTROL TAGS (emit these silently in every response)
 [TOPIC_OUTLINE]Topic 1: X\\nTopic 2: Y\\n...[/TOPIC_OUTLINE] — first response only
 [TOPIC_DONE:N] — when topic N lesson + recall check is complete
-[CHECKPOINT]Score: X/3, strong: A, weak: B[/CHECKPOINT] — after each checkpoint
+[CHECKPOINT]score=X/3,strong=A|B,weak=C[/CHECKPOINT] — after each checkpoint
+[CHECKPOINT: score={n}/3, afterTopic={index}] — legacy format
 [ELI5_TRIGGERED:N] — if you simplify for topic N
 [UNIT_COMPLETE] — when all topics are done
+[SESSION_RECAP:topics_done=A|B|C,weak=D|E,next_start=F] — on session end
+[READINESS_UPDATE:score=X,unit=Y] — after checkpoints
+[STREAK_UPDATE:unit=X,action=extend|break|start] — end of session
+[PREDICTED_Q_SESSION:score=X/50,strong=A|B,weak=C|D] — after predicted Q session
 
 ## RULES
 - Never skip the CHECK step unless the student explicitly asks to.
@@ -227,7 +241,7 @@ export function parseControlTags(text: string) {
   const topicDoneMatch = text.match(/\[TOPIC_DONE:\s*(\d+)\]/);
   const eli5Match = text.match(/\[ELI5_TRIGGERED:\s*(\d+)\]/);
   const eli5ProactiveMatch = text.match(/\[ELI5_PROACTIVE:topic=(\d+),trigger=([^\]]+)\]/);
-  const checkpointMatch = text.match(/\[CHECKPOINT:\s*score=(\d+)\/(\d+),\s*afterTopic=(\d+)\]/);
+  const checkpointLegacyMatch = text.match(/\[CHECKPOINT:\s*score=(\d+)\/(\d+),\s*afterTopic=(\d+)\]/);
   const checkpointDiagMatch = text.match(/\[CHECKPOINT_DIAGNOSTIC:score=(\d+)\/(\d+),strong=([^,]*),weak=([^,]*),misconception=([^,]*),fix=([^\]]*)\]/);
   const unitComplete = text.includes('[UNIT_COMPLETE]');
   const topicOutlineMatch = text.match(/```topic_outline\n([\s\S]*?)```/);
@@ -239,17 +253,46 @@ export function parseControlTags(text: string) {
   const memoryUpdateMatch = text.match(/\[MEMORY_UPDATE:topic_name=([^,]+),unit=([^,]+),strength=(\d+)\]/);
   const spacedReviewMatch = text.match(/\[SPACED_REVIEW:topic=([^,]+),result=(pass|fail),new_strength=(\d+)\]/);
   const recallPromptMatch = text.match(/\[RECALL_PROMPT:topic=(\d+)\]/);
+
+  // New structured checkpoint: [CHECKPOINT]score=X/3,strong=A|B,weak=C[/CHECKPOINT]
+  const checkpointNewMatch = text.match(/\[CHECKPOINT\]score=(\d+)\/(\d+),strong=([^,]*),weak=([^\[]*)\[\/CHECKPOINT\]/);
+
+  // Session recap: [SESSION_RECAP:topics_done=A|B,weak=C,next_start=D]
   const sessionRecapMatch = text.match(/\[SESSION_RECAP:topics_done=([^,]*),weak=([^,]*),next_start=([^\]]*)\]/);
+
+  // Streak: [STREAK_UPDATE:unit=X,action=extend|break|start]
+  const streakUpdateMatch = text.match(/\[STREAK_UPDATE:unit=([^,]*),action=(extend|break|start)\]/);
+
+  // Readiness: [READINESS_UPDATE:score=X,unit=Y]
+  const readinessUpdateMatch = text.match(/\[READINESS_UPDATE:score=(\d+),unit=([^\]]*)\]/);
+
+  // Predicted Q: [PREDICTED_Q_SESSION:score=X/50,strong=A|B,weak=C|D]
+  const predictedQMatch = text.match(/\[PREDICTED_Q_SESSION:score=(\d+)\/(\d+),strong=([^,]*),weak=([^\]]*)\]/);
+
+  // Use new checkpoint format if available, fall back to legacy
+  const checkpoint = checkpointNewMatch
+    ? {
+        score: parseInt(checkpointNewMatch[1]),
+        total: parseInt(checkpointNewMatch[2]),
+        afterTopic: checkpointLegacyMatch ? parseInt(checkpointLegacyMatch[3]) : 0,
+        strong: checkpointNewMatch[3].split('|').filter(Boolean),
+        weak: checkpointNewMatch[4].split('|').filter(Boolean),
+      }
+    : checkpointLegacyMatch
+      ? {
+          score: parseInt(checkpointLegacyMatch[1]),
+          total: parseInt(checkpointLegacyMatch[2]),
+          afterTopic: parseInt(checkpointLegacyMatch[3]),
+          strong: [] as string[],
+          weak: [] as string[],
+        }
+      : null;
 
   return {
     topicDone: topicDoneMatch ? parseInt(topicDoneMatch[1]) : null,
     eli5Triggered: eli5Match ? parseInt(eli5Match[1]) : (eli5ProactiveMatch ? parseInt(eli5ProactiveMatch[1]) : null),
     eli5Proactive: eli5ProactiveMatch ? { topic: parseInt(eli5ProactiveMatch[1]), trigger: eli5ProactiveMatch[2] } : null,
-    checkpoint: checkpointMatch ? {
-      score: parseInt(checkpointMatch[1]),
-      total: parseInt(checkpointMatch[2]),
-      afterTopic: parseInt(checkpointMatch[3]),
-    } : null,
+    checkpoint,
     checkpointDiagnostic: checkpointDiagMatch ? {
       score: parseInt(checkpointDiagMatch[1]),
       total: parseInt(checkpointDiagMatch[2]),
@@ -259,7 +302,7 @@ export function parseControlTags(text: string) {
       fix: checkpointDiagMatch[6],
     } : null,
     unitComplete,
-    topicOutline: topicOutlineMatch ? JSON.parse(topicOutlineMatch[1]) : null,
+    topicOutline: topicOutlineMatch ? (() => { try { return JSON.parse(topicOutlineMatch[1]); } catch { return null; } })() : null,
     topicReinforce: topicReinforceMatch ? parseInt(topicReinforceMatch[1]) : null,
     topicSkip: topicSkipMatch ? parseInt(topicSkipMatch[1]) : null,
     outlineReordered: outlineReorderedMatch ? outlineReorderedMatch[1] : null,
@@ -273,6 +316,20 @@ export function parseControlTags(text: string) {
       weak: sessionRecapMatch[2].split('|').filter(Boolean),
       nextStart: sessionRecapMatch[3],
     } : null,
+    streakUpdate: streakUpdateMatch ? {
+      unit: streakUpdateMatch[1],
+      action: streakUpdateMatch[2] as 'extend' | 'break' | 'start',
+    } : null,
+    readinessUpdate: readinessUpdateMatch ? {
+      score: parseInt(readinessUpdateMatch[1]),
+      unit: readinessUpdateMatch[2],
+    } : null,
+    predictedQSession: predictedQMatch ? {
+      score: parseInt(predictedQMatch[1]),
+      total: parseInt(predictedQMatch[2]),
+      strong: predictedQMatch[3].split('|').filter(Boolean),
+      weak: predictedQMatch[4].split('|').filter(Boolean),
+    } : null,
   };
 }
 
@@ -282,6 +339,7 @@ export function stripControlTags(text: string): string {
     .replace(/\[ELI5_TRIGGERED:\s*\d+\]/g, '')
     .replace(/\[ELI5_PROACTIVE:topic=\d+,trigger=[^\]]+\]/g, '')
     .replace(/\[CHECKPOINT:[^\]]+\]/g, '')
+    .replace(/\[CHECKPOINT\][^\[]*\[\/CHECKPOINT\]/g, '')
     .replace(/\[CHECKPOINT_DIAGNOSTIC:[^\]]+\]/g, '')
     .replace(/\[UNIT_COMPLETE\]/g, '')
     .replace(/```topic_outline[\s\S]*?```/g, '')
@@ -294,11 +352,12 @@ export function stripControlTags(text: string): string {
     .replace(/\[SPACED_REVIEW:topic=[^,]+,result=(?:pass|fail),new_strength=\d+\]/g, '')
     .replace(/\[RECALL_PROMPT:topic=\d+\]/g, '')
     .replace(/\[SESSION_RECAP:[^\]]+\]/g, '')
-    .replace(/\[STREAK_UPDATE[^\]]*\]/g, '')
-    .replace(/\[READINESS_UPDATE[^\]]*\]/g, '')
+    .replace(/\[STREAK_UPDATE:[^\]]*\]/g, '')
+    .replace(/\[READINESS_UPDATE:[^\]]*\]/g, '')
     .replace(/\[DAYS_TO_EXAM[^\]]*\]/g, '')
-    .replace(/\[PREDICTED_Q_SESSION[^\]]*\]/g, '')
+    .replace(/\[PREDICTED_Q_SESSION:[^\]]*\]/g, '')
     .replace(/\[QUIZ_RESULT[^\]]*\]/g, '')
     .replace(/\[CHEAT_SHEET_GENERATED[^\]]*\]/g, '')
+    .replace(/\[TOPIC_OUTLINE\][\s\S]*?\[\/TOPIC_OUTLINE\]/g, '')
     .trim();
 }

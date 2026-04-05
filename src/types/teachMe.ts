@@ -6,7 +6,7 @@ export interface TopicItem {
   eli5Used?: boolean;
   depthLevel?: 'light' | 'medium' | 'deep';
   examPriority?: 'high' | 'medium' | 'low';
-  strengthLevel?: number; // 1-5 from student_memory
+  strengthLevel?: number;
   daysSinceLastSeen?: number;
   reviewDue?: boolean;
 }
@@ -16,7 +16,6 @@ export interface CheckpointScore {
   score: number;
   total: number;
   passed: boolean;
-  // Diagnostic fields
   strong?: string;
   weak?: string;
   misconception?: string;
@@ -44,4 +43,11 @@ export interface TeachMeSession {
   createdAt: string;
   updatedAt: string;
   metadata?: Record<string, any>;
+  // New fields
+  exam_readiness_score: number;
+  streak_days: number;
+  session_recap: SessionRecap | null;
+  predicted_q_score: number | null;
+  weak_topics: string[];
+  strong_topics: string[];
 }
