@@ -586,69 +586,76 @@ serve(async (req) => {
       }
     }
 
-    // --- Exam Mode: fetch past papers and notes separately ---
+    // --- Full context retrieval for Teach Me & Exam Mode ---
+    let teachMeContext = "";
     let examModeContext = "";
     const isExamMode = examMode || lastUserMessage.includes("[EXAM_MODE]");
-    if (isExamMode && unitId && OPENAI_API_KEY) {
+    const isTeachOrExam = teachMeMode || isExamMode;
+
+    if (isTeachOrExam && unitId) {
       try {
-        // Fetch all past paper chunks for this unit (by metadata document_type)
-        const { data: allDocs } = await supabaseAdmin
-          .from("document_embeddings")
-          .select("content, metadata")
-          .eq("material_id", unitId)
-          .limit(200);
-
-        // Since we can't filter by metadata in a simple query, fetch via materials
-        const { data: pastPaperMaterials } = await supabaseAdmin
-          .from("materials")
-          .select("id")
-          .eq("unit_id", unitId)
-          .eq("document_type", "past_paper");
-        
         const { data: notesMaterials } = await supabaseAdmin
-          .from("materials")
-          .select("id")
-          .eq("unit_id", unitId)
-          .eq("document_type", "notes");
+          .from("materials").select("id").eq("unit_id", unitId).neq("document_type", "past_paper");
+        const { data: pastPaperMaterials } = await supabaseAdmin
+          .from("materials").select("id").eq("unit_id", unitId).eq("document_type", "past_paper");
 
-        const ppIds = new Set((pastPaperMaterials || []).map((m: any) => m.id));
-        const noteIds = new Set((notesMaterials || []).map((m: any) => m.id));
+        const noteIds = (notesMaterials || []).map((m: any) => m.id);
+        const ppIds = (pastPaperMaterials || []).map((m: any) => m.id);
 
-        // Fetch chunks for past papers
-        let ppContext = "";
-        if (ppIds.size > 0) {
-          const { data: ppChunks } = await supabaseAdmin
-            .from("document_embeddings")
-            .select("content, metadata")
-            .in("material_id", Array.from(ppIds))
-            .limit(60);
-          if (ppChunks && ppChunks.length > 0) {
-            ppContext = "\n\n## PAST PAPERS:\n" + ppChunks.map((c: any) => {
+        let notesChunks: any[] = [];
+        if (noteIds.length > 0) {
+          const { data } = await supabaseAdmin
+            .from("document_embeddings").select("content, metadata, material_id")
+            .in("material_id", noteIds).order("material_id", { ascending: true }).limit(500);
+          notesChunks = data || [];
+        }
+
+        let pastPaperChunks: any[] = [];
+        if (ppIds.length > 0) {
+          const { data } = await supabaseAdmin
+            .from("document_embeddings").select("content, metadata, material_id")
+            .in("material_id", ppIds).order("material_id", { ascending: true }).limit(200);
+          pastPaperChunks = data || [];
+        }
+
+        const notesText = notesChunks.map((c: any) => c.content).join("\n\n");
+        const pastPaperText = pastPaperChunks.map((c: any) => c.content).join("\n\n");
+
+        teachMeContext = `
+=== FULL UNIT NOTES — TEACH DIRECTLY FROM THESE ===
+Document count: ${new Set(notesChunks.map((c: any) => c.material_id)).size}
+Chunk count: ${notesChunks.length}
+
+${notesText.slice(0, 14000)}
+${notesText.length > 14000 ? '\n[Notes truncated at 14,000 chars. Continue fetching on topic requests.]' : ''}
+
+${pastPaperChunks.length ? `
+=== PAST PAPERS — USE TO PRIORITIZE EXAM TOPICS ===
+Paper count: ${new Set(pastPaperChunks.map((c: any) => c.material_id)).size}
+${pastPaperText.slice(0, 6000)}
+` : '=== NO PAST PAPERS UPLOADED FOR THIS UNIT ==='}
+`;
+
+        // Also build exam-specific context
+        if (isExamMode) {
+          let ppContext = "";
+          if (pastPaperChunks.length > 0) {
+            ppContext = "\n\n## PAST PAPERS:\n" + pastPaperChunks.map((c: any) => {
               const meta = c.metadata || {};
               return `[Past Paper: ${meta.title || 'Unknown'}${meta.year ? ` (${meta.year})` : ''}]\n${c.content}`;
             }).join("\n---\n");
           }
-        }
-
-        // Fetch chunks for notes
-        let notesContext = "";
-        if (noteIds.size > 0) {
-          const { data: noteChunks } = await supabaseAdmin
-            .from("document_embeddings")
-            .select("content, metadata")
-            .in("material_id", Array.from(noteIds))
-            .limit(60);
-          if (noteChunks && noteChunks.length > 0) {
-            notesContext = "\n\n## COURSE NOTES:\n" + noteChunks.map((c: any) => {
+          let notesCtx = "";
+          if (notesChunks.length > 0) {
+            notesCtx = "\n\n## COURSE NOTES:\n" + notesChunks.slice(0, 60).map((c: any) => {
               const meta = c.metadata || {};
               return `[Notes: ${meta.title || 'Unknown'}]\n${c.content}`;
             }).join("\n---\n");
           }
+          examModeContext = ppContext + notesCtx;
         }
-
-        examModeContext = ppContext + notesContext;
       } catch (e) {
-        console.warn("Exam mode context fetch error:", e);
+        console.warn("Teach Me / Exam mode context fetch error:", e);
       }
     }
 
