@@ -175,7 +175,7 @@ const ChatPage = () => {
   const [input, setInput] = useState("");
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [mobileUnitsOpen, setMobileUnitsOpen] = useState(false); // right panel on mobile
+  const [mobileUnitsOpen, setMobileUnitsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<ProcessedFile[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -208,7 +208,7 @@ const ChatPage = () => {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null); // for right panel accordion
+  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
 
   // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -360,8 +360,8 @@ const ChatPage = () => {
           score: tags.checkpoint.score,
           total: tags.checkpoint.total,
           passed: tags.checkpoint.score >= 2,
-          strong: tags.checkpoint.strong?.join(', '),
-          weak: tags.checkpoint.weak?.join(', '),
+          strong: tags.checkpoint.strong?.join(", "),
+          weak: tags.checkpoint.weak?.join(", "),
         });
       }
       if (tags.readinessUpdate) {
@@ -407,7 +407,7 @@ const ChatPage = () => {
     restoreTeachMe();
   }, [activeChat?.id]);
 
-  // Touch swipe gestures — left sidebar (from left edge) + right panel (from right edge)
+  // Touch swipe gestures
   const handleTouchStart = useCallback((e: TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
@@ -422,10 +422,8 @@ const ChatPage = () => {
       const screenW = window.innerWidth;
       touchStartRef.current = null;
       if (Math.abs(dx) < 50 || dy > 100) return;
-      // Left sidebar: swipe right from left edge
       if (dx > 0 && startX < 30 && !mobileSidebarOpen) setMobileSidebarOpen(true);
       else if (dx < 0 && mobileSidebarOpen) setMobileSidebarOpen(false);
-      // Right units panel: swipe left from right edge
       else if (dx < 0 && startX > screenW - 30 && !mobileUnitsOpen) setMobileUnitsOpen(true);
       else if (dx > 0 && mobileUnitsOpen) setMobileUnitsOpen(false);
     },
@@ -581,11 +579,11 @@ const ChatPage = () => {
     await sendMessage(prompt, chat.id);
   };
 
-  // ─── Unit selection (from right panel) ───────────────────────────────────────
+  // ─── Unit selection ───────────────────────────────────────────────────────────
 
   const handleSelectUnit = (unitId: string) => {
     setSelectedUnitId(unitId);
-    setExpandedUnitId(prev => prev === unitId ? null : unitId);
+    setExpandedUnitId((prev) => (prev === unitId ? null : unitId));
     setShowArtifacts(false);
   };
 
@@ -992,18 +990,27 @@ const ChatPage = () => {
 
   const selectedUnit = enrolledUnits.find((u) => u.unit_id === selectedUnitId);
 
-  // Only general chats in left sidebar
+  // General chats (no unit) for left sidebar when no unit is selected
   const generalChats = useMemo(() => chats.filter((c) => c.chat_type !== "unit"), [chats]);
 
+  // Unit chats for the selected unit
+  const unitChats = useMemo(
+    () => (selectedUnitId ? chats.filter((c) => c.chat_type === "unit" && c.unit_id === selectedUnitId) : []),
+    [chats, selectedUnitId],
+  );
+
+  // The active list shown in the sidebar depends on whether a unit is selected
+  const activeChatList = selectedUnitId ? unitChats : generalChats;
+
   const groupedChats = useMemo(() => {
-    const groups: Record<string, typeof generalChats> = {};
-    for (const chat of generalChats) {
+    const groups: Record<string, typeof activeChatList> = {};
+    for (const chat of activeChatList) {
       const group = getDateGroup(chat.timestamp);
       if (!groups[group]) groups[group] = [];
       groups[group].push(chat);
     }
     return groups;
-  }, [generalChats]);
+  }, [activeChatList]);
 
   const chatBgStyle = (() => {
     const bg = getChatBg();
@@ -1115,7 +1122,7 @@ const ChatPage = () => {
     );
   };
 
-  // ─── LEFT SIDEBAR content (general chats + artifacts only) ───────────────────
+  // ─── LEFT SIDEBAR content ─────────────────────────────────────────────────────
 
   const sidebarContent = (
     <>
@@ -1150,8 +1157,11 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           <Button
             onClick={() => {
-              createChat("general");
-              setSelectedUnitId(null);
+              if (selectedUnitId) {
+                createChat("unit", selectedUnitId);
+              } else {
+                createChat("general");
+              }
               setShowArtifacts(false);
               if (isMobile) setMobileSidebarOpen(false);
             }}
@@ -1162,7 +1172,13 @@ const ChatPage = () => {
           </Button>
         ) : (
           <Button
-            onClick={() => createChat("general")}
+            onClick={() => {
+              if (selectedUnitId) {
+                createChat("unit", selectedUnitId);
+              } else {
+                createChat("general");
+              }
+            }}
             className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 p-0 flex items-center justify-center"
             size="icon"
           >
@@ -1197,26 +1213,30 @@ const ChatPage = () => {
         </div>
       )}
 
-      {/* Chat history — general only */}
+      {/* Chat history — shows unit chats when unit selected, general chats otherwise */}
       <div className="flex-1 overflow-y-auto px-3 py-2">
         {sidebarExpanded || isMobile ? (
-          generalChats.length === 0 ? (
+          activeChatList.length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
-              <p className="text-sm text-sidebar-foreground/30">No chats yet</p>
+              <p className="text-sm text-sidebar-foreground/30">
+                {selectedUnit ? `No chats for ${selectedUnit.unit_code} yet` : "No chats yet"}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1 mb-1">
                 <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40">
-                  Chat History
+                  {selectedUnit ? `${selectedUnit.unit_code} Chats` : "Chat History"}
                 </p>
-                <button
-                  onClick={() => setShowDeleteAllConfirm(true)}
-                  className="text-xs text-destructive/70 hover:text-destructive transition-colors"
-                >
-                  Delete All
-                </button>
+                {!selectedUnit && (
+                  <button
+                    onClick={() => setShowDeleteAllConfirm(true)}
+                    className="text-xs text-destructive/70 hover:text-destructive transition-colors"
+                  >
+                    Delete All
+                  </button>
+                )}
               </div>
               {DATE_GROUP_ORDER.map((group) => {
                 const groupChats = groupedChats[group];
@@ -1349,7 +1369,7 @@ const ChatPage = () => {
     </>
   );
 
-  // ─── RIGHT PANEL content (units + actions) ────────────────────────────────────
+  // ─── RIGHT PANEL content ──────────────────────────────────────────────────────
 
   const unitsPanelContent = (
     <div className="flex flex-col h-full">
@@ -1372,7 +1392,7 @@ const ChatPage = () => {
         <p className="text-xs text-muted-foreground mt-1">Select a unit to start studying</p>
       </div>
 
-      {/* Hidden file inputs (shared across units) */}
+      {/* Hidden file inputs */}
       <input
         ref={unitUploadInputRef}
         type="file"
@@ -1518,7 +1538,6 @@ const ChatPage = () => {
 
                         {/* New Chat + Action buttons */}
                         <div className="space-y-1 pt-1">
-                          {/* New Chat button */}
                           <button
                             onClick={() => handleNewUnitChat(unit.unit_id)}
                             className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-background transition-colors text-left border border-dashed border-border mb-1"
@@ -1543,7 +1562,8 @@ const ChatPage = () => {
                                 }
                                 setTeachMeActive(true);
                                 let chat = activeChat;
-                                if (!chat || chat.unit_id !== unit.unit_id) chat = await createChat("unit", unit.unit_id);
+                                if (!chat || chat.unit_id !== unit.unit_id)
+                                  chat = await createChat("unit", unit.unit_id);
                                 if (chat)
                                   await sendMessage(
                                     `Start Teach Me Mode for the unit: ${unit.unit_name}. Scan my uploaded notes and past papers, build the topic outline, and begin teaching Topic 1 immediately.`,
@@ -1880,12 +1900,10 @@ const ChatPage = () => {
         >
           {/* ── HEADER ── */}
           <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent gap-2">
-            {/* Mobile: left sidebar toggle */}
             <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0">
               <PanelLeft className="w-5 h-5" />
             </button>
 
-            {/* Title */}
             <div className="flex-1 min-w-0">
               {selectedUnit ? (
                 <div>
@@ -1902,7 +1920,6 @@ const ChatPage = () => {
               )}
             </div>
 
-            {/* Teach Me — only when unit selected */}
             {selectedUnit && (
               <button
                 onClick={async () => {
@@ -1938,7 +1955,6 @@ const ChatPage = () => {
               </button>
             )}
 
-            {/* Exam button (replaces Calendar) — only when unit selected */}
             {selectedUnit ? (
               <button
                 onClick={() => {
@@ -1965,7 +1981,6 @@ const ChatPage = () => {
               </button>
             )}
 
-            {/* Mobile: right units panel toggle */}
             <button
               onClick={() => setMobileUnitsOpen(true)}
               className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0"
@@ -2018,7 +2033,6 @@ const ChatPage = () => {
                           >
                             {chatInput}
                           </motion.div>
-                          {/* General suggestions (no unit selected) */}
                           {!selectedUnit && (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
@@ -2044,7 +2058,6 @@ const ChatPage = () => {
                               ))}
                             </motion.div>
                           )}
-                          {/* Unit selected but no messages — show select unit nudge on mobile */}
                           {!selectedUnit && isMobile && (
                             <motion.div
                               initial={{ opacity: 0 }}
@@ -2493,27 +2506,27 @@ const ChatPage = () => {
           </div>
         )}
 
-        {/* Teach Me Panel — show even without session (loading state) */}
+        {/* Teach Me Panel */}
         <AnimatePresence>
           {teachMeActive && !viewerOpen && (
-              <TeachMePanel
-                session={teachMe.session}
-                loading={teachMe.loading || (!teachMe.session && teachMeActive)}
-                unitName={selectedUnit?.unit_name || ""}
-                onToggleFocusMode={() => {
-                  if (teachMe.session) {
-                    teachMe.toggleFocusMode(teachMe.session.id);
-                    document.body.classList.toggle("focus-mode", !teachMe.session.focusMode);
-                  }
-                }}
-                onEndSession={() => {
-                  if (teachMe.session) teachMe.markComplete(teachMe.session.id);
-                  setTeachMeActive(false);
-                  teachMe.endSession();
-                  document.body.classList.remove("focus-mode");
-                }}
-                onSendMessage={(text) => handleSend(text)}
-              />
+            <TeachMePanel
+              session={teachMe.session}
+              loading={teachMe.loading || (!teachMe.session && teachMeActive)}
+              unitName={selectedUnit?.unit_name || ""}
+              onToggleFocusMode={() => {
+                if (teachMe.session) {
+                  teachMe.toggleFocusMode(teachMe.session.id);
+                  document.body.classList.toggle("focus-mode", !teachMe.session.focusMode);
+                }
+              }}
+              onEndSession={() => {
+                if (teachMe.session) teachMe.markComplete(teachMe.session.id);
+                setTeachMeActive(false);
+                teachMe.endSession();
+                document.body.classList.remove("focus-mode");
+              }}
+              onSendMessage={(text) => handleSend(text)}
+            />
           )}
         </AnimatePresence>
 
@@ -2545,7 +2558,6 @@ const ChatPage = () => {
               className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl border-t border-border md:hidden"
               style={{ maxHeight: "85vh" }}
             >
-              {/* Drag handle */}
               <div className="flex justify-center pt-3 pb-1">
                 <div className="w-10 h-1 rounded-full bg-border" />
               </div>
