@@ -262,7 +262,8 @@ const ChatPage = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!selectedUnitId) {
+    const targetId = selectedUnitId || expandedUnitId;
+    if (!targetId) {
       setPastPaperCount(0);
       setNotesCount(0);
       return;
@@ -272,19 +273,19 @@ const ChatPage = () => {
         supabase
           .from("materials")
           .select("id", { count: "exact", head: true })
-          .eq("unit_id", selectedUnitId)
+          .eq("unit_id", targetId)
           .eq("document_type", "past_paper"),
         supabase
           .from("materials")
           .select("id", { count: "exact", head: true })
-          .eq("unit_id", selectedUnitId)
+          .eq("unit_id", targetId)
           .eq("document_type", "notes"),
       ]);
       setPastPaperCount(ppRes.count || 0);
       setNotesCount(notesRes.count || 0);
     };
     loadCounts();
-  }, [selectedUnitId]);
+  }, [selectedUnitId, expandedUnitId]);
 
   useEffect(() => {
     const el = chatContainerRef.current;
