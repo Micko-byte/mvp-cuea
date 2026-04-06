@@ -582,11 +582,22 @@ const ChatPage = () => {
 
   // ─── Unit selection (from right panel) ───────────────────────────────────────
 
-  const handleSelectUnit = async (unitId: string) => {
+  const handleSelectUnit = (unitId: string) => {
     setSelectedUnitId(unitId);
-    setExpandedUnitId(unitId);
+    setExpandedUnitId(prev => prev === unitId ? null : unitId);
     setShowArtifacts(false);
-    // Create or switch to a unit chat
+  };
+
+  const handleNewUnitChat = async (unitId: string) => {
+    setSelectedUnitId(unitId);
+    setShowArtifacts(false);
+    await createChat("unit", unitId);
+    if (isMobile) setMobileUnitsOpen(false);
+  };
+
+  const handleOpenUnitChat = async (unitId: string) => {
+    setSelectedUnitId(unitId);
+    setShowArtifacts(false);
     const existingUnitChat = chats.find((c) => c.chat_type === "unit" && c.unit_id === unitId);
     if (existingUnitChat) {
       setActiveChat(existingUnitChat.id);
