@@ -1515,8 +1515,17 @@ const ChatPage = () => {
                           </div>
                         )}
 
-                        {/* Action buttons */}
+                        {/* New Chat + Action buttons */}
                         <div className="space-y-1 pt-1">
+                          {/* New Chat button */}
+                          <button
+                            onClick={() => handleNewUnitChat(unit.unit_id)}
+                            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-background transition-colors text-left border border-dashed border-border mb-1"
+                          >
+                            <Plus className="w-4 h-4 flex-shrink-0 text-primary" />
+                            <span className="font-medium text-foreground">New Chat</span>
+                          </button>
+
                           <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-0.5">
                             Quick Actions
                           </p>
@@ -1533,7 +1542,7 @@ const ChatPage = () => {
                                 }
                                 setTeachMeActive(true);
                                 let chat = activeChat;
-                                if (!chat) chat = await createChat("unit", unit.unit_id);
+                                if (!chat || chat.unit_id !== unit.unit_id) chat = await createChat("unit", unit.unit_id);
                                 if (chat)
                                   await sendMessage(
                                     `Start Teach Me Mode for the unit: ${unit.unit_name}. Scan my uploaded notes and past papers, build the topic outline, and begin teaching Topic 1 immediately.`,
@@ -1553,10 +1562,10 @@ const ChatPage = () => {
                                   toast.error("Upload course notes first.");
                                   return;
                                 }
+                                await handleOpenUnitChat(unit.unit_id);
                                 await handleSuggestion(
                                   `Help me prepare for my ${unit.unit_code} exam. Give me the key topics, likely exam questions, and a revision summary based on the uploaded notes.`,
                                 );
-                                if (isMobile) setMobileUnitsOpen(false);
                               },
                             },
                             ...(pastPaperCount > 0
@@ -1566,10 +1575,10 @@ const ChatPage = () => {
                                     label: "Exam Mode",
                                     color: "text-amber-600",
                                     onClick: async () => {
+                                      await handleOpenUnitChat(unit.unit_id);
                                       await handleSuggestion(
                                         `[EXAM_MODE] Analyze ALL past papers uploaded for ${unit.unit_code} — ${unit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.`,
                                       );
-                                      if (isMobile) setMobileUnitsOpen(false);
                                     },
                                   },
                                 ]
@@ -1583,10 +1592,10 @@ const ChatPage = () => {
                                   toast.error("Upload course notes first.");
                                   return;
                                 }
+                                await handleOpenUnitChat(unit.unit_id);
                                 await handleSuggestion(
                                   `Quiz me on ${unit.unit_code} — ${unit.unit_name}. Start with an easy question from the uploaded notes and wait for my answer.`,
                                 );
-                                if (isMobile) setMobileUnitsOpen(false);
                               },
                             },
                             {
@@ -1598,10 +1607,10 @@ const ChatPage = () => {
                                   toast.error("Upload course notes first.");
                                   return;
                                 }
+                                await handleOpenUnitChat(unit.unit_id);
                                 await handleSuggestion(
                                   `Give me a complete summary of all the uploaded notes for ${unit.unit_code} — ${unit.unit_name}. Organize by topic.`,
                                 );
-                                if (isMobile) setMobileUnitsOpen(false);
                               },
                             },
                           ].map((action) => (
