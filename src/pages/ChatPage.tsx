@@ -2492,11 +2492,13 @@ const ChatPage = () => {
           </div>
         )}
 
-        {/* Teach Me Panel */}
+        {/* Teach Me Panel — show even without session (loading state) */}
         <AnimatePresence>
-          {teachMeActive && teachMe.session && !viewerOpen && (
+          {teachMeActive && !viewerOpen && (
               <TeachMePanel
                 session={teachMe.session}
+                loading={teachMe.loading || (!teachMe.session && teachMeActive)}
+                unitName={selectedUnit?.unit_name || ""}
                 onToggleFocusMode={() => {
                   if (teachMe.session) {
                     teachMe.toggleFocusMode(teachMe.session.id);
@@ -2509,6 +2511,7 @@ const ChatPage = () => {
                   teachMe.endSession();
                   document.body.classList.remove("focus-mode");
                 }}
+                onSendMessage={(text) => handleSend(text)}
               />
           )}
         </AnimatePresence>
