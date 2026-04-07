@@ -64,6 +64,7 @@ import {
   ChevronRight,
   GraduationCap,
   ClipboardList,
+  ScrollText,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ import { Switch } from "@/components/ui/switch";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
 import ArtifactViewer from "@/components/ArtifactViewer";
 import { TeachMePanel } from "@/components/TeachMePanel";
+import { SourcesPanel } from "@/components/SourcesPanel";
 import { getTimeBasedGreeting } from "@/utils/greetings";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -209,6 +211,7 @@ const ChatPage = () => {
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
   // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -1934,6 +1937,7 @@ const ChatPage = () => {
                     return;
                   }
                   setTeachMeActive(true);
+                  setSourcesOpen(false);
                   if (activeChat) {
                     const existing = await teachMe.loadSession(activeChat.id);
                     if (existing) return;
@@ -1952,6 +1956,17 @@ const ChatPage = () => {
               >
                 <BookOpen className="w-3 h-3" />
                 <span className="hidden sm:inline">{teachMeActive ? "Teaching..." : "Teach Me"}</span>
+              </button>
+            )}
+
+            {selectedUnit && !teachMeActive && (
+              <button
+                onClick={() => setSourcesOpen(!sourcesOpen)}
+                className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 ${sourcesOpen ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                title="View uploaded notes and past papers"
+              >
+                <ScrollText className="w-3 h-3" />
+                <span>Sources</span>
               </button>
             )}
 
@@ -2530,8 +2545,17 @@ const ChatPage = () => {
           )}
         </AnimatePresence>
 
+        {/* Sources Panel (desktop) */}
+        {sourcesOpen && selectedUnitId && selectedUnit && !viewerOpen && !teachMeActive && (
+          <SourcesPanel
+            unitId={selectedUnitId}
+            unitName={`${selectedUnit.unit_code} — ${selectedUnit.unit_name}`}
+            onClose={() => setSourcesOpen(false)}
+          />
+        )}
+
         {/* ── RIGHT UNITS PANEL (desktop) ── */}
-        {!viewerOpen && !teachMeActive && (
+        {!viewerOpen && !teachMeActive && !sourcesOpen && (
           <aside className="hidden md:flex flex-col w-[260px] flex-shrink-0 border-l border-border bg-card/50">
             {unitsPanelContent}
           </aside>
