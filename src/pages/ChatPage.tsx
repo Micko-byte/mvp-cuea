@@ -2544,8 +2544,17 @@ const ChatPage = () => {
           )}
         </AnimatePresence>
 
+        {/* Sources Panel (desktop) */}
+        {sourcesOpen && selectedUnitId && selectedUnit && !viewerOpen && !teachMeActive && (
+          <SourcesPanel
+            unitId={selectedUnitId}
+            unitName={`${selectedUnit.unit_code} — ${selectedUnit.unit_name}`}
+            onClose={() => setSourcesOpen(false)}
+          />
+        )}
+
         {/* ── RIGHT UNITS PANEL (desktop) ── */}
-        {!viewerOpen && !teachMeActive && (
+        {!viewerOpen && !teachMeActive && !sourcesOpen && (
           <aside className="hidden md:flex flex-col w-[260px] flex-shrink-0 border-l border-border bg-card/50">
             {unitsPanelContent}
           </aside>
