@@ -77,6 +77,7 @@ import { Switch } from "@/components/ui/switch";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
 import ArtifactViewer from "@/components/ArtifactViewer";
 import { TeachMePanel } from "@/components/TeachMePanel";
+import { SourcesPanel } from "@/components/SourcesPanel";
 import { getTimeBasedGreeting } from "@/utils/greetings";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -209,6 +210,7 @@ const ChatPage = () => {
   const [enrolledUnits, setEnrolledUnits] = useState<EnrolledUnit[]>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
   // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
