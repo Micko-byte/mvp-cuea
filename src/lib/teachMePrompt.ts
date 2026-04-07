@@ -304,7 +304,20 @@ export function parseControlTags(text: string) {
       fix: checkpointDiagMatch[6],
     } : null,
     unitComplete,
-    topicOutline: topicOutlineMatch ? (() => { try { return JSON.parse(topicOutlineMatch[1]); } catch { return null; } })() : null,
+    topicOutline: topicOutlineMatch ? (() => {
+      const raw = topicOutlineMatch[1].trim();
+      // Try JSON first
+      try { return JSON.parse(raw); } catch {}
+      // Fall back to "Topic N: Name" format
+      const lines = raw.split('\n').filter(l => l.trim());
+      if (lines.length > 0) {
+        return lines.map((line, i) => {
+          const cleaned = line.replace(/^[\d]+[\.\):\-]\s*/, '').replace(/^Topic\s*\d+\s*[:\.]\s*/i, '').trim();
+          return { index: i, name: cleaned || line.trim() };
+        });
+      }
+      return null;
+    })() : null,
     topicReinforce: topicReinforceMatch ? parseInt(topicReinforceMatch[1]) : null,
     topicSkip: topicSkipMatch ? parseInt(topicSkipMatch[1]) : null,
     outlineReordered: outlineReorderedMatch ? outlineReorderedMatch[1] : null,
