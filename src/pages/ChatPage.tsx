@@ -1966,7 +1966,7 @@ const ChatPage = () => {
                 <ScrollText className="w-3 h-3" />
                 <span>Sources</span>
               </button>
-            )
+            )}
 
             {selectedUnit ? (
               <button
