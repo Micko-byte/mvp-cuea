@@ -1957,6 +1957,17 @@ const ChatPage = () => {
               </button>
             )}
 
+            {selectedUnit && !teachMeActive && (
+              <button
+                onClick={() => setSourcesOpen(!sourcesOpen)}
+                className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 ${sourcesOpen ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                title="View uploaded notes and past papers"
+              >
+                <ScrollText className="w-3 h-3" />
+                <span>Sources</span>
+              </button>
+            )
+
             {selectedUnit ? (
               <button
                 onClick={() => {
