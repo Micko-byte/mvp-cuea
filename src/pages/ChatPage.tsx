@@ -1937,6 +1937,7 @@ const ChatPage = () => {
                     return;
                   }
                   setTeachMeActive(true);
+                  setSourcesOpen(false);
                   if (activeChat) {
                     const existing = await teachMe.loadSession(activeChat.id);
                     if (existing) return;
