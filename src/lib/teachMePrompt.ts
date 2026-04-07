@@ -244,7 +244,9 @@ export function parseControlTags(text: string) {
   const checkpointLegacyMatch = text.match(/\[CHECKPOINT:\s*score=(\d+)\/(\d+),\s*afterTopic=(\d+)\]/);
   const checkpointDiagMatch = text.match(/\[CHECKPOINT_DIAGNOSTIC:score=(\d+)\/(\d+),strong=([^,]*),weak=([^,]*),misconception=([^,]*),fix=([^\]]*)\]/);
   const unitComplete = text.includes('[UNIT_COMPLETE]');
-  const topicOutlineMatch = text.match(/```topic_outline\n([\s\S]*?)```/);
+  // Try code block first, then [TOPIC_OUTLINE] tags, then loose JSON array
+  const topicOutlineMatch = text.match(/```topic_outline\n([\s\S]*?)```/)
+    || text.match(/\[TOPIC_OUTLINE\]([\s\S]*?)\[\/TOPIC_OUTLINE\]/);
   const topicReinforceMatch = text.match(/\[TOPIC_REINFORCE:(\d+)\]/);
   const topicSkipMatch = text.match(/\[TOPIC_SKIP:(\d+)\]/);
   const outlineReorderedMatch = text.match(/\[OUTLINE_REORDERED:reason=([^\]]+)\]/);
