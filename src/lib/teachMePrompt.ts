@@ -244,7 +244,9 @@ export function parseControlTags(text: string) {
   const checkpointLegacyMatch = text.match(/\[CHECKPOINT:\s*score=(\d+)\/(\d+),\s*afterTopic=(\d+)\]/);
   const checkpointDiagMatch = text.match(/\[CHECKPOINT_DIAGNOSTIC:score=(\d+)\/(\d+),strong=([^,]*),weak=([^,]*),misconception=([^,]*),fix=([^\]]*)\]/);
   const unitComplete = text.includes('[UNIT_COMPLETE]');
-  const topicOutlineMatch = text.match(/```topic_outline\n([\s\S]*?)```/);
+  // Try code block first, then [TOPIC_OUTLINE] tags, then loose JSON array
+  const topicOutlineMatch = text.match(/```topic_outline\n([\s\S]*?)```/)
+    || text.match(/\[TOPIC_OUTLINE\]([\s\S]*?)\[\/TOPIC_OUTLINE\]/);
   const topicReinforceMatch = text.match(/\[TOPIC_REINFORCE:(\d+)\]/);
   const topicSkipMatch = text.match(/\[TOPIC_SKIP:(\d+)\]/);
   const outlineReorderedMatch = text.match(/\[OUTLINE_REORDERED:reason=([^\]]+)\]/);
@@ -302,7 +304,20 @@ export function parseControlTags(text: string) {
       fix: checkpointDiagMatch[6],
     } : null,
     unitComplete,
-    topicOutline: topicOutlineMatch ? (() => { try { return JSON.parse(topicOutlineMatch[1]); } catch { return null; } })() : null,
+    topicOutline: topicOutlineMatch ? (() => {
+      const raw = topicOutlineMatch[1].trim();
+      // Try JSON first
+      try { return JSON.parse(raw); } catch {}
+      // Fall back to "Topic N: Name" format
+      const lines = raw.split('\n').filter(l => l.trim());
+      if (lines.length > 0) {
+        return lines.map((line, i) => {
+          const cleaned = line.replace(/^[\d]+[\.\):\-]\s*/, '').replace(/^Topic\s*\d+\s*[:\.]\s*/i, '').trim();
+          return { index: i, name: cleaned || line.trim() };
+        });
+      }
+      return null;
+    })() : null,
     topicReinforce: topicReinforceMatch ? parseInt(topicReinforceMatch[1]) : null,
     topicSkip: topicSkipMatch ? parseInt(topicSkipMatch[1]) : null,
     outlineReordered: outlineReorderedMatch ? outlineReorderedMatch[1] : null,
