@@ -43,7 +43,7 @@ interface ChatContextType {
   isStreaming: boolean;
   createChat: (chatType?: "general" | "unit", unitId?: string) => Promise<Chat | null>;
   setActiveChat: (id: string) => void;
-  sendMessage: (text: string, overrideChatId?: string, files?: ProcessedFile[], teachMeMode?: boolean) => Promise<void>;
+  sendMessage: (text: string, overrideChatId?: string, files?: ProcessedFile[], teachMeMode?: boolean, openedSources?: { id: string; title: string; file_name: string }[]) => Promise<void>;
   deleteChat: (id: string) => Promise<void>;
   deleteAllChats: () => Promise<void>;
   renameChat: (id: string, newTitle: string) => Promise<void>;
@@ -230,7 +230,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const sendMessage = useCallback(async (text: string, overrideChatId?: string, attachedFiles?: ProcessedFile[], teachMeMode?: boolean) => {
+  const sendMessage = useCallback(async (text: string, overrideChatId?: string, attachedFiles?: ProcessedFile[], teachMeMode?: boolean, openedSources?: { id: string; title: string; file_name: string }[]) => {
     const chatId = overrideChatId || activeChatId;
     if (!user || !chatId) return;
 
@@ -379,6 +379,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const bodyPayload: Record<string, unknown> = { messages: aiMessages, chatId };
       if (currentChat?.unit_id) bodyPayload.unitId = currentChat.unit_id;
       if (teachMeMode) bodyPayload.teachMeMode = true;
+      if (openedSources && openedSources.length > 0) bodyPayload.openedSources = openedSources;
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
