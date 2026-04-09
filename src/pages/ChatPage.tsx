@@ -575,6 +575,7 @@ const ChatPage = () => {
     const filesToSend = attachedFiles.length > 0 ? attachedFiles : undefined;
     setInput("");
     setAttachedFiles([]);
+    if (inputRef.current) inputRef.current.style.height = "36px";
     inputRef.current?.focus();
     await sendMessage(text, chat.id, filesToSend, teachMeActive);
   };
