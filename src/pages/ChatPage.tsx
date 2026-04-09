@@ -1840,8 +1840,8 @@ const ChatPage = () => {
             }
           }}
           placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
-          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
-          style={{ maxHeight: "150px" }}
+          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto leading-5"
+          style={{ maxHeight: "150px", height: "36px" }}
           rows={1}
           disabled={isStreaming}
         />
