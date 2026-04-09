@@ -155,11 +155,19 @@ export function SourcesPanel({ unitId, unitName, onClose }: SourcesPanelProps) {
               <p className="text-sm text-muted-foreground">Loading document...</p>
             </div>
           ) : pdfUrl ? (
-            <iframe
-              src={`${pdfUrl}#toolbar=1&navpanes=0`}
-              className="w-full h-full border-0"
-              title={selectedFile.title}
-            />
+            selectedFile.file_type === "application/pdf" || selectedFile.file_name.endsWith(".pdf") ? (
+              <iframe
+                src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(pdfUrl)}`}
+                className="w-full h-full border-0 bg-background"
+                title={selectedFile.title}
+              />
+            ) : (
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-0"
+                title={selectedFile.title}
+              />
+            )
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
               <File className="w-8 h-8 text-muted-foreground" />

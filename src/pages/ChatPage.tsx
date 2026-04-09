@@ -325,8 +325,14 @@ const ChatPage = () => {
     }
   }, []);
 
+  // Auto-scroll only if user is already near the bottom (not scrolled up)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    if (atBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [activeChat?.messages, isStreaming]);
 
   useEffect(() => {
