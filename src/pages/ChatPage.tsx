@@ -1830,7 +1830,7 @@ const ChatPage = () => {
           onChange={(e) => {
             setInput(e.target.value);
             const el = e.target;
-            el.style.height = "auto";
+            el.style.height = "36px";
             el.style.height = Math.min(el.scrollHeight, 150) + "px";
           }}
           onKeyDown={(e) => {
