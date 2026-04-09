@@ -325,8 +325,14 @@ const ChatPage = () => {
     }
   }, []);
 
+  // Auto-scroll only if user is already near the bottom (not scrolled up)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    if (atBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [activeChat?.messages, isStreaming]);
 
   useEffect(() => {
@@ -569,6 +575,7 @@ const ChatPage = () => {
     const filesToSend = attachedFiles.length > 0 ? attachedFiles : undefined;
     setInput("");
     setAttachedFiles([]);
+    if (inputRef.current) inputRef.current.style.height = "36px";
     inputRef.current?.focus();
     await sendMessage(text, chat.id, filesToSend, teachMeActive);
   };
@@ -1824,7 +1831,7 @@ const ChatPage = () => {
           onChange={(e) => {
             setInput(e.target.value);
             const el = e.target;
-            el.style.height = "auto";
+            el.style.height = "36px";
             el.style.height = Math.min(el.scrollHeight, 150) + "px";
           }}
           onKeyDown={(e) => {
@@ -1834,8 +1841,8 @@ const ChatPage = () => {
             }
           }}
           placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
-          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto"
-          style={{ maxHeight: "150px" }}
+          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto leading-5"
+          style={{ maxHeight: "150px", height: "36px" }}
           rows={1}
           disabled={isStreaming}
         />
