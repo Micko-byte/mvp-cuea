@@ -3,14 +3,30 @@ import { supabase } from '@/integrations/supabase/client';
 import type { TeachMeSession, TopicItem, CheckpointScore } from '@/types/teachMe';
 
 function mapRow(data: any): TeachMeSession {
+  const outline = (data.topic_outline as TopicItem[]) || [];
+  const completedTopics = (data.completed_topics as number[]) || [];
+  const currentIndex = data.current_topic_index ?? 0;
+  
+  // Ensure every topic has a status — DB might store without it
+  const enrichedOutline = outline.map((t, i) => ({
+    ...t,
+    index: t.index ?? i,
+    status: t.status || (
+      completedTopics.includes(t.index ?? i) ? 'done' 
+      : (t.index ?? i) === currentIndex ? 'active' 
+      : (t.index ?? i) < currentIndex ? 'done'
+      : 'locked'
+    ),
+  }));
+
   return {
     id: data.id,
     userId: data.user_id,
     threadId: data.thread_id,
     unitName: data.unit_name,
-    topicOutline: data.topic_outline as TopicItem[],
-    currentTopicIndex: data.current_topic_index,
-    completedTopics: data.completed_topics as number[],
+    topicOutline: enrichedOutline,
+    currentTopicIndex: currentIndex,
+    completedTopics: completedTopics,
     eli5Triggers: data.eli5_triggers,
     checkpointScores: data.checkpoint_scores as CheckpointScore[],
     focusMode: data.focus_mode,
@@ -18,7 +34,6 @@ function mapRow(data: any): TeachMeSession {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     metadata: data.metadata || {},
-    // New fields
     exam_readiness_score: data.exam_readiness_score ?? 0,
     streak_days: data.streak_days ?? 0,
     session_recap: data.session_recap ?? null,
