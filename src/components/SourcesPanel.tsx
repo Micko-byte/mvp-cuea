@@ -27,7 +27,6 @@ interface SourcesPanelProps {
   unitId: string;
   unitName: string;
   onClose: () => void;
-  onFileOpened?: (material: { id: string; title: string; file_name: string }) => void;
 }
 
 /** Smart sort: course outlines first, then by module/chapter/week number, then alphabetically. Past papers last. */
@@ -75,7 +74,7 @@ function getFileIcon(docType: string) {
   return FileText;
 }
 
-export function SourcesPanel({ unitId, unitName, onClose, onFileOpened }: SourcesPanelProps) {
+export function SourcesPanel({ unitId, unitName, onClose }: SourcesPanelProps) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<Material | null>(null);
@@ -118,8 +117,6 @@ export function SourcesPanel({ unitId, unitName, onClose, onFileOpened }: Source
 
     if (!error && data?.signedUrl) {
       setPdfUrl(data.signedUrl);
-      // Track that this file was opened
-      onFileOpened?.({ id: material.id, title: material.title, file_name: material.file_name });
     }
     setPdfLoading(false);
   };
@@ -160,7 +157,7 @@ export function SourcesPanel({ unitId, unitName, onClose, onFileOpened }: Source
           ) : pdfUrl ? (
             selectedFile.file_type === "application/pdf" || selectedFile.file_name.endsWith(".pdf") ? (
               <iframe
-                src={`${pdfUrl}#toolbar=1&navpanes=0`}
+                src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(pdfUrl)}`}
                 className="w-full h-full border-0 bg-background"
                 title={selectedFile.title}
               />

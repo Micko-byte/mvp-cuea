@@ -297,7 +297,7 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const { messages, chatId, unitId, teachMeMode, examMode, openedSources } = await req.json();
+    const { messages, chatId, unitId, teachMeMode, examMode } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -674,40 +674,6 @@ ${pastPaperText.slice(0, 6000)}
     const isGeneralChat = !unitId;
     const generalChatNote = isGeneralChat ? `\n\nThis is a GENERAL chat, but you must still ground academic answers in retrieved notes. If the uploaded notes do not support the answer, say that the material is not in the current knowledge base.` : "";
 
-    // --- Opened Sources context (user has viewed these files in the Sources panel) ---
-    let openedSourcesContext = "";
-    if (openedSources && Array.isArray(openedSources) && openedSources.length > 0) {
-      // Fetch the actual content chunks for opened files so the AI can reference them
-      const openedIds = openedSources.map((s: any) => s.id).filter(Boolean);
-      if (openedIds.length > 0) {
-        try {
-          const { data: sourceChunks } = await supabaseAdmin
-            .from("document_embeddings")
-            .select("content, metadata, material_id")
-            .in("material_id", openedIds)
-            .order("material_id", { ascending: true })
-            .limit(200);
-          if (sourceChunks && sourceChunks.length > 0) {
-            const groupedByFile: Record<string, { title: string; chunks: string[] }> = {};
-            for (const chunk of sourceChunks) {
-              const mid = chunk.material_id || "unknown";
-              if (!groupedByFile[mid]) {
-                const src = openedSources.find((s: any) => s.id === mid);
-                groupedByFile[mid] = { title: src?.title || (chunk.metadata as any)?.title || "Document", chunks: [] };
-              }
-              groupedByFile[mid].chunks.push(chunk.content);
-            }
-            const parts = Object.entries(groupedByFile).map(([, file]) => {
-              return `### 📄 ${file.title}\n${file.chunks.join("\n")}`;
-            });
-            openedSourcesContext = `\n\n## OPENED SOURCES (Student is currently viewing these files)\nThe student has these documents open in the Sources panel. When they ask for references, cite the specific file and relevant section.\n\n${parts.join("\n\n---\n\n")}`;
-          }
-        } catch (e) {
-          console.warn("Failed to load opened sources context:", e);
-        }
-      }
-    }
-
     // --- Build the final system prompt ---
     let systemPrompt: string;
 
@@ -818,7 +784,7 @@ Do not summarize — expand and explain every concept thoroughly.
 - Always reference topic roadmap ("Topic 3 of 8")
 `;
 
-      systemPrompt = TEACH_ME_PROMPT + "\n" + studentContext + "\n" + unitContext + "\n" + memoryForTeachMe + "\n\n" + teachMeContext + openedSourcesContext + (ragContext ? "\n\nAdditional RAG Context:\n" + ragContext : "");
+      systemPrompt = TEACH_ME_PROMPT + "\n" + studentContext + "\n" + unitContext + "\n" + memoryForTeachMe + "\n\n" + teachMeContext + (ragContext ? "\n\nAdditional RAG Context:\n" + ragContext : "");
     } else {
       systemPrompt = `${SEKANI_SYSTEM_PROMPT}
 
@@ -843,11 +809,10 @@ ${calendarContext}
 ${memoryContext}
 ${adminExtra}
 ${generalChatNote}
-${openedSourcesContext}
 
 ${ragContext ? `Course Material Context:\n${ragContext}` : "No specific course material was retrieved for this query. You must say that the answer is not supported by the uploaded notes and ask for relevant notes instead of guessing."}
 
-Answer the student's question helpfully, comprehensively, and naturally, but only from supported note context. If support is missing, explicitly say the notes provided do not contain the answer.${openedSourcesContext ? `\n\nIMPORTANT: The student has documents open in the Sources panel. When they ask "where is this?" or "reference?", cite the specific file name and section from the OPENED SOURCES above.` : ""}`;
+Answer the student's question helpfully, comprehensively, and naturally, but only from supported note context. If support is missing, explicitly say the notes provided do not contain the answer.`;
     }
 
     // --- Call OpenAI API ---
