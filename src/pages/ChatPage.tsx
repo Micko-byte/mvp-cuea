@@ -212,6 +212,7 @@ const ChatPage = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [openedSources, setOpenedSources] = useState<{ id: string; title: string; file_name: string }[]>([]);
 
   // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
