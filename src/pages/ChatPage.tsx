@@ -212,6 +212,7 @@ const ChatPage = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [openedSources, setOpenedSources] = useState<{ id: string; title: string; file_name: string }[]>([]);
 
   // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -577,7 +578,7 @@ const ChatPage = () => {
     setAttachedFiles([]);
     if (inputRef.current) inputRef.current.style.height = "36px";
     inputRef.current?.focus();
-    await sendMessage(text, chat.id, filesToSend, teachMeActive);
+    await sendMessage(text, chat.id, filesToSend, teachMeActive, sourcesOpen ? openedSources : undefined);
   };
 
   const handleSuggestion = async (prompt: string) => {
@@ -2558,6 +2559,12 @@ const ChatPage = () => {
             unitId={selectedUnitId}
             unitName={`${selectedUnit.unit_code} — ${selectedUnit.unit_name}`}
             onClose={() => setSourcesOpen(false)}
+            onFileOpened={(mat) => {
+              setOpenedSources((prev) => {
+                if (prev.some((s) => s.id === mat.id)) return prev;
+                return [...prev, mat];
+              });
+            }}
           />
         )}
 
