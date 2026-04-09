@@ -212,7 +212,6 @@ const ChatPage = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [openedSources, setOpenedSources] = useState<{ id: string; title: string; file_name: string }[]>([]);
 
   // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -578,7 +577,7 @@ const ChatPage = () => {
     setAttachedFiles([]);
     if (inputRef.current) inputRef.current.style.height = "36px";
     inputRef.current?.focus();
-    await sendMessage(text, chat.id, filesToSend, teachMeActive, sourcesOpen ? openedSources : undefined);
+    await sendMessage(text, chat.id, filesToSend, teachMeActive);
   };
 
   const handleSuggestion = async (prompt: string) => {
@@ -2141,6 +2140,107 @@ const ChatPage = () => {
                                             remarkPlugins={[remarkMath, remarkGfm]}
                                             rehypePlugins={[rehypeKatex]}
                                             components={{
+                                              // ── HEADINGS ──────────────────────────────────────
+                                              h1({ children }) {
+                                                return (
+                                                  <h1
+                                                    style={{
+                                                      fontSize: "1.5rem",
+                                                      fontWeight: 800,
+                                                      lineHeight: 1.25,
+                                                      marginTop: "1.25rem",
+                                                      marginBottom: "0.6rem",
+                                                      color: "inherit",
+                                                      letterSpacing: "-0.01em",
+                                                    }}
+                                                  >
+                                                    {children}
+                                                  </h1>
+                                                );
+                                              },
+                                              h2({ children }) {
+                                                return (
+                                                  <h2
+                                                    style={{
+                                                      fontSize: "1.2rem",
+                                                      fontWeight: 700,
+                                                      lineHeight: 1.3,
+                                                      marginTop: "1.1rem",
+                                                      marginBottom: "0.5rem",
+                                                      color: "inherit",
+                                                      letterSpacing: "-0.01em",
+                                                    }}
+                                                  >
+                                                    {children}
+                                                  </h2>
+                                                );
+                                              },
+                                              h3({ children }) {
+                                                return (
+                                                  <h3
+                                                    style={{
+                                                      fontSize: "1.05rem",
+                                                      fontWeight: 700,
+                                                      lineHeight: 1.35,
+                                                      marginTop: "0.9rem",
+                                                      marginBottom: "0.4rem",
+                                                      color: "inherit",
+                                                    }}
+                                                  >
+                                                    {children}
+                                                  </h3>
+                                                );
+                                              },
+                                              h4({ children }) {
+                                                return (
+                                                  <h4
+                                                    style={{
+                                                      fontSize: "0.95rem",
+                                                      fontWeight: 600,
+                                                      lineHeight: 1.4,
+                                                      marginTop: "0.75rem",
+                                                      marginBottom: "0.3rem",
+                                                      color: "inherit",
+                                                    }}
+                                                  >
+                                                    {children}
+                                                  </h4>
+                                                );
+                                              },
+                                              h5({ children }) {
+                                                return (
+                                                  <h5
+                                                    style={{
+                                                      fontSize: "0.9rem",
+                                                      fontWeight: 600,
+                                                      lineHeight: 1.4,
+                                                      marginTop: "0.6rem",
+                                                      marginBottom: "0.25rem",
+                                                      color: "inherit",
+                                                    }}
+                                                  >
+                                                    {children}
+                                                  </h5>
+                                                );
+                                              },
+                                              h6({ children }) {
+                                                return (
+                                                  <h6
+                                                    style={{
+                                                      fontSize: "0.85rem",
+                                                      fontWeight: 600,
+                                                      lineHeight: 1.4,
+                                                      marginTop: "0.5rem",
+                                                      marginBottom: "0.2rem",
+                                                      color: "inherit",
+                                                      opacity: 0.85,
+                                                    }}
+                                                  >
+                                                    {children}
+                                                  </h6>
+                                                );
+                                              },
+                                              // ── LINKS ─────────────────────────────────────────
                                               a({ href, children, ...props }) {
                                                 if (href?.startsWith("download:")) {
                                                   const format = href.replace("download:", "") as
@@ -2183,6 +2283,7 @@ const ChatPage = () => {
                                                   </a>
                                                 );
                                               },
+                                              // ── TABLES ────────────────────────────────────────
                                               table: ({ children }: any) => (
                                                 <div className="my-3 overflow-x-auto rounded-lg border border-border">
                                                   <table className="min-w-full divide-y divide-border text-sm">
@@ -2207,6 +2308,7 @@ const ChatPage = () => {
                                               td: ({ children }: any) => (
                                                 <td className="px-3 py-2 text-sm text-foreground">{children}</td>
                                               ),
+                                              // ── CODE ──────────────────────────────────────────
                                               code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || "");
                                                 const lang = match ? match[1] : "";
@@ -2284,6 +2386,7 @@ const ChatPage = () => {
                                                   </code>
                                                 );
                                               },
+                                              // ── IMAGES ────────────────────────────────────────
                                               img({ src, alt, ...props }) {
                                                 return (
                                                   <div className="my-3">
@@ -2559,12 +2662,6 @@ const ChatPage = () => {
             unitId={selectedUnitId}
             unitName={`${selectedUnit.unit_code} — ${selectedUnit.unit_name}`}
             onClose={() => setSourcesOpen(false)}
-            onFileOpened={(mat) => {
-              setOpenedSources((prev) => {
-                if (prev.some((s) => s.id === mat.id)) return prev;
-                return [...prev, mat];
-              });
-            }}
           />
         )}
 
