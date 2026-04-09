@@ -818,7 +818,7 @@ Do not summarize — expand and explain every concept thoroughly.
 - Always reference topic roadmap ("Topic 3 of 8")
 `;
 
-      systemPrompt = TEACH_ME_PROMPT + "\n" + studentContext + "\n" + unitContext + "\n" + memoryForTeachMe + "\n\n" + teachMeContext + (ragContext ? "\n\nAdditional RAG Context:\n" + ragContext : "");
+      systemPrompt = TEACH_ME_PROMPT + "\n" + studentContext + "\n" + unitContext + "\n" + memoryForTeachMe + "\n\n" + teachMeContext + openedSourcesContext + (ragContext ? "\n\nAdditional RAG Context:\n" + ragContext : "");
     } else {
       systemPrompt = `${SEKANI_SYSTEM_PROMPT}
 
@@ -843,10 +843,11 @@ ${calendarContext}
 ${memoryContext}
 ${adminExtra}
 ${generalChatNote}
+${openedSourcesContext}
 
 ${ragContext ? `Course Material Context:\n${ragContext}` : "No specific course material was retrieved for this query. You must say that the answer is not supported by the uploaded notes and ask for relevant notes instead of guessing."}
 
-Answer the student's question helpfully, comprehensively, and naturally, but only from supported note context. If support is missing, explicitly say the notes provided do not contain the answer.`;
+Answer the student's question helpfully, comprehensively, and naturally, but only from supported note context. If support is missing, explicitly say the notes provided do not contain the answer.${openedSourcesContext ? `\n\nIMPORTANT: The student has documents open in the Sources panel. When they ask "where is this?" or "reference?", cite the specific file name and section from the OPENED SOURCES above.` : ""}`;
     }
 
     // --- Call OpenAI API ---
