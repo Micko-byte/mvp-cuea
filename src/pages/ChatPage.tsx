@@ -119,14 +119,14 @@ const GLOBAL_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cal+Sans:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
 
   :root {
-    --sk-sidebar-bg: #0c1220;
-    --sk-sidebar-border: rgba(255,255,255,0.06);
-    --sk-sidebar-item-hover: rgba(255,255,255,0.05);
-    --sk-sidebar-item-active: rgba(99,102,241,0.18);
-    --sk-sidebar-text: rgba(255,255,255,0.55);
-    --sk-sidebar-text-active: rgba(255,255,255,0.92);
-    --sk-accent: #6366f1;
-    --sk-accent2: #8b5cf6;
+    --sk-sidebar-bg: hsl(var(--sidebar-background));
+    --sk-sidebar-border: hsl(var(--sidebar-border) / 0.6);
+    --sk-sidebar-item-hover: hsl(var(--sidebar-accent) / 0.12);
+    --sk-sidebar-item-active: hsl(var(--sidebar-primary) / 0.18);
+    --sk-sidebar-text: hsl(var(--sidebar-foreground) / 0.55);
+    --sk-sidebar-text-active: hsl(var(--sidebar-foreground) / 0.92);
+    --sk-accent: hsl(var(--sidebar-primary));
+    --sk-accent2: hsl(var(--sidebar-primary) / 0.8);
     --sk-user-bubble-from: #4f46e5;
     --sk-user-bubble-to: #7c3aed;
     --sk-font-display: 'Cal Sans', 'DM Sans', system-ui, sans-serif;
@@ -1245,8 +1245,8 @@ const ChatPage = () => {
               <div className="absolute inset-0 rounded-xl bg-indigo-500/10 -z-10" />
             </div>
             <span
-              className="sk-font-display font-semibold text-white/90 tracking-tight"
-              style={{ fontSize: "22px", letterSpacing: "-0.02em" }}
+              className="sk-font-display font-semibold tracking-tight"
+              style={{ fontSize: "22px", letterSpacing: "0.04em", color: "var(--sk-sidebar-text-active)" }}
             >
               Sekani
             </span>
@@ -1587,7 +1587,7 @@ const ChatPage = () => {
                 key={unit.unit_id}
                 className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isExpanded
-                    ? "border-indigo-300/30 dark:border-indigo-700/40 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm"
+                    ? "border-primary/30 bg-primary/8 shadow-sm"
                     : "border-border/60 bg-card hover:border-border"
                 }`}
               >
@@ -1599,13 +1599,13 @@ const ChatPage = () => {
                   className="w-full flex items-center gap-3 p-3 text-left"
                 >
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold sk-font-display ${isExpanded ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground"}`}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold sk-font-display ${isExpanded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
                   >
                     {unit.unit_code.slice(-2)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p
-                      className={`text-[11px] font-bold tracking-wide sk-font-body ${isExpanded ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground"}`}
+                      className={`text-[11px] font-bold tracking-wide sk-font-body ${isExpanded ? "text-primary" : "text-muted-foreground"}`}
                     >
                       {unit.unit_code}
                     </p>
@@ -1630,7 +1630,7 @@ const ChatPage = () => {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="px-3 pb-3 space-y-2.5 border-t border-indigo-200/30 dark:border-indigo-800/30">
+                      <div className="px-3 pb-3 space-y-2.5 border-t border-primary/15">
                         <div className="flex gap-2 pt-2.5">
                           <div className="flex-1 bg-background rounded-xl p-2.5 text-center border border-border/50">
                             <p className="text-xl font-bold text-foreground sk-font-display">{notesCount}</p>
@@ -2246,11 +2246,11 @@ const ChatPage = () => {
                             </div>
                             <h2
                               className="sk-font-display font-semibold text-foreground mb-2"
-                              style={{ fontSize: "clamp(1.4rem, 4vw, 1.9rem)", letterSpacing: "-0.02em" }}
+                              style={{ fontSize: "clamp(1.5rem, 4.5vw, 2.1rem)", letterSpacing: "0.01em" }}
                             >
                               {greeting}, {displayName.split(" ")[0]}
                             </h2>
-                            <p className="text-muted-foreground text-sm sk-font-body max-w-sm mx-auto">
+                            <p className="text-muted-foreground text-sm sk-font-body max-w-sm mx-auto" style={{ letterSpacing: "0.02em" }}>
                               {selectedUnit
                                 ? `Ask anything about ${selectedUnit.unit_code} — ${selectedUnit.unit_name}`
                                 : "How can I help you with your studies today?"}
