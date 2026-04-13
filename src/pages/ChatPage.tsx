@@ -1308,7 +1308,7 @@ const ChatPage = () => {
                 selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
               }}
               className="w-full flex items-center justify-center p-2 rounded-xl transition-colors"
-              style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}
+              style={{ background: "hsl(var(--sidebar-primary) / 0.12)", border: "1px solid hsl(var(--sidebar-primary) / 0.2)" }}
             >
               <Plus className="w-4 h-4 text-indigo-300" />
             </button>
