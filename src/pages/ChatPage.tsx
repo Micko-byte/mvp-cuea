@@ -119,14 +119,14 @@ const GLOBAL_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Cal+Sans:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
 
   :root {
-    --sk-sidebar-bg: hsl(var(--sidebar-background));
-    --sk-sidebar-border: hsl(var(--sidebar-border) / 0.6);
-    --sk-sidebar-item-hover: hsl(var(--sidebar-accent) / 0.12);
-    --sk-sidebar-item-active: hsl(var(--sidebar-primary) / 0.18);
-    --sk-sidebar-text: hsl(var(--sidebar-foreground) / 0.55);
-    --sk-sidebar-text-active: hsl(var(--sidebar-foreground) / 0.92);
-    --sk-accent: hsl(var(--sidebar-primary));
-    --sk-accent2: hsl(var(--sidebar-primary) / 0.8);
+    --sk-sidebar-bg: #0c1220;
+    --sk-sidebar-border: rgba(255,255,255,0.06);
+    --sk-sidebar-item-hover: rgba(255,255,255,0.05);
+    --sk-sidebar-item-active: rgba(99,102,241,0.18);
+    --sk-sidebar-text: rgba(255,255,255,0.55);
+    --sk-sidebar-text-active: rgba(255,255,255,0.92);
+    --sk-accent: #6366f1;
+    --sk-accent2: #8b5cf6;
     --sk-user-bubble-from: #4f46e5;
     --sk-user-bubble-to: #7c3aed;
     --sk-font-display: 'Cal Sans', 'DM Sans', system-ui, sans-serif;
@@ -1142,12 +1142,11 @@ const ChatPage = () => {
           }
         }}
         className={`group/ci relative flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 text-sm ${
-          isActive ? "" : "border border-transparent"
+          isActive ? "bg-indigo-500/15 border border-indigo-500/20" : "border border-transparent hover:bg-white/5"
         }`}
-        style={isActive ? { background: "var(--sk-sidebar-item-active)", border: "1px solid hsl(var(--sidebar-primary) / 0.2)" } : {}}
       >
         {/* Active indicator bar */}
-        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full" style={{ background: "var(--sk-accent)" }} />}
+        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-400 rounded-full" />}
 
         <div className="flex-1 min-w-0 pl-1">
           {isRenaming ? (
@@ -1166,30 +1165,28 @@ const ChatPage = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setRenamingChatId(null);
                 }}
-                className="bg-transparent border-b text-sm w-full outline-none py-0.5 sk-font-body"
-                style={{ borderColor: "var(--sk-accent)", color: "var(--sk-sidebar-text-active)" }}
+                className="bg-transparent border-b border-indigo-400/60 text-sm w-full outline-none py-0.5 text-white/90 sk-font-body"
                 onClick={(e) => e.stopPropagation()}
               />
-              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5" style={{ color: "var(--sk-accent)" }}>
+              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-indigo-400">
                 <Check className="w-3 h-3" />
               </button>
             </form>
           ) : (
             <>
-                <span
-                  className="truncate block text-[13px] font-medium leading-tight sk-font-body"
-                  style={{ color: isActive ? "var(--sk-sidebar-text-active)" : "var(--sk-sidebar-text)" }}
-                >
-                  {chat.title}
+              <span
+                className={`truncate block text-[13px] font-medium leading-tight sk-font-body ${isActive ? "text-white/90" : "text-white/55"}`}
+              >
+                {chat.title}
+              </span>
+              <div className="flex items-center justify-between mt-0.5 gap-2">
+                <span className={`text-[11px] truncate ${isActive ? "text-white/40" : "text-white/25"}`}>
+                  {preview}
                 </span>
-                <div className="flex items-center justify-between mt-0.5 gap-2">
-                  <span className="text-[11px] truncate" style={{ color: isActive ? "var(--sk-sidebar-text)" : "hsl(var(--sidebar-foreground) / 0.25)" }}>
-                    {preview}
-                  </span>
-                  <span className="text-[10px] flex-shrink-0" style={{ color: isActive ? "var(--sk-accent)" : "hsl(var(--sidebar-foreground) / 0.2)" }}>
-                    {time}
-                  </span>
-                </div>
+                <span className={`text-[10px] flex-shrink-0 ${isActive ? "text-indigo-300/60" : "text-white/20"}`}>
+                  {time}
+                </span>
+              </div>
             </>
           )}
         </div>
@@ -1199,10 +1196,9 @@ const ChatPage = () => {
             <PopoverTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="p-1 opacity-0 group-hover/ci:opacity-100 transition-opacity flex-shrink-0 ml-1 rounded-md"
-                style={{ color: "var(--sk-sidebar-text)" }}
+                className="p-1 opacity-0 group-hover/ci:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-white/10 rounded-md"
               >
-                <MoreVertical className="w-3.5 h-3.5" />
+                <MoreVertical className="w-3.5 h-3.5 text-white/40" />
               </button>
             </PopoverTrigger>
             <PopoverContent side="right" align="start" className="w-36 p-1" onClick={(e) => e.stopPropagation()}>
@@ -1249,8 +1245,8 @@ const ChatPage = () => {
               <div className="absolute inset-0 rounded-xl bg-indigo-500/10 -z-10" />
             </div>
             <span
-              className="sk-font-display font-semibold tracking-tight"
-              style={{ fontSize: "22px", letterSpacing: "0.04em", color: "var(--sk-sidebar-text-active)" }}
+              className="sk-font-display font-semibold text-white/90 tracking-tight"
+              style={{ fontSize: "22px", letterSpacing: "-0.02em" }}
             >
               Sekani
             </span>
@@ -1258,8 +1254,7 @@ const ChatPage = () => {
               onClick={toggleSidebar}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="ml-auto p-1.5 rounded-lg transition-colors"
-              style={{ color: "var(--sk-sidebar-text)" }}
+              className="ml-auto p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/8 transition-colors"
               title="Collapse sidebar"
             >
               <PanelRight className="w-4 h-4" />
@@ -1272,8 +1267,7 @@ const ChatPage = () => {
               onClick={toggleSidebar}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-1.5 rounded-lg transition-colors"
-              style={{ color: "var(--sk-sidebar-text)" }}
+              className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/8 transition-colors"
               title="Expand sidebar"
             >
               <PanelLeft className="w-4.5 h-4.5" />
@@ -1291,9 +1285,9 @@ const ChatPage = () => {
             }}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group/newchat sk-font-body"
             style={{
-              background: "hsl(var(--sidebar-primary) / 0.12)",
-              border: "1px solid hsl(var(--sidebar-primary) / 0.25)",
-              color: "var(--sk-sidebar-text-active)",
+              background: "rgba(99,102,241,0.12)",
+              border: "1px solid rgba(99,102,241,0.25)",
+              color: "rgba(255,255,255,0.75)",
             }}
           >
             <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0 group-hover/newchat:bg-indigo-500/30 transition-colors">
@@ -1308,7 +1302,7 @@ const ChatPage = () => {
                 selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
               }}
               className="w-full flex items-center justify-center p-2 rounded-xl transition-colors"
-              style={{ background: "hsl(var(--sidebar-primary) / 0.12)", border: "1px solid hsl(var(--sidebar-primary) / 0.2)" }}
+              style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}
             >
               <Plus className="w-4 h-4 text-indigo-300" />
             </button>
@@ -1327,10 +1321,9 @@ const ChatPage = () => {
             }}
             className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all sk-font-body ${
               showArtifacts
-                ? "border"
-                : "border border-transparent"
+                ? "bg-indigo-500/15 text-white/85 border border-indigo-500/20"
+                : "text-white/40 hover:text-white/65 hover:bg-white/5 border border-transparent"
             }`}
-            style={showArtifacts ? { background: "var(--sk-sidebar-item-active)", color: "var(--sk-sidebar-text-active)", borderColor: "hsl(var(--sidebar-primary) / 0.2)" } : { color: "var(--sk-sidebar-text)" }}
           >
             <LayoutGrid className="w-4 h-4 flex-shrink-0" />
             <span className="font-medium">Artifacts</span>
@@ -1341,8 +1334,7 @@ const ChatPage = () => {
           <div className="sk-icon-btn-wrap w-full">
             <button
               onClick={() => setShowArtifacts(true)}
-              className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-colors ${showArtifacts ? "text-sidebar-primary-foreground" : ""}`}
-              style={showArtifacts ? { background: "var(--sk-sidebar-item-active)" } : { color: "var(--sk-sidebar-text)" }}
+              className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-colors ${showArtifacts ? "bg-indigo-500/15 text-indigo-300" : "text-white/30 hover:bg-white/5 hover:text-white/60"}`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -1353,7 +1345,7 @@ const ChatPage = () => {
 
       {/* Divider */}
       {(sidebarExpanded || isMobile) && (
-        <div className="mx-4 mb-3 mt-1" style={{ height: "1px", background: "var(--sk-sidebar-border)" }} />
+        <div className="mx-4 mb-3 mt-1" style={{ height: "1px", background: "rgba(255,255,255,0.06)" }} />
       )}
 
       {/* Chat history */}
@@ -1361,17 +1353,17 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           activeChatList.length === 0 ? (
             <div className="flex flex-col items-center py-10 gap-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--sk-sidebar-item-hover)" }}>
-                <MessageSquare className="w-5 h-5" style={{ color: "var(--sk-sidebar-text)" }} />
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-white/20" />
               </div>
-              <p className="text-[12px] sk-font-body text-center" style={{ color: "var(--sk-sidebar-text)" }}>
+              <p className="text-[12px] text-white/25 sk-font-body text-center">
                 {selectedUnit ? `No ${selectedUnit.unit_code} chats yet` : "No conversations yet"}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                <p className="text-[10px] uppercase tracking-[0.1em] font-semibold sk-font-body" style={{ color: "var(--sk-sidebar-text)" }}>
+                <p className="text-[10px] uppercase tracking-[0.1em] font-semibold text-white/25 sk-font-body">
                   {selectedUnit ? `${selectedUnit.unit_code} Chats` : "History"}
                 </p>
                 {!selectedUnit && (
@@ -1388,7 +1380,7 @@ const ChatPage = () => {
                 if (!groupChats || groupChats.length === 0) return null;
                 return (
                   <div key={group}>
-                    <p className="text-[10px] uppercase tracking-[0.08em] font-semibold px-1 mb-1.5 sk-font-body" style={{ color: "var(--sk-sidebar-text)" }}>
+                    <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-white/20 px-1 mb-1.5 sk-font-body">
                       {group}
                     </p>
                     <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
@@ -1404,7 +1396,7 @@ const ChatPage = () => {
       <div
         ref={profileMenuRef}
         className={`relative flex-shrink-0 ${sidebarExpanded || isMobile ? "p-3" : "px-2 py-3"}`}
-        style={{ borderTop: "1px solid var(--sk-sidebar-border)" }}
+        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
       >
         <AnimatePresence>
           {profileMenuOpen && (sidebarExpanded || isMobile) && (
@@ -1493,8 +1485,7 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           <button
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="flex items-center gap-3 w-full p-2 rounded-xl transition-colors"
-            style={{ background: "transparent" }}
+            className="flex items-center gap-3 w-full p-2 rounded-xl transition-colors hover:bg-white/5"
           >
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
@@ -1503,12 +1494,11 @@ const ChatPage = () => {
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-[13px] font-medium truncate sk-font-body" style={{ color: "var(--sk-sidebar-text-active)" }}>{displayName}</p>
-              <p className="text-[11px] truncate sk-font-body" style={{ color: "var(--sk-sidebar-text)" }}>{profile?.course_name || "Student"}</p>
+              <p className="text-[13px] font-medium text-white/75 truncate sk-font-body">{displayName}</p>
+              <p className="text-[11px] text-white/30 truncate sk-font-body">{profile?.course_name || "Student"}</p>
             </div>
             <ChevronUp
-              className={`w-3.5 h-3.5 transition-transform duration-200 ${profileMenuOpen ? "" : "rotate-180"}`}
-              style={{ color: "var(--sk-sidebar-text)" }}
+              className={`w-3.5 h-3.5 text-white/25 transition-transform duration-200 ${profileMenuOpen ? "" : "rotate-180"}`}
             />
           </button>
         ) : (
@@ -1597,7 +1587,7 @@ const ChatPage = () => {
                 key={unit.unit_id}
                 className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isExpanded
-                    ? "border-primary/30 bg-primary/8 shadow-sm"
+                    ? "border-indigo-300/30 dark:border-indigo-700/40 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm"
                     : "border-border/60 bg-card hover:border-border"
                 }`}
               >
@@ -1609,13 +1599,13 @@ const ChatPage = () => {
                   className="w-full flex items-center gap-3 p-3 text-left"
                 >
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold sk-font-display ${isExpanded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold sk-font-display ${isExpanded ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground"}`}
                   >
                     {unit.unit_code.slice(-2)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p
-                      className={`text-[11px] font-bold tracking-wide sk-font-body ${isExpanded ? "text-primary" : "text-muted-foreground"}`}
+                      className={`text-[11px] font-bold tracking-wide sk-font-body ${isExpanded ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground"}`}
                     >
                       {unit.unit_code}
                     </p>
@@ -1640,7 +1630,7 @@ const ChatPage = () => {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="px-3 pb-3 space-y-2.5 border-t border-primary/15">
+                      <div className="px-3 pb-3 space-y-2.5 border-t border-indigo-200/30 dark:border-indigo-800/30">
                         <div className="flex gap-2 pt-2.5">
                           <div className="flex-1 bg-background rounded-xl p-2.5 text-center border border-border/50">
                             <p className="text-xl font-bold text-foreground sk-font-display">{notesCount}</p>
@@ -2256,11 +2246,11 @@ const ChatPage = () => {
                             </div>
                             <h2
                               className="sk-font-display font-semibold text-foreground mb-2"
-                              style={{ fontSize: "clamp(1.5rem, 4.5vw, 2.1rem)", letterSpacing: "0.01em" }}
+                              style={{ fontSize: "clamp(1.4rem, 4vw, 1.9rem)", letterSpacing: "0.04em" }}
                             >
                               {greeting}, {displayName.split(" ")[0]}
                             </h2>
-                            <p className="text-muted-foreground text-sm sk-font-body max-w-sm mx-auto" style={{ letterSpacing: "0.02em" }}>
+                            <p className="text-muted-foreground text-sm sk-font-body max-w-sm mx-auto">
                               {selectedUnit
                                 ? `Ask anything about ${selectedUnit.unit_code} — ${selectedUnit.unit_name}`
                                 : "How can I help you with your studies today?"}
