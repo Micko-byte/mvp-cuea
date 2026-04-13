@@ -1347,7 +1347,7 @@ const ChatPage = () => {
 
       {/* Divider */}
       {(sidebarExpanded || isMobile) && (
-        <div className="mx-4 mb-3 mt-1" style={{ height: "1px", background: "rgba(255,255,255,0.06)" }} />
+        <div className="mx-4 mb-3 mt-1" style={{ height: "1px", background: "var(--sk-sidebar-border)" }} />
       )}
 
       {/* Chat history */}
@@ -1355,17 +1355,17 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           activeChatList.length === 0 ? (
             <div className="flex flex-col items-center py-10 gap-2">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-white/20" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--sk-sidebar-item-hover)" }}>
+                <MessageSquare className="w-5 h-5" style={{ color: "var(--sk-sidebar-text)" }} />
               </div>
-              <p className="text-[12px] text-white/25 sk-font-body text-center">
+              <p className="text-[12px] sk-font-body text-center" style={{ color: "var(--sk-sidebar-text)" }}>
                 {selectedUnit ? `No ${selectedUnit.unit_code} chats yet` : "No conversations yet"}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                <p className="text-[10px] uppercase tracking-[0.1em] font-semibold text-white/25 sk-font-body">
+                <p className="text-[10px] uppercase tracking-[0.1em] font-semibold sk-font-body" style={{ color: "var(--sk-sidebar-text)" }}>
                   {selectedUnit ? `${selectedUnit.unit_code} Chats` : "History"}
                 </p>
                 {!selectedUnit && (
@@ -1382,7 +1382,7 @@ const ChatPage = () => {
                 if (!groupChats || groupChats.length === 0) return null;
                 return (
                   <div key={group}>
-                    <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-white/20 px-1 mb-1.5 sk-font-body">
+                    <p className="text-[10px] uppercase tracking-[0.08em] font-semibold px-1 mb-1.5 sk-font-body" style={{ color: "var(--sk-sidebar-text)" }}>
                       {group}
                     </p>
                     <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
@@ -1398,7 +1398,7 @@ const ChatPage = () => {
       <div
         ref={profileMenuRef}
         className={`relative flex-shrink-0 ${sidebarExpanded || isMobile ? "p-3" : "px-2 py-3"}`}
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderTop: "1px solid var(--sk-sidebar-border)" }}
       >
         <AnimatePresence>
           {profileMenuOpen && (sidebarExpanded || isMobile) && (
@@ -1487,7 +1487,8 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           <button
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="flex items-center gap-3 w-full p-2 rounded-xl transition-colors hover:bg-white/5"
+            className="flex items-center gap-3 w-full p-2 rounded-xl transition-colors"
+            style={{ background: "transparent" }}
           >
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
@@ -1496,11 +1497,12 @@ const ChatPage = () => {
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-[13px] font-medium text-white/75 truncate sk-font-body">{displayName}</p>
-              <p className="text-[11px] text-white/30 truncate sk-font-body">{profile?.course_name || "Student"}</p>
+              <p className="text-[13px] font-medium truncate sk-font-body" style={{ color: "var(--sk-sidebar-text-active)" }}>{displayName}</p>
+              <p className="text-[11px] truncate sk-font-body" style={{ color: "var(--sk-sidebar-text)" }}>{profile?.course_name || "Student"}</p>
             </div>
             <ChevronUp
-              className={`w-3.5 h-3.5 text-white/25 transition-transform duration-200 ${profileMenuOpen ? "" : "rotate-180"}`}
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${profileMenuOpen ? "" : "rotate-180"}`}
+              style={{ color: "var(--sk-sidebar-text)" }}
             />
           </button>
         ) : (
