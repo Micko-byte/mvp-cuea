@@ -1254,7 +1254,8 @@ const ChatPage = () => {
               onClick={toggleSidebar}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="ml-auto p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/8 transition-colors"
+              className="ml-auto p-1.5 rounded-lg transition-colors"
+              style={{ color: "var(--sk-sidebar-text)" }}
               title="Collapse sidebar"
             >
               <PanelRight className="w-4 h-4" />
@@ -1267,7 +1268,8 @@ const ChatPage = () => {
               onClick={toggleSidebar}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/8 transition-colors"
+              className="p-1.5 rounded-lg transition-colors"
+              style={{ color: "var(--sk-sidebar-text)" }}
               title="Expand sidebar"
             >
               <PanelLeft className="w-4.5 h-4.5" />
@@ -1285,9 +1287,9 @@ const ChatPage = () => {
             }}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group/newchat sk-font-body"
             style={{
-              background: "rgba(99,102,241,0.12)",
-              border: "1px solid rgba(99,102,241,0.25)",
-              color: "rgba(255,255,255,0.75)",
+              background: "hsl(var(--sidebar-primary) / 0.12)",
+              border: "1px solid hsl(var(--sidebar-primary) / 0.25)",
+              color: "var(--sk-sidebar-text-active)",
             }}
           >
             <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0 group-hover/newchat:bg-indigo-500/30 transition-colors">
