@@ -1142,11 +1142,12 @@ const ChatPage = () => {
           }
         }}
         className={`group/ci relative flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 text-sm ${
-          isActive ? "bg-indigo-500/15 border border-indigo-500/20" : "border border-transparent hover:bg-white/5"
+          isActive ? "" : "border border-transparent"
         }`}
+        style={isActive ? { background: "var(--sk-sidebar-item-active)", border: "1px solid hsl(var(--sidebar-primary) / 0.2)" } : {}}
       >
         {/* Active indicator bar */}
-        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-400 rounded-full" />}
+        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full" style={{ background: "var(--sk-accent)" }} />}
 
         <div className="flex-1 min-w-0 pl-1">
           {isRenaming ? (
@@ -1165,28 +1166,30 @@ const ChatPage = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setRenamingChatId(null);
                 }}
-                className="bg-transparent border-b border-indigo-400/60 text-sm w-full outline-none py-0.5 text-white/90 sk-font-body"
+                className="bg-transparent border-b text-sm w-full outline-none py-0.5 sk-font-body"
+                style={{ borderColor: "var(--sk-accent)", color: "var(--sk-sidebar-text-active)" }}
                 onClick={(e) => e.stopPropagation()}
               />
-              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-indigo-400">
+              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5" style={{ color: "var(--sk-accent)" }}>
                 <Check className="w-3 h-3" />
               </button>
             </form>
           ) : (
             <>
-              <span
-                className={`truncate block text-[13px] font-medium leading-tight sk-font-body ${isActive ? "text-white/90" : "text-white/55"}`}
-              >
-                {chat.title}
-              </span>
-              <div className="flex items-center justify-between mt-0.5 gap-2">
-                <span className={`text-[11px] truncate ${isActive ? "text-white/40" : "text-white/25"}`}>
-                  {preview}
+                <span
+                  className="truncate block text-[13px] font-medium leading-tight sk-font-body"
+                  style={{ color: isActive ? "var(--sk-sidebar-text-active)" : "var(--sk-sidebar-text)" }}
+                >
+                  {chat.title}
                 </span>
-                <span className={`text-[10px] flex-shrink-0 ${isActive ? "text-indigo-300/60" : "text-white/20"}`}>
-                  {time}
-                </span>
-              </div>
+                <div className="flex items-center justify-between mt-0.5 gap-2">
+                  <span className="text-[11px] truncate" style={{ color: isActive ? "var(--sk-sidebar-text)" : "hsl(var(--sidebar-foreground) / 0.25)" }}>
+                    {preview}
+                  </span>
+                  <span className="text-[10px] flex-shrink-0" style={{ color: isActive ? "var(--sk-accent)" : "hsl(var(--sidebar-foreground) / 0.2)" }}>
+                    {time}
+                  </span>
+                </div>
             </>
           )}
         </div>
@@ -1196,9 +1199,10 @@ const ChatPage = () => {
             <PopoverTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="p-1 opacity-0 group-hover/ci:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-white/10 rounded-md"
+                className="p-1 opacity-0 group-hover/ci:opacity-100 transition-opacity flex-shrink-0 ml-1 rounded-md"
+                style={{ color: "var(--sk-sidebar-text)" }}
               >
-                <MoreVertical className="w-3.5 h-3.5 text-white/40" />
+                <MoreVertical className="w-3.5 h-3.5" />
               </button>
             </PopoverTrigger>
             <PopoverContent side="right" align="start" className="w-36 p-1" onClick={(e) => e.stopPropagation()}>
