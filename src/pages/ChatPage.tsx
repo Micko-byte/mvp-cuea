@@ -1327,9 +1327,10 @@ const ChatPage = () => {
             }}
             className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all sk-font-body ${
               showArtifacts
-                ? "bg-indigo-500/15 text-white/85 border border-indigo-500/20"
-                : "text-white/40 hover:text-white/65 hover:bg-white/5 border border-transparent"
+                ? "border"
+                : "border border-transparent"
             }`}
+            style={showArtifacts ? { background: "var(--sk-sidebar-item-active)", color: "var(--sk-sidebar-text-active)", borderColor: "hsl(var(--sidebar-primary) / 0.2)" } : { color: "var(--sk-sidebar-text)" }}
           >
             <LayoutGrid className="w-4 h-4 flex-shrink-0" />
             <span className="font-medium">Artifacts</span>
@@ -1340,7 +1341,8 @@ const ChatPage = () => {
           <div className="sk-icon-btn-wrap w-full">
             <button
               onClick={() => setShowArtifacts(true)}
-              className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-colors ${showArtifacts ? "bg-indigo-500/15 text-indigo-300" : "text-white/30 hover:bg-white/5 hover:text-white/60"}`}
+              className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-colors ${showArtifacts ? "text-sidebar-primary-foreground" : ""}`}
+              style={showArtifacts ? { background: "var(--sk-sidebar-item-active)" } : { color: "var(--sk-sidebar-text)" }}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
