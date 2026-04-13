@@ -113,39 +113,133 @@ interface EnrolledUnit {
   lecturer: string | null;
 }
 
+// ─── Global styles injected once ─────────────────────────────────────────────
+
+const GLOBAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Cal+Sans:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+  :root {
+    --sk-sidebar-bg: #0c1220;
+    --sk-sidebar-border: rgba(255,255,255,0.06);
+    --sk-sidebar-item-hover: rgba(255,255,255,0.05);
+    --sk-sidebar-item-active: rgba(99,102,241,0.18);
+    --sk-sidebar-text: rgba(255,255,255,0.55);
+    --sk-sidebar-text-active: rgba(255,255,255,0.92);
+    --sk-accent: #6366f1;
+    --sk-accent2: #8b5cf6;
+    --sk-user-bubble-from: #4f46e5;
+    --sk-user-bubble-to: #7c3aed;
+    --sk-font-display: 'Cal Sans', 'DM Sans', system-ui, sans-serif;
+    --sk-font-body: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .sk-font-display { font-family: var(--sk-font-display); }
+  .sk-font-body { font-family: var(--sk-font-body); }
+
+  /* ── Scrollbars ── */
+  .sk-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+  .sk-scroll::-webkit-scrollbar-track { background: transparent; }
+  .sk-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 99px;
+  }
+  .sk-scroll::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+  .sk-sidebar-scroll::-webkit-scrollbar { width: 3px; }
+  .sk-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+  .sk-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+  }
+  .sk-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.2);
+  }
+
+  /* ── Typing dots ── */
+  @keyframes sk-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  /* ── Mic pulse ── */
+  @keyframes sk-mic-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
+    100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+  }
+  .sk-mic-active { animation: sk-mic-pulse 1.2s ease-out infinite; }
+
+  /* ── Sidebar collapsed icon tooltip ── */
+  .sk-icon-btn-wrap { position: relative; }
+  .sk-icon-btn-wrap .sk-tooltip {
+    position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+    background: hsl(var(--popover)); color: hsl(var(--popover-foreground));
+    font-size: 12px; font-family: var(--sk-font-body); white-space: nowrap;
+    padding: 4px 10px; border-radius: 8px;
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0; pointer-events: none; transition: opacity .15s;
+    z-index: 100;
+  }
+  .sk-icon-btn-wrap:hover .sk-tooltip { opacity: 1; }
+
+  /* ── Message prose overrides ── */
+  .sk-prose p { margin: 0.45em 0; }
+  .sk-prose p:first-child { margin-top: 0; }
+  .sk-prose p:last-child { margin-bottom: 0; }
+  .sk-prose ul, .sk-prose ol { padding-left: 1.25em; margin: 0.5em 0; }
+  .sk-prose li { margin: 0.2em 0; }
+  .sk-prose strong { font-weight: 600; }
+
+  /* ── Input focus ring ── */
+  .sk-input-bar:focus-within {
+    border-color: rgba(99,102,241,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+  }
+`;
+
+function injectStyles() {
+  if (document.getElementById("sk-global-styles")) return;
+  const el = document.createElement("style");
+  el.id = "sk-global-styles";
+  el.textContent = GLOBAL_STYLES;
+  document.head.appendChild(el);
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const TypingIndicator = () => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
+    initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0 }}
     className="flex justify-start"
   >
-    <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-md">
-      <div className="flex items-center gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className="w-2 h-2 rounded-full bg-muted-foreground/50"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-          />
-        ))}
-        <span className="text-xs text-muted-foreground ml-2">Sekani is thinking...</span>
-      </div>
+    <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl rounded-bl-[4px] bg-card border border-border/60 shadow-sm">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="w-2 h-2 rounded-full bg-indigo-400/60"
+          style={{
+            animation: `sk-bounce 0.9s ease-in-out infinite`,
+            animationDelay: `${i * 0.15}s`,
+          }}
+        />
+      ))}
+      <span className="text-xs text-muted-foreground ml-1.5 sk-font-body">Sekani is thinking…</span>
     </div>
   </motion.div>
 );
 
 const VoiceInputVisualizer = () => (
-  <div className="flex h-8 items-end gap-1" aria-hidden="true">
+  <div className="flex h-7 items-end gap-1" aria-hidden="true">
     {[0, 1, 2, 3, 4].map((i) => (
       <motion.div
         key={i}
-        className="w-1.5 rounded-full bg-primary"
-        animate={{ height: [10, 24 - i * 2, 14 + (i % 2) * 8, 20 - (i % 3) * 3, 10] }}
-        transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
+        className="w-1 rounded-full bg-indigo-500"
+        animate={{ height: [8, 22 - i * 2, 12 + (i % 2) * 8, 18 - (i % 3) * 3, 8] }}
+        transition={{ duration: 0.85, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
       />
     ))}
   </div>
@@ -232,6 +326,11 @@ const ChatPage = () => {
   const greeting = useMemo(() => getTimeBasedGreeting(), []);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const micSupported = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+
+  // Inject global styles once
+  useEffect(() => {
+    injectStyles();
+  }, []);
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
@@ -325,14 +424,11 @@ const ChatPage = () => {
     }
   }, []);
 
-  // Auto-scroll only if user is already near the bottom (not scrolled up)
   useEffect(() => {
     const el = chatContainerRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-    if (atBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
+    if (atBottom) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeChat?.messages, isStreaming]);
 
   useEffect(() => {
@@ -344,7 +440,6 @@ const ChatPage = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, [profileMenuOpen]);
 
-  // Parse Teach Me control tags
   useEffect(() => {
     if (!teachMeActive || !activeChat || isStreaming) return;
     const msgs = activeChat.messages;
@@ -352,10 +447,7 @@ const ChatPage = () => {
     if (!lastMsg || lastMsg.sender !== "bot") return;
     const tags = parseControlTags(lastMsg.text);
     if (tags.topicOutline && !teachMe.session) {
-      const outline = tags.topicOutline.map((t: any, i: number) => ({
-        ...t,
-        status: i === 0 ? "active" : "locked",
-      }));
+      const outline = tags.topicOutline.map((t: any, i: number) => ({ ...t, status: i === 0 ? "active" : "locked" }));
       const unitName = selectedUnit?.unit_name || activeChat.title || "Unit";
       teachMe.createSession(activeChat.id, unitName, outline);
     }
@@ -373,21 +465,12 @@ const ChatPage = () => {
           weak: tags.checkpoint.weak?.join(", "),
         });
       }
-      if (tags.readinessUpdate) {
-        teachMe.updateReadiness(teachMe.session.id, tags.readinessUpdate.score);
-      }
-      if (tags.streakUpdate) {
-        teachMe.updateStreak(teachMe.session.id, tags.streakUpdate.action);
-      }
-      if (tags.sessionRecap) {
-        teachMe.saveRecap(teachMe.session.id, tags.sessionRecap);
-      }
-      if (tags.predictedQSession) {
-        teachMe.updatePredictedQScore(teachMe.session.id, tags.predictedQSession.score);
-      }
-      if (tags.memoryUpdate) {
+      if (tags.readinessUpdate) teachMe.updateReadiness(teachMe.session.id, tags.readinessUpdate.score);
+      if (tags.streakUpdate) teachMe.updateStreak(teachMe.session.id, tags.streakUpdate.action);
+      if (tags.sessionRecap) teachMe.saveRecap(teachMe.session.id, tags.sessionRecap);
+      if (tags.predictedQSession) teachMe.updatePredictedQScore(teachMe.session.id, tags.predictedQSession.score);
+      if (tags.memoryUpdate)
         teachMe.upsertStudentMemory(tags.memoryUpdate.topicName, tags.memoryUpdate.unit, tags.memoryUpdate.strength);
-      }
       if (tags.unitComplete) {
         teachMe.markComplete(teachMe.session.id);
         toast.success("🎓 Unit complete! Amazing work!");
@@ -416,7 +499,6 @@ const ChatPage = () => {
     restoreTeachMe();
   }, [activeChat?.id]);
 
-  // Touch swipe gestures
   const handleTouchStart = useCallback((e: TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
@@ -559,7 +641,7 @@ const ChatPage = () => {
   const displayName = nickname || profile?.name || user?.email?.split("@")[0] || "Student";
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    toast.success("Copied!");
   };
 
   // ─── Send ────────────────────────────────────────────────────────────────────
@@ -608,11 +690,8 @@ const ChatPage = () => {
     setSelectedUnitId(unitId);
     setShowArtifacts(false);
     const existingUnitChat = chats.find((c) => c.chat_type === "unit" && c.unit_id === unitId);
-    if (existingUnitChat) {
-      setActiveChat(existingUnitChat.id);
-    } else {
-      await createChat("unit", unitId);
-    }
+    if (existingUnitChat) setActiveChat(existingUnitChat.id);
+    else await createChat("unit", unitId);
     if (isMobile) setMobileUnitsOpen(false);
   };
 
@@ -999,19 +1078,12 @@ const ChatPage = () => {
   // ─── Derived state ────────────────────────────────────────────────────────────
 
   const selectedUnit = enrolledUnits.find((u) => u.unit_id === selectedUnitId);
-
-  // General chats (no unit) for left sidebar when no unit is selected
   const generalChats = useMemo(() => chats.filter((c) => c.chat_type !== "unit"), [chats]);
-
-  // Unit chats for the selected unit
   const unitChats = useMemo(
     () => (selectedUnitId ? chats.filter((c) => c.chat_type === "unit" && c.unit_id === selectedUnitId) : []),
     [chats, selectedUnitId],
   );
-
-  // The active list shown in the sidebar depends on whether a unit is selected
   const activeChatList = selectedUnitId ? unitChats : generalChats;
-
   const groupedChats = useMemo(() => {
     const groups: Record<string, typeof activeChatList> = {};
     for (const chat of activeChatList) {
@@ -1036,7 +1108,13 @@ const ChatPage = () => {
   if (authLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-t-indigo-500 animate-spin" />
+          </div>
+          <p className="text-sm text-muted-foreground sk-font-body">Loading Sekani…</p>
+        </div>
       </div>
     );
   }
@@ -1050,7 +1128,9 @@ const ChatPage = () => {
 
   const renderChatItem = (chat: (typeof chats)[0]) => {
     const isRenaming = renamingChatId === chat.id;
-    const preview = chat.messages[0]?.text?.slice(0, 50) || "Empty chat";
+    const isActive = activeChat?.id === chat.id;
+    const preview = chat.messages[0]?.text?.slice(0, 45) || "Empty chat";
+    const time = formatTime(chat.timestamp);
     return (
       <div
         key={chat.id}
@@ -1061,9 +1141,14 @@ const ChatPage = () => {
             if (isMobile) setMobileSidebarOpen(false);
           }
         }}
-        className={`group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm ${activeChat?.id === chat.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}
+        className={`group/ci relative flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 text-sm ${
+          isActive ? "bg-indigo-500/15 border border-indigo-500/20" : "border border-transparent hover:bg-white/5"
+        }`}
       >
-        <div className="flex-1 min-w-0">
+        {/* Active indicator bar */}
+        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-400 rounded-full" />}
+
+        <div className="flex-1 min-w-0 pl-1">
           {isRenaming ? (
             <form
               onSubmit={(e) => {
@@ -1080,29 +1165,40 @@ const ChatPage = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setRenamingChatId(null);
                 }}
-                className="bg-transparent border-b border-primary text-sm w-full outline-none py-0.5"
+                className="bg-transparent border-b border-indigo-400/60 text-sm w-full outline-none py-0.5 text-white/90 sk-font-body"
                 onClick={(e) => e.stopPropagation()}
               />
-              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-primary">
+              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-indigo-400">
                 <Check className="w-3 h-3" />
               </button>
             </form>
           ) : (
             <>
-              <span className="truncate block">{chat.title}</span>
-              <span className="text-xs text-sidebar-foreground/30 block mt-0.5 truncate">{preview}</span>
+              <span
+                className={`truncate block text-[13px] font-medium leading-tight sk-font-body ${isActive ? "text-white/90" : "text-white/55"}`}
+              >
+                {chat.title}
+              </span>
+              <div className="flex items-center justify-between mt-0.5 gap-2">
+                <span className={`text-[11px] truncate ${isActive ? "text-white/40" : "text-white/25"}`}>
+                  {preview}
+                </span>
+                <span className={`text-[10px] flex-shrink-0 ${isActive ? "text-indigo-300/60" : "text-white/20"}`}>
+                  {time}
+                </span>
+              </div>
             </>
           )}
         </div>
+
         {!isRenaming && (
           <Popover>
             <PopoverTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-sidebar-accent rounded"
-                title="Options"
+                className="p-1 opacity-0 group-hover/ci:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-white/10 rounded-md"
               >
-                <MoreVertical className="w-3.5 h-3.5" />
+                <MoreVertical className="w-3.5 h-3.5 text-white/40" />
               </button>
             </PopoverTrigger>
             <PopoverContent side="right" align="start" className="w-36 p-1" onClick={(e) => e.stopPropagation()}>
@@ -1135,116 +1231,147 @@ const ChatPage = () => {
   // ─── LEFT SIDEBAR content ─────────────────────────────────────────────────────
 
   const sidebarContent = (
-    <>
-      {/* Logo + Toggle */}
-      <div className={`p-4 ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : ""}`}>
+    <div
+      className="flex flex-col h-full sk-sidebar-scroll overflow-y-auto"
+      style={{ background: "var(--sk-sidebar-bg)" }}
+    >
+      {/* Logo area */}
+      <div className={`flex-shrink-0 ${sidebarExpanded || isMobile ? "px-4 pt-5 pb-3" : "px-2 pt-4 pb-3"}`}>
         {sidebarExpanded || isMobile ? (
-          <div className="flex items-center gap-3 mb-4">
-            <img src={sekaniLogo} alt="Sekani" className="w-8 h-8" />
-            <span className="font-display font-bold text-sidebar-foreground text-lg">Sekani</span>
-            <button
+          <div className="flex items-center gap-3 mb-5">
+            {/* Logo renders as SVG/PNG — supports both */}
+            <div className="relative flex-shrink-0">
+              <img src={sekaniLogo} alt="Sekani" className="w-9 h-9 object-contain" />
+              <div className="absolute inset-0 rounded-xl bg-indigo-500/10 -z-10" />
+            </div>
+            <span
+              className="sk-font-display font-semibold text-white/90 tracking-tight"
+              style={{ fontSize: "22px", letterSpacing: "-0.02em" }}
+            >
+              Sekani
+            </span>
+            <motion.button
               onClick={toggleSidebar}
-              className="ml-auto p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="ml-auto p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/8 transition-colors"
               title="Collapse sidebar"
             >
               <PanelRight className="w-4 h-4" />
-            </button>
+            </motion.button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 mb-3">
-            <img src={sekaniLogo} alt="Sekani" className="w-9 h-9" />
-            <button
+          <div className="flex flex-col items-center gap-3 mb-3">
+            <img src={sekaniLogo} alt="Sekani" className="w-9 h-9 object-contain" />
+            <motion.button
               onClick={toggleSidebar}
-              className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/8 transition-colors"
               title="Expand sidebar"
             >
-              <PanelLeft className="w-5 h-5" />
-            </button>
+              <PanelLeft className="w-4.5 h-4.5" />
+            </motion.button>
           </div>
         )}
 
-        {/* New Chat */}
+        {/* New Chat button */}
         {sidebarExpanded || isMobile ? (
-          <Button
+          <button
             onClick={() => {
-              if (selectedUnitId) {
-                createChat("unit", selectedUnitId);
-              } else {
-                createChat("general");
-              }
+              selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
               setShowArtifacts(false);
               if (isMobile) setMobileSidebarOpen(false);
             }}
-            className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 justify-start gap-2"
-            size="sm"
-          >
-            <Plus className="w-4 h-4" /> New Chat
-          </Button>
-        ) : (
-          <Button
-            onClick={() => {
-              if (selectedUnitId) {
-                createChat("unit", selectedUnitId);
-              } else {
-                createChat("general");
-              }
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group/newchat sk-font-body"
+            style={{
+              background: "rgba(99,102,241,0.12)",
+              border: "1px solid rgba(99,102,241,0.25)",
+              color: "rgba(255,255,255,0.75)",
             }}
-            className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 p-0 flex items-center justify-center"
-            size="icon"
           >
-            <Plus className="w-4 h-4" />
-          </Button>
+            <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0 group-hover/newchat:bg-indigo-500/30 transition-colors">
+              <Plus className="w-3.5 h-3.5 text-indigo-300" />
+            </div>
+            <span>New Chat</span>
+          </button>
+        ) : (
+          <div className="sk-icon-btn-wrap">
+            <button
+              onClick={() => {
+                selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
+              }}
+              className="w-full flex items-center justify-center p-2 rounded-xl transition-colors"
+              style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}
+            >
+              <Plus className="w-4 h-4 text-indigo-300" />
+            </button>
+            <span className="sk-tooltip">New Chat</span>
+          </div>
         )}
       </div>
 
       {/* Artifacts link */}
-      {(sidebarExpanded || isMobile) && (
+      {sidebarExpanded || isMobile ? (
         <div className="px-3 mb-1">
           <button
             onClick={() => {
               setShowArtifacts(true);
               if (isMobile) setMobileSidebarOpen(false);
             }}
-            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors ${showArtifacts ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40"}`}
+            className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all sk-font-body ${
+              showArtifacts
+                ? "bg-indigo-500/15 text-white/85 border border-indigo-500/20"
+                : "text-white/40 hover:text-white/65 hover:bg-white/5 border border-transparent"
+            }`}
           >
-            <LayoutGrid className="w-4 h-4" /> <span>Artifacts</span>
+            <LayoutGrid className="w-4 h-4 flex-shrink-0" />
+            <span className="font-medium">Artifacts</span>
           </button>
         </div>
-      )}
-      {!sidebarExpanded && !isMobile && (
-        <div className="flex flex-col items-center px-1 mb-2">
-          <button
-            onClick={() => setShowArtifacts(true)}
-            className="p-2 rounded-lg text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors"
-            title="Artifacts"
-          >
-            <LayoutGrid className="w-5 h-5" />
-          </button>
+      ) : (
+        <div className="flex flex-col items-center px-2 mb-2">
+          <div className="sk-icon-btn-wrap w-full">
+            <button
+              onClick={() => setShowArtifacts(true)}
+              className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-colors ${showArtifacts ? "bg-indigo-500/15 text-indigo-300" : "text-white/30 hover:bg-white/5 hover:text-white/60"}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <span className="sk-tooltip">Artifacts</span>
+          </div>
         </div>
       )}
 
-      {/* Chat history — shows unit chats when unit selected, general chats otherwise */}
-      <div className="flex-1 overflow-y-auto px-3 py-2">
+      {/* Divider */}
+      {(sidebarExpanded || isMobile) && (
+        <div className="mx-4 mb-3 mt-1" style={{ height: "1px", background: "rgba(255,255,255,0.06)" }} />
+      )}
+
+      {/* Chat history */}
+      <div className="flex-1 overflow-y-auto px-3 py-1 sk-sidebar-scroll">
         {sidebarExpanded || isMobile ? (
           activeChatList.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="w-8 h-8 text-sidebar-foreground/20 mx-auto mb-2" />
-              <p className="text-sm text-sidebar-foreground/30">
-                {selectedUnit ? `No chats for ${selectedUnit.unit_code} yet` : "No chats yet"}
+            <div className="flex flex-col items-center py-10 gap-2">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-white/20" />
+              </div>
+              <p className="text-[12px] text-white/25 sk-font-body text-center">
+                {selectedUnit ? `No ${selectedUnit.unit_code} chats yet` : "No conversations yet"}
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1 mb-1">
-                <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40">
-                  {selectedUnit ? `${selectedUnit.unit_code} Chats` : "Chat History"}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[10px] uppercase tracking-[0.1em] font-semibold text-white/25 sk-font-body">
+                  {selectedUnit ? `${selectedUnit.unit_code} Chats` : "History"}
                 </p>
                 {!selectedUnit && (
                   <button
                     onClick={() => setShowDeleteAllConfirm(true)}
-                    className="text-xs text-destructive/70 hover:text-destructive transition-colors"
+                    className="text-[10px] text-red-400/50 hover:text-red-400 transition-colors sk-font-body"
                   >
-                    Delete All
+                    Clear all
                   </button>
                 )}
               </div>
@@ -1253,7 +1380,7 @@ const ChatPage = () => {
                 if (!groupChats || groupChats.length === 0) return null;
                 return (
                   <div key={group}>
-                    <p className="text-xs uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-1 mb-1.5">
+                    <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-white/20 px-1 mb-1.5 sk-font-body">
                       {group}
                     </p>
                     <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
@@ -1265,25 +1392,32 @@ const ChatPage = () => {
         ) : null}
       </div>
 
-      {/* Bottom: Profile */}
-      <div ref={profileMenuRef} className={`relative ${!sidebarExpanded && !isMobile ? "px-1.5 py-3" : "p-3"}`}>
+      {/* Profile */}
+      <div
+        ref={profileMenuRef}
+        className={`relative flex-shrink-0 ${sidebarExpanded || isMobile ? "p-3" : "px-2 py-3"}`}
+        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+      >
         <AnimatePresence>
           {profileMenuOpen && (sidebarExpanded || isMobile) && (
             <motion.div
-              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              initial={{ opacity: 0, y: 6, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute bottom-full left-3 right-3 mb-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
+              exit={{ opacity: 0, y: 6, scale: 0.97 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute bottom-full left-3 right-3 mb-2 bg-popover border border-border rounded-2xl shadow-2xl overflow-hidden z-50"
             >
-              <div className="px-4 py-3">
+              <div className="px-4 py-3 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                    style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                  >
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-popover-foreground truncate">{displayName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{profile?.email || "student"}</p>
+                    <p className="text-sm font-semibold text-popover-foreground truncate sk-font-body">{displayName}</p>
+                    <p className="text-xs text-muted-foreground truncate sk-font-body">{profile?.email || "student"}</p>
                   </div>
                 </div>
               </div>
@@ -1294,9 +1428,9 @@ const ChatPage = () => {
                       setProfileMenuOpen(false);
                       navigate("/admin");
                     }}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors sk-font-body"
                   >
-                    <Shield className="w-4 h-4 text-muted-foreground" /> <span>Admin Dashboard</span>
+                    <Shield className="w-4 h-4 text-muted-foreground" /> Admin Dashboard
                   </button>
                 )}
                 <button
@@ -1304,44 +1438,44 @@ const ChatPage = () => {
                     setProfileMenuOpen(false);
                     navigate("/personalization");
                   }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors sk-font-body"
                 >
-                  <User className="w-4 h-4 text-muted-foreground" /> <span>Personalization</span>
+                  <User className="w-4 h-4 text-muted-foreground" /> Personalization
                 </button>
                 <button
                   onClick={() => {
                     setProfileMenuOpen(false);
                     setSettingsOpen(true);
                   }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors sk-font-body"
                 >
-                  <Settings className="w-4 h-4 text-muted-foreground" /> <span>Settings</span>
+                  <Settings className="w-4 h-4 text-muted-foreground" /> Settings
                 </button>
-                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors">
-                  <CircleHelp className="w-4 h-4 text-muted-foreground" /> <span>Help</span>
+                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors sk-font-body">
+                  <CircleHelp className="w-4 h-4 text-muted-foreground" /> Help
                 </button>
-                <div className="mx-3 my-2 border-t border-border" />
+                <div className="mx-3 my-1.5 border-t border-border" />
                 <div className="px-2 pb-1">
                   <button
                     onClick={() => {
                       setProfileMenuOpen(false);
                       setShowPaymentDialog(true);
                     }}
-                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
-                    style={{ background: "linear-gradient(135deg, #1D2A3A 0%, #b91c1c 100%)", color: "white" }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90 sk-font-body"
+                    style={{ background: "linear-gradient(135deg,#1D2A3A,#b91c1c)", color: "white" }}
                   >
-                    <span>⚡ Upgrade to Premium</span>
+                    <Sparkles className="w-4 h-4" /> Upgrade to Premium
                   </button>
                 </div>
-                <div className="my-1.5" />
+                <div className="my-1" />
                 <button
                   onClick={() => {
                     setProfileMenuOpen(false);
                     setShowLogoutConfirm(true);
                   }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors sk-font-body"
                 >
-                  <LogOut className="w-4 h-4 text-muted-foreground" /> <span>Log out</span>
+                  <LogOut className="w-4 h-4 text-muted-foreground" /> Log out
                 </button>
               </div>
             </motion.div>
@@ -1351,55 +1485,62 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           <button
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors"
+            className="flex items-center gap-3 w-full p-2 rounded-xl transition-colors hover:bg-white/5"
           >
-            <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground flex-shrink-0">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+            >
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
-              <p className="text-xs text-sidebar-foreground/50 truncate">{profile?.course_name || "Student"}</p>
+              <p className="text-[13px] font-medium text-white/75 truncate sk-font-body">{displayName}</p>
+              <p className="text-[11px] text-white/30 truncate sk-font-body">{profile?.course_name || "Student"}</p>
             </div>
             <ChevronUp
-              className={`w-4 h-4 text-sidebar-foreground/40 transition-transform ${profileMenuOpen ? "" : "rotate-180"}`}
+              className={`w-3.5 h-3.5 text-white/25 transition-transform duration-200 ${profileMenuOpen ? "" : "rotate-180"}`}
             />
           </button>
         ) : (
-          <div className="flex flex-col items-center gap-2">
+          <div className="sk-icon-btn-wrap flex justify-center">
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-bold text-sidebar-accent-foreground"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
               title={displayName}
             >
               {displayName.charAt(0).toUpperCase()}
             </button>
+            <span className="sk-tooltip">{displayName}</span>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 
   // ─── RIGHT PANEL content ──────────────────────────────────────────────────────
 
   const unitsPanelContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-card/30">
       {/* Panel header */}
-      <div className="p-4 border-b border-border flex-shrink-0">
+      <div className="px-4 py-4 border-b border-border/50 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-primary" />
-            <h2 className="font-display font-bold text-foreground text-sm">My Units</h2>
+            <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center">
+              <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+            </div>
+            <h2 className="font-semibold text-foreground text-[13px] sk-font-display">My Units</h2>
           </div>
           {isMobile && (
             <button
               onClick={() => setMobileUnitsOpen(false)}
-              className="p-1.5 rounded-md hover:bg-accent transition-colors"
+              className="p-1.5 rounded-lg hover:bg-accent transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">Select a unit to start studying</p>
+        <p className="text-[11px] text-muted-foreground mt-1 sk-font-body">Select a unit to start studying</p>
       </div>
 
       {/* Hidden file inputs */}
@@ -1427,79 +1568,85 @@ const ChatPage = () => {
       />
 
       {/* Units list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 sk-scroll">
         {enrolledUnits.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No units enrolled</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Your course units will appear here</p>
+          <div className="flex flex-col items-center py-14 gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-muted-foreground/40" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground sk-font-body">No units enrolled</p>
+              <p className="text-xs text-muted-foreground/50 mt-1 sk-font-body">Your course units will appear here</p>
+            </div>
           </div>
         ) : (
           enrolledUnits.map((unit) => {
             const isExpanded = expandedUnitId === unit.unit_id;
-            const isSelected = selectedUnitId === unit.unit_id;
             return (
               <div
                 key={unit.unit_id}
-                className={`rounded-xl border transition-all duration-200 overflow-hidden ${isExpanded ? "border-primary/40 bg-primary/5" : "border-border bg-card hover:border-border/80"}`}
+                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                  isExpanded
+                    ? "border-indigo-300/30 dark:border-indigo-700/40 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm"
+                    : "border-border/60 bg-card hover:border-border"
+                }`}
               >
-                {/* Unit header row */}
                 <button
                   onClick={() => {
-                    if (isExpanded) {
-                      setExpandedUnitId(null);
-                    } else {
-                      handleSelectUnit(unit.unit_id);
-                    }
+                    if (isExpanded) setExpandedUnitId(null);
+                    else handleSelectUnit(unit.unit_id);
                   }}
                   className="w-full flex items-center gap-3 p-3 text-left"
                 >
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold ${isExpanded ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold sk-font-display ${isExpanded ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground"}`}
                   >
                     {unit.unit_code.slice(-2)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-bold ${isExpanded ? "text-primary" : "text-muted-foreground"}`}>
+                    <p
+                      className={`text-[11px] font-bold tracking-wide sk-font-body ${isExpanded ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground"}`}
+                    >
                       {unit.unit_code}
                     </p>
-                    <p className="text-sm font-medium text-foreground truncate leading-tight">{unit.unit_name}</p>
-                    {unit.lecturer && <p className="text-xs text-muted-foreground truncate">{unit.lecturer}</p>}
+                    <p className="text-[13px] font-medium text-foreground truncate leading-tight sk-font-body">
+                      {unit.unit_name}
+                    </p>
+                    {unit.lecturer && (
+                      <p className="text-[11px] text-muted-foreground truncate sk-font-body">{unit.lecturer}</p>
+                    )}
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                   />
                 </button>
 
-                {/* Expanded unit panel */}
                 <AnimatePresence>
                   {isExpanded && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="px-3 pb-3 space-y-2 border-t border-primary/20">
-                        {/* Stats row */}
-                        <div className="flex gap-2 pt-2">
-                          <div className="flex-1 bg-background rounded-lg p-2 text-center">
-                            <p className="text-lg font-bold text-foreground">{notesCount}</p>
-                            <p className="text-[10px] text-muted-foreground">Notes</p>
+                      <div className="px-3 pb-3 space-y-2.5 border-t border-indigo-200/30 dark:border-indigo-800/30">
+                        <div className="flex gap-2 pt-2.5">
+                          <div className="flex-1 bg-background rounded-xl p-2.5 text-center border border-border/50">
+                            <p className="text-xl font-bold text-foreground sk-font-display">{notesCount}</p>
+                            <p className="text-[10px] text-muted-foreground sk-font-body">Notes</p>
                           </div>
-                          <div className="flex-1 bg-background rounded-lg p-2 text-center">
-                            <p className="text-lg font-bold text-foreground">{pastPaperCount}</p>
-                            <p className="text-[10px] text-muted-foreground">Papers</p>
+                          <div className="flex-1 bg-background rounded-xl p-2.5 text-center border border-border/50">
+                            <p className="text-xl font-bold text-foreground sk-font-display">{pastPaperCount}</p>
+                            <p className="text-[10px] text-muted-foreground sk-font-body">Papers</p>
                           </div>
                         </div>
 
-                        {/* Upload buttons */}
                         <div className="grid grid-cols-2 gap-1.5">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs border-dashed h-8"
+                            className="text-xs border-dashed h-8 sk-font-body"
                             disabled={unitUploading}
                             onClick={() => unitUploadInputRef.current?.click()}
                           >
@@ -1513,7 +1660,7 @@ const ChatPage = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs border-dashed h-8"
+                            className="text-xs border-dashed h-8 sk-font-body"
                             disabled={pastPaperUploading}
                             onClick={() => pastPaperInputRef.current?.click()}
                           >
@@ -1526,11 +1673,10 @@ const ChatPage = () => {
                           </Button>
                         </div>
 
-                        {/* Upload progress */}
                         {Object.entries(unitUploadProgress).length > 0 && (
                           <div className="space-y-0.5">
                             {Object.entries(unitUploadProgress).map(([key, status]) => (
-                              <p key={key} className="text-xs text-muted-foreground truncate">
+                              <p key={key} className="text-xs text-muted-foreground truncate sk-font-body">
                                 {status}
                               </p>
                             ))}
@@ -1539,24 +1685,23 @@ const ChatPage = () => {
                         {Object.entries(pastPaperUploadProgress).length > 0 && (
                           <div className="space-y-0.5">
                             {Object.entries(pastPaperUploadProgress).map(([key, status]) => (
-                              <p key={key} className="text-xs text-muted-foreground truncate">
+                              <p key={key} className="text-xs text-muted-foreground truncate sk-font-body">
                                 {status}
                               </p>
                             ))}
                           </div>
                         )}
 
-                        {/* New Chat + Action buttons */}
-                        <div className="space-y-1 pt-1">
+                        <div className="space-y-0.5 pt-0.5">
                           <button
                             onClick={() => handleNewUnitChat(unit.unit_id)}
-                            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-background transition-colors text-left border border-dashed border-border mb-1"
+                            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm hover:bg-background transition-colors text-left border border-dashed border-border mb-1 sk-font-body"
                           >
-                            <Plus className="w-4 h-4 flex-shrink-0 text-primary" />
+                            <Plus className="w-4 h-4 flex-shrink-0 text-indigo-500" />
                             <span className="font-medium text-foreground">New Chat</span>
                           </button>
 
-                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-0.5">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-1 pb-0.5 sk-font-body">
                             Quick Actions
                           </p>
 
@@ -1565,6 +1710,7 @@ const ChatPage = () => {
                               icon: BookOpen,
                               label: "Teach Me",
                               color: "text-emerald-600",
+                              bg: "bg-emerald-50 dark:bg-emerald-950/30",
                               onClick: async () => {
                                 if (notesCount === 0) {
                                   toast.error("Upload course notes first.");
@@ -1588,6 +1734,7 @@ const ChatPage = () => {
                               icon: PenLine,
                               label: "Exam Prep",
                               color: "text-blue-600",
+                              bg: "bg-blue-50 dark:bg-blue-950/30",
                               onClick: async () => {
                                 if (notesCount === 0) {
                                   toast.error("Upload course notes first.");
@@ -1605,6 +1752,7 @@ const ChatPage = () => {
                                     icon: FileQuestion,
                                     label: "Exam Mode",
                                     color: "text-amber-600",
+                                    bg: "bg-amber-50 dark:bg-amber-950/30",
                                     onClick: async () => {
                                       await handleOpenUnitChat(unit.unit_id);
                                       await handleSuggestion(
@@ -1618,6 +1766,7 @@ const ChatPage = () => {
                               icon: ListChecks,
                               label: "Quiz Me",
                               color: "text-purple-600",
+                              bg: "bg-purple-50 dark:bg-purple-950/30",
                               onClick: async () => {
                                 if (notesCount === 0) {
                                   toast.error("Upload course notes first.");
@@ -1633,6 +1782,7 @@ const ChatPage = () => {
                               icon: FileText,
                               label: "Summarize",
                               color: "text-rose-600",
+                              bg: "bg-rose-50 dark:bg-rose-950/30",
                               onClick: async () => {
                                 if (notesCount === 0) {
                                   toast.error("Upload course notes first.");
@@ -1648,11 +1798,15 @@ const ChatPage = () => {
                             <button
                               key={action.label}
                               onClick={action.onClick}
-                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-background transition-colors text-left"
+                              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-xl text-sm hover:bg-muted/50 transition-colors text-left group/ua sk-font-body"
                             >
-                              <action.icon className={`w-4 h-4 flex-shrink-0 ${action.color}`} />
+                              <div
+                                className={`w-7 h-7 rounded-lg ${action.bg} flex items-center justify-center flex-shrink-0`}
+                              >
+                                <action.icon className={`w-3.5 h-3.5 ${action.color}`} />
+                              </div>
                               <span className="font-medium text-foreground">{action.label}</span>
-                              <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto" />
+                              <ChevronRight className="w-3 h-3 text-muted-foreground ml-auto opacity-0 group-hover/ua:opacity-100 transition-opacity" />
                             </button>
                           ))}
                         </div>
@@ -1671,15 +1825,22 @@ const ChatPage = () => {
   // ─── Chat input ───────────────────────────────────────────────────────────────
 
   const chatInput = (
-    <div className="max-w-[680px] w-full mx-auto pointer-events-auto">
+    <div className="max-w-[700px] w-full mx-auto pointer-events-auto">
+      {/* Voice recording indicator */}
       {(isListening || isTranscribing) && (
-        <div className="mb-2 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-3">
+        <div className="mb-2.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/40 bg-indigo-50/80 dark:bg-indigo-950/30 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              {isTranscribing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <VoiceInputVisualizer />}
+              {isTranscribing ? (
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-500 flex-shrink-0" />
+              ) : (
+                <VoiceInputVisualizer />
+              )}
               <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{isTranscribing ? "Transcribing…" : "Listening…"}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm font-medium text-foreground sk-font-body">
+                  {isTranscribing ? "Transcribing…" : "Listening…"}
+                </p>
+                <p className="text-xs text-muted-foreground sk-font-body">
                   {isTranscribing ? "Converting speech to text." : "Speak freely — tap Stop when done."}
                 </p>
               </div>
@@ -1687,7 +1848,7 @@ const ChatPage = () => {
             {isListening && (
               <button
                 onClick={toggleVoice}
-                className="rounded-full border border-primary/20 bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                className="rounded-full border border-indigo-300/40 bg-white/80 dark:bg-black/20 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white dark:hover:bg-black/30 transition-colors sk-font-body"
               >
                 Stop
               </button>
@@ -1696,51 +1857,55 @@ const ChatPage = () => {
         </div>
       )}
 
+      {/* Voice draft preview */}
       {showVoicePreview && !isListening && voiceDraft && (
-        <div className="mb-2 rounded-3xl border border-border bg-card px-4 py-3">
+        <div className="mb-2.5 rounded-2xl border border-border bg-card/80 backdrop-blur-sm px-4 py-3">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Voice preview</p>
-              <p className="mt-1 text-sm text-foreground break-words">{voiceDraft}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground sk-font-body">
+                Voice preview
+              </p>
+              <p className="mt-1 text-sm text-foreground break-words sk-font-body">{voiceDraft}</p>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 onClick={discardVoiceDraft}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 title="Discard"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={applyVoiceDraft}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
                 title="Use transcript"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Attached files */}
       {attachedFiles.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-2">
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
           {attachedFiles.map((pf, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1 text-xs bg-card border border-border px-2 py-1 rounded-lg"
+              className="inline-flex items-center gap-1.5 text-xs bg-card border border-border/60 px-2.5 py-1.5 rounded-xl sk-font-body"
             >
               {pf.preview ? (
-                <img src={pf.preview} alt="" className="w-6 h-6 rounded object-cover" />
+                <img src={pf.preview} alt="" className="w-5 h-5 rounded-md object-cover" />
               ) : pf.file.type.startsWith("image/") ? (
-                <ImageIcon className="w-3 h-3" />
+                <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
               ) : (
-                <File className="w-3 h-3" />
+                <File className="w-3.5 h-3.5 text-muted-foreground" />
               )}
-              <span className="max-w-[120px] truncate">{pf.file.name}</span>
+              <span className="max-w-[120px] truncate text-foreground">{pf.file.name}</span>
               <button
                 onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))}
-                className="text-muted-foreground hover:text-destructive"
+                className="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -1749,10 +1914,17 @@ const ChatPage = () => {
         </div>
       )}
 
+      {/* Main input bar */}
       <div
-        className="flex items-end gap-1 rounded-[24px] px-2 py-1.5 bg-[hsl(var(--chat-input-bg))] border border-solid border-inherit"
-        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.15)" }}
+        className="sk-input-bar flex items-end gap-1 rounded-[20px] px-2 py-2"
+        style={{
+          background: "hsl(var(--chat-input-bg, var(--card)))",
+          border: "1.5px solid hsl(var(--border))",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+        }}
       >
+        {/* Hidden file inputs */}
         <input
           ref={cameraInputRef}
           type="file"
@@ -1787,44 +1959,39 @@ const ChatPage = () => {
           }}
         />
 
+        {/* Attach button */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex w-9 h-9 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0">
+            <button className="flex w-9 h-9 items-center justify-center rounded-xl text-muted-foreground hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors flex-shrink-0">
               <Paperclip className="w-4 h-4" />
             </button>
           </PopoverTrigger>
-          <PopoverContent side="top" align="start" className="w-52 p-1.5">
-            <button
-              onClick={() => cameraInputRef.current?.click()}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
-            >
-              <Camera className="w-4 h-4 text-muted-foreground" /> Take Photo
-            </button>
-            <button
-              onClick={() => photoInputRef.current?.click()}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
-            >
-              <ImageIcon className="w-4 h-4 text-muted-foreground" /> Upload Image
-            </button>
-            <button
-              onClick={() => docInputRef.current?.click()}
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
-            >
-              <FileText className="w-4 h-4 text-muted-foreground" /> Upload File
-            </button>
-            <button
-              onClick={() =>
-                handleSuggestion(
-                  "Enter Quiz Mode: Generate exam-style questions for my current unit to help me revise. Ask one question at a time, evaluate my answer, and explain the correct answer step by step.",
-                )
-              }
-              className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
-            >
-              <FileQuestion className="w-4 h-4 text-muted-foreground" /> Quizzes
-            </button>
+          <PopoverContent side="top" align="start" className="w-52 p-1.5 rounded-2xl">
+            {[
+              { icon: Camera, label: "Take Photo", onClick: () => cameraInputRef.current?.click() },
+              { icon: ImageIcon, label: "Upload Image", onClick: () => photoInputRef.current?.click() },
+              { icon: FileText, label: "Upload File", onClick: () => docInputRef.current?.click() },
+              {
+                icon: FileQuestion,
+                label: "Quizzes",
+                onClick: () =>
+                  handleSuggestion(
+                    "Enter Quiz Mode: Generate exam-style questions for my current unit to help me revise. Ask one question at a time, evaluate my answer, and explain the correct answer step by step.",
+                  ),
+              },
+            ].map((item) => (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm hover:bg-accent transition-colors sk-font-body"
+              >
+                <item.icon className="w-4 h-4 text-muted-foreground" /> {item.label}
+              </button>
+            ))}
           </PopoverContent>
         </Popover>
 
+        {/* Textarea */}
         <textarea
           ref={inputRef}
           value={input}
@@ -1840,25 +2007,34 @@ const ChatPage = () => {
               handleSend();
             }
           }}
-          placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}...` : "Ask Sekani anything..."}
-          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto leading-5"
+          placeholder={selectedUnit ? `Ask about ${selectedUnit.unit_code}…` : "Ask Sekani anything…"}
+          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground py-2 px-2 min-w-0 resize-none overflow-y-auto leading-relaxed sk-font-body sk-scroll"
           style={{ maxHeight: "150px", height: "36px" }}
           rows={1}
           disabled={isStreaming}
         />
 
+        {/* Mic button */}
         <button
           onClick={toggleVoice}
           disabled={!micSupported || isTranscribing}
-          className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors flex-shrink-0 ${isListening ? "text-primary bg-primary/20 mic-pulse-ring" : isTranscribing ? "text-primary animate-pulse" : "text-muted-foreground hover:text-primary hover:bg-primary/10"} ${!micSupported ? "opacity-40 cursor-not-allowed" : ""}`}
+          className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all flex-shrink-0 ${
+            isListening
+              ? "text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 sk-mic-active"
+              : isTranscribing
+                ? "text-indigo-500 animate-pulse"
+                : "text-muted-foreground hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+          } ${!micSupported ? "opacity-30 cursor-not-allowed" : ""}`}
         >
           {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
         </button>
 
+        {/* Send button */}
         <button
           onClick={() => handleSend()}
           disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-40"
+          className="w-9 h-9 flex items-center justify-center rounded-xl transition-all flex-shrink-0 disabled:opacity-30"
+          style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "white" }}
         >
           {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
         </button>
@@ -1869,13 +2045,16 @@ const ChatPage = () => {
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden">
+    <div className="h-screen flex bg-background overflow-hidden sk-font-body">
       {/* ── LEFT SIDEBAR (desktop) ── */}
-      <aside
-        className={`hidden md:flex flex-col bg-sidebar flex-shrink-0 transition-all duration-300 ease-in-out ${sidebarExpanded ? "w-[260px]" : "w-[56px]"}`}
+      <motion.aside
+        animate={{ width: sidebarExpanded ? 260 : 60 }}
+        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+        className="hidden md:flex flex-col flex-shrink-0 overflow-hidden"
+        style={{ background: "var(--sk-sidebar-bg)" }}
       >
         {sidebarContent}
-      </aside>
+      </motion.aside>
 
       {/* ── LEFT SIDEBAR (mobile overlay) ── */}
       <AnimatePresence>
@@ -1886,15 +2065,16 @@ const ChatPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
               onClick={() => setMobileSidebarOpen(false)}
             />
             <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              transition={{ type: "spring", damping: 25, stiffness: 250 }}
-              className="fixed inset-y-0 left-0 w-[280px] z-50 bg-sidebar flex flex-col md:hidden"
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 w-[280px] z-50 flex flex-col md:hidden"
+              style={{ background: "var(--sk-sidebar-bg)" }}
             >
               {sidebarContent}
             </motion.aside>
@@ -1909,22 +2089,38 @@ const ChatPage = () => {
           style={chatBgStyle}
         >
           {/* ── HEADER ── */}
-          <header className="h-14 flex items-center px-4 flex-shrink-0 z-10 bg-transparent gap-2">
-            <button onClick={toggleSidebar} className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0">
+          <header
+            className="h-14 flex items-center px-4 flex-shrink-0 z-10 gap-2"
+            style={{
+              borderBottom: "1px solid hsl(var(--border) / 0.5)",
+              background: "hsl(var(--background) / 0.85)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <button
+              onClick={toggleSidebar}
+              className="p-2 hover:bg-muted rounded-xl md:hidden flex-shrink-0 transition-colors"
+            >
               <PanelLeft className="w-5 h-5" />
             </button>
 
             <div className="flex-1 min-w-0">
               {selectedUnit ? (
-                <div>
-                  <h2 className="font-display font-semibold text-foreground text-sm truncate leading-tight">
-                    {selectedUnit.unit_code} — {selectedUnit.unit_name}
+                <div className="flex flex-col gap-0.5">
+                  <span
+                    className="inline-flex text-[10px] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-md w-fit sk-font-body"
+                    style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1" }}
+                  >
+                    {selectedUnit.unit_code}
+                  </span>
+                  <h2 className="font-semibold text-foreground text-[13px] truncate leading-tight sk-font-display">
+                    {selectedUnit.unit_name}
                   </h2>
                 </div>
               ) : showArtifacts ? (
-                <h2 className="font-display font-semibold text-foreground text-sm">Artifacts</h2>
+                <h2 className="font-semibold text-foreground text-sm sk-font-display">Artifacts</h2>
               ) : (
-                <h2 className="font-display font-semibold text-foreground text-sm">
+                <h2 className="font-semibold text-foreground text-sm sk-font-display">
                   {activeChat ? activeChat.title : "Sekani"}
                 </h2>
               )}
@@ -1959,18 +2155,25 @@ const ChatPage = () => {
                       true,
                     );
                 }}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 ${teachMeActive ? "bg-emerald-600 text-white border-emerald-600" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 sk-font-body font-medium ${
+                  teachMeActive
+                    ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
+                    : "border-border text-muted-foreground hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                }`}
               >
                 <BookOpen className="w-3 h-3" />
-                <span className="hidden sm:inline">{teachMeActive ? "Teaching..." : "Teach Me"}</span>
+                <span className="hidden sm:inline">{teachMeActive ? "Teaching…" : "Teach Me"}</span>
               </button>
             )}
 
             {selectedUnit && !teachMeActive && (
               <button
                 onClick={() => setSourcesOpen(!sourcesOpen)}
-                className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 ${sourcesOpen ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
-                title="View uploaded notes and past papers"
+                className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 sk-font-body font-medium ${
+                  sourcesOpen
+                    ? "bg-indigo-500 text-white border-indigo-500"
+                    : "border-border text-muted-foreground hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                }`}
               >
                 <ScrollText className="w-3 h-3" />
                 <span>Sources</span>
@@ -1988,15 +2191,15 @@ const ChatPage = () => {
                     `[EXAM_MODE] Analyze ALL past papers uploaded for ${selectedUnit.unit_code} — ${selectedUnit.unit_name}. Cross-reference with course notes to identify: 1) Most frequently tested topics, 2) Common question patterns, 3) Key areas to focus on. Then give me a targeted revision plan.`,
                   );
                 }}
-                className={`p-2 rounded-lg transition-colors flex-shrink-0 ${pastPaperCount > 0 ? "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30" : "text-muted-foreground hover:bg-foreground/10"}`}
-                title={pastPaperCount > 0 ? "Exam Mode" : "Upload past papers to unlock Exam Mode"}
+                className={`p-2 rounded-xl transition-colors flex-shrink-0 ${pastPaperCount > 0 ? "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30" : "text-muted-foreground hover:bg-muted"}`}
+                title={pastPaperCount > 0 ? "Exam Mode" : "Upload past papers to unlock"}
               >
                 <ClipboardList className="w-5 h-5" />
               </button>
             ) : (
               <button
                 onClick={() => setCalendarOpen(!calendarOpen)}
-                className="p-2 hover:bg-foreground/10 rounded-lg text-foreground flex-shrink-0"
+                className="p-2 hover:bg-muted rounded-xl text-foreground flex-shrink-0 transition-colors"
                 title="Academic Calendar"
               >
                 <Calendar className="w-5 h-5" />
@@ -2005,7 +2208,7 @@ const ChatPage = () => {
 
             <button
               onClick={() => setMobileUnitsOpen(true)}
-              className="p-2 hover:bg-foreground/10 rounded-lg md:hidden flex-shrink-0"
+              className="p-2 hover:bg-muted rounded-xl md:hidden flex-shrink-0 transition-colors"
               title="My Units"
             >
               <GraduationCap className="w-5 h-5" />
@@ -2014,7 +2217,7 @@ const ChatPage = () => {
 
           {/* ── CONTENT AREA ── */}
           {showArtifacts ? (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto sk-scroll">
               <ArtifactsPage />
             </div>
           ) : (
@@ -2022,31 +2225,38 @@ const ChatPage = () => {
               const isNewChat = !activeChat || activeChat.messages.length === 0;
               return (
                 <>
-                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto chat-scroll-area">
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto sk-scroll">
                     <AnimatePresence mode="wait">
                       {isNewChat ? (
                         <motion.div
                           key="new-chat"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          exit={{ opacity: 0, y: 40 }}
+                          exit={{ opacity: 0, y: 20 }}
                           transition={{ duration: 0.3 }}
-                          className="flex flex-col items-center justify-center h-full px-4"
+                          className="flex flex-col items-center justify-center h-full px-4 py-8"
                         >
                           <motion.div
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-center mb-6"
+                            className="text-center mb-8"
                           >
-                            <h2 className="text-2xl font-display font-bold text-foreground mb-2">
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                              <img src={sekaniLogo} alt="Sekani" className="w-10 h-10 object-contain" />
+                            </div>
+                            <h2
+                              className="sk-font-display font-semibold text-foreground mb-2"
+                              style={{ fontSize: "clamp(1.4rem, 4vw, 1.9rem)", letterSpacing: "-0.02em" }}
+                            >
                               {greeting}, {displayName.split(" ")[0]}
                             </h2>
-                            <p className="text-muted-foreground text-sm">
+                            <p className="text-muted-foreground text-sm sk-font-body max-w-sm mx-auto">
                               {selectedUnit
                                 ? `Ask anything about ${selectedUnit.unit_code} — ${selectedUnit.unit_name}`
                                 : "How can I help you with your studies today?"}
                             </p>
                           </motion.div>
+
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -2055,41 +2265,42 @@ const ChatPage = () => {
                           >
                             {chatInput}
                           </motion.div>
+
                           {!selectedUnit && (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.2 }}
-                              className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-[680px] w-full px-4 md:px-0"
+                              className="flex flex-wrap justify-center gap-2.5 mt-6 max-w-[700px] w-full px-4 md:px-0"
                             >
                               {SUGGESTIONS.map((s, i) => (
                                 <motion.button
                                   key={s.label}
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.25 + i * 0.08 }}
+                                  transition={{ delay: 0.25 + i * 0.07 }}
                                   onClick={() => handleSuggestion(s.prompt)}
-                                  className="inline-flex items-center gap-2 px-4 py-2.5 glass-card hover:-translate-y-0.5 transition-all"
-                                  style={{ borderRadius: "30px" }}
+                                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[30px] border border-border/60 bg-card/80 backdrop-blur-sm hover:border-indigo-300/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:-translate-y-0.5 transition-all shadow-sm sk-font-body"
                                 >
-                                  <s.icon className="w-4 h-4 text-primary flex-shrink-0" />
-                                  <span className="font-display font-semibold text-sm text-foreground whitespace-nowrap">
-                                    {s.label}
-                                  </span>
+                                  <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
+                                    <s.icon className="w-3.5 h-3.5 text-indigo-500" />
+                                  </div>
+                                  <span className="font-medium text-sm text-foreground">{s.label}</span>
                                 </motion.button>
                               ))}
                             </motion.div>
                           )}
+
                           {!selectedUnit && isMobile && (
                             <motion.div
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               transition={{ delay: 0.4 }}
-                              className="mt-4"
+                              className="mt-5"
                             >
                               <button
                                 onClick={() => setMobileUnitsOpen(true)}
-                                className="flex items-center gap-2 text-sm text-primary border border-primary/30 rounded-full px-4 py-2 hover:bg-primary/5 transition-colors"
+                                className="flex items-center gap-2 text-sm text-indigo-500 border border-indigo-300/40 rounded-full px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors sk-font-body font-medium"
                               >
                                 <GraduationCap className="w-4 h-4" /> Browse My Units
                               </button>
@@ -2102,55 +2313,66 @@ const ChatPage = () => {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ duration: 0.2 }}
-                          className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-4"
+                          className="max-w-3xl mx-auto px-4 py-6 pb-32 space-y-5"
                         >
                           {activeChat!.messages.map((msg, msgIndex) => (
                             <motion.div
                               key={msg.id}
-                              initial={{ opacity: 0, y: 10 }}
+                              initial={{ opacity: 0, y: 8 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className={`group/msg flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                              transition={{ duration: 0.2 }}
+                              className={`group/msg flex ${msg.sender === "user" ? "justify-end" : "justify-start"} gap-3`}
                             >
-                              <div className="flex flex-col gap-1 max-w-[85%]">
+                              {/* Bot avatar */}
+                              {msg.sender === "bot" && (
+                                <div className="flex-shrink-0 mt-1">
+                                  <div
+                                    className="w-7 h-7 rounded-xl flex items-center justify-center"
+                                    style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}
+                                  >
+                                    <img src={sekaniLogo} alt="S" className="w-4 h-4 object-contain" />
+                                  </div>
+                                </div>
+                              )}
+
+                              <div
+                                className={`flex flex-col gap-1 ${msg.sender === "user" ? "items-end max-w-[82%]" : "items-start max-w-[85%]"}`}
+                              >
                                 {(() => {
                                   const chatBg = getChatBg();
                                   const hasCustomBg = chatBg && chatBg.url;
-                                  const bubbleStyle = hasCustomBg
-                                    ? msg.sender === "user"
-                                      ? { background: chatBg.userBubble, color: chatBg.userText }
-                                      : { background: chatBg.botBubble, color: chatBg.botText }
-                                    : msg.sender === "user"
-                                      ? { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
-                                      : undefined;
-                                  const bubbleClass =
-                                    msg.sender === "user"
-                                      ? `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-br-md`
-                                      : `px-4 py-3 rounded-2xl text-sm leading-relaxed rounded-bl-md ${!hasCustomBg ? "bg-muted text-foreground" : ""}`;
+                                  const userStyle = hasCustomBg
+                                    ? { background: chatBg.userBubble, color: chatBg.userText }
+                                    : { background: "linear-gradient(135deg, #4f46e5, #7c3aed)", color: "white" };
+                                  const botStyle = hasCustomBg
+                                    ? { background: chatBg.botBubble, color: chatBg.botText }
+                                    : undefined;
+
                                   return (
-                                    <div className={bubbleClass} style={bubbleStyle}>
-                                      {msg.sender === "bot" && (
-                                        <div className="flex items-center gap-1.5 mb-1.5">
-                                          <img src={sekaniLogo} alt="Sekani" className="w-4 h-4" />
-                                          <span className="text-xs font-semibold text-primary">Sekani</span>
-                                        </div>
-                                      )}
+                                    <div
+                                      className={`px-4 py-3 text-[13.5px] leading-relaxed ${
+                                        msg.sender === "user"
+                                          ? "rounded-2xl rounded-br-[5px] shadow-sm"
+                                          : `rounded-2xl rounded-bl-[5px] shadow-sm ${!hasCustomBg ? "bg-card border border-border/60 text-foreground" : ""}`
+                                      }`}
+                                      style={msg.sender === "user" ? userStyle : botStyle}
+                                    >
                                       {msg.sender === "bot" ? (
-                                        <div className="prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
+                                        <div className="sk-prose prose prose-sm max-w-none dark:prose-invert break-words [overflow-wrap:anywhere] [word-break:break-word]">
                                           <ReactMarkdown
                                             remarkPlugins={[remarkMath, remarkGfm]}
                                             rehypePlugins={[rehypeKatex]}
                                             components={{
-                                              // ── HEADINGS ──────────────────────────────────────
                                               h1({ children }) {
                                                 return (
                                                   <h1
                                                     style={{
-                                                      fontSize: "1.5rem",
-                                                      fontWeight: 800,
+                                                      fontSize: "1.45rem",
+                                                      fontWeight: 700,
                                                       lineHeight: 1.25,
-                                                      marginTop: "1.25rem",
-                                                      marginBottom: "0.6rem",
-                                                      color: "inherit",
+                                                      marginTop: "1.2rem",
+                                                      marginBottom: "0.5rem",
+                                                      fontFamily: "var(--sk-font-display)",
                                                       letterSpacing: "-0.01em",
                                                     }}
                                                   >
@@ -2162,12 +2384,12 @@ const ChatPage = () => {
                                                 return (
                                                   <h2
                                                     style={{
-                                                      fontSize: "1.2rem",
+                                                      fontSize: "1.15rem",
                                                       fontWeight: 700,
                                                       lineHeight: 1.3,
-                                                      marginTop: "1.1rem",
-                                                      marginBottom: "0.5rem",
-                                                      color: "inherit",
+                                                      marginTop: "1rem",
+                                                      marginBottom: "0.45rem",
+                                                      fontFamily: "var(--sk-font-display)",
                                                       letterSpacing: "-0.01em",
                                                     }}
                                                   >
@@ -2179,12 +2401,11 @@ const ChatPage = () => {
                                                 return (
                                                   <h3
                                                     style={{
-                                                      fontSize: "1.05rem",
-                                                      fontWeight: 700,
+                                                      fontSize: "1rem",
+                                                      fontWeight: 600,
                                                       lineHeight: 1.35,
-                                                      marginTop: "0.9rem",
-                                                      marginBottom: "0.4rem",
-                                                      color: "inherit",
+                                                      marginTop: "0.85rem",
+                                                      marginBottom: "0.35rem",
                                                     }}
                                                   >
                                                     {children}
@@ -2195,52 +2416,17 @@ const ChatPage = () => {
                                                 return (
                                                   <h4
                                                     style={{
-                                                      fontSize: "0.95rem",
+                                                      fontSize: "0.9rem",
                                                       fontWeight: 600,
                                                       lineHeight: 1.4,
-                                                      marginTop: "0.75rem",
+                                                      marginTop: "0.7rem",
                                                       marginBottom: "0.3rem",
-                                                      color: "inherit",
                                                     }}
                                                   >
                                                     {children}
                                                   </h4>
                                                 );
                                               },
-                                              h5({ children }) {
-                                                return (
-                                                  <h5
-                                                    style={{
-                                                      fontSize: "0.9rem",
-                                                      fontWeight: 600,
-                                                      lineHeight: 1.4,
-                                                      marginTop: "0.6rem",
-                                                      marginBottom: "0.25rem",
-                                                      color: "inherit",
-                                                    }}
-                                                  >
-                                                    {children}
-                                                  </h5>
-                                                );
-                                              },
-                                              h6({ children }) {
-                                                return (
-                                                  <h6
-                                                    style={{
-                                                      fontSize: "0.85rem",
-                                                      fontWeight: 600,
-                                                      lineHeight: 1.4,
-                                                      marginTop: "0.5rem",
-                                                      marginBottom: "0.2rem",
-                                                      color: "inherit",
-                                                      opacity: 0.85,
-                                                    }}
-                                                  >
-                                                    {children}
-                                                  </h6>
-                                                );
-                                              },
-                                              // ── LINKS ─────────────────────────────────────────
                                               a({ href, children, ...props }) {
                                                 if (href?.startsWith("download:")) {
                                                   const format = href.replace("download:", "") as
@@ -2264,12 +2450,12 @@ const ChatPage = () => {
                                                         e.stopPropagation();
                                                         generators[format]?.();
                                                       }}
-                                                      className="inline-flex items-center gap-2 px-4 py-2.5 my-1 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                                      className="inline-flex items-center gap-2 px-4 py-2.5 my-1 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] sk-font-body"
                                                       style={{
                                                         background:
-                                                          "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8))",
+                                                          "linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary)/0.8))",
                                                         color: "hsl(var(--primary-foreground))",
-                                                        boxShadow: "0 2px 8px hsl(var(--primary) / 0.3)",
+                                                        boxShadow: "0 2px 8px hsl(var(--primary)/0.3)",
                                                       }}
                                                     >
                                                       <Download className="w-4 h-4" />
@@ -2283,16 +2469,15 @@ const ChatPage = () => {
                                                   </a>
                                                 );
                                               },
-                                              // ── TABLES ────────────────────────────────────────
                                               table: ({ children }: any) => (
-                                                <div className="my-3 overflow-x-auto rounded-lg border border-border">
+                                                <div className="my-3 overflow-x-auto rounded-xl border border-border sk-scroll">
                                                   <table className="min-w-full divide-y divide-border text-sm">
                                                     {children}
                                                   </table>
                                                 </div>
                                               ),
                                               thead: ({ children }: any) => (
-                                                <thead className="bg-muted/50">{children}</thead>
+                                                <thead className="bg-muted/60">{children}</thead>
                                               ),
                                               tbody: ({ children }: any) => (
                                                 <tbody className="divide-y divide-border">{children}</tbody>
@@ -2301,14 +2486,13 @@ const ChatPage = () => {
                                                 <tr className="hover:bg-muted/30 transition-colors">{children}</tr>
                                               ),
                                               th: ({ children }: any) => (
-                                                <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                <th className="px-3 py-2.5 text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                                                   {children}
                                                 </th>
                                               ),
                                               td: ({ children }: any) => (
-                                                <td className="px-3 py-2 text-sm text-foreground">{children}</td>
+                                                <td className="px-3 py-2.5 text-sm text-foreground">{children}</td>
                                               ),
-                                              // ── CODE ──────────────────────────────────────────
                                               code({ className, children, ...props }) {
                                                 const match = /language-(\w+)/.exec(className || "");
                                                 const lang = match ? match[1] : "";
@@ -2326,24 +2510,24 @@ const ChatPage = () => {
                                                 ].includes(lang.toLowerCase());
                                                 if (isBlock) {
                                                   return (
-                                                    <div className="relative group/code my-2">
+                                                    <div className="relative group/code my-2.5 rounded-xl overflow-hidden">
                                                       {lang && (
-                                                        <div className="flex items-center justify-between bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-t-lg text-xs">
-                                                          <span className="font-mono">{lang}</span>
+                                                        <div className="flex items-center justify-between bg-zinc-800 text-zinc-300 px-3.5 py-2 text-xs">
+                                                          <span className="font-mono text-zinc-400">{lang}</span>
                                                           <div className="flex items-center gap-1 opacity-0 group-hover/code:opacity-100 transition-opacity">
                                                             <button
                                                               onClick={() => {
                                                                 navigator.clipboard.writeText(codeStr);
                                                                 toast.success("Copied!");
                                                               }}
-                                                              className="px-2 py-0.5 rounded hover:bg-zinc-700 transition-colors"
+                                                              className="px-2 py-0.5 rounded-md hover:bg-zinc-700 transition-colors sk-font-body"
                                                             >
                                                               Copy
                                                             </button>
                                                             {canPreview && (
                                                               <button
                                                                 onClick={() => handleCreateArtifact(codeStr, lang)}
-                                                                className="px-2 py-0.5 rounded hover:bg-zinc-700 text-blue-400 transition-colors flex items-center gap-1"
+                                                                className="px-2 py-0.5 rounded-md hover:bg-zinc-700 text-blue-400 transition-colors flex items-center gap-1 sk-font-body"
                                                               >
                                                                 <Play className="w-3 h-3" /> Run
                                                               </button>
@@ -2352,7 +2536,7 @@ const ChatPage = () => {
                                                               onClick={() =>
                                                                 handleCreateArtifact(codeStr, lang || "text")
                                                               }
-                                                              className="px-2 py-0.5 rounded hover:bg-zinc-700 text-emerald-400 transition-colors flex items-center gap-1"
+                                                              className="px-2 py-0.5 rounded-md hover:bg-zinc-700 text-emerald-400 transition-colors flex items-center gap-1 sk-font-body"
                                                             >
                                                               <Code2 className="w-3 h-3" /> Artifact
                                                             </button>
@@ -2360,7 +2544,7 @@ const ChatPage = () => {
                                                         </div>
                                                       )}
                                                       <pre
-                                                        className={`bg-zinc-900 text-zinc-100 ${lang ? "rounded-b-lg" : "rounded-lg"} p-3 overflow-x-auto`}
+                                                        className={`bg-zinc-900 text-zinc-100 ${lang ? "" : "rounded-xl"} p-3.5 overflow-x-auto sk-scroll`}
                                                       >
                                                         <code className={className} {...props}>
                                                           {children}
@@ -2369,7 +2553,7 @@ const ChatPage = () => {
                                                       {!lang && (
                                                         <button
                                                           onClick={() => handleCreateArtifact(codeStr, "text")}
-                                                          className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md"
+                                                          className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-indigo-500 text-white px-2 py-1 rounded-lg sk-font-body"
                                                         >
                                                           <Code2 className="w-3 h-3" /> Artifact
                                                         </button>
@@ -2379,26 +2563,25 @@ const ChatPage = () => {
                                                 }
                                                 return (
                                                   <code
-                                                    className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono"
+                                                    className="bg-muted px-1.5 py-0.5 rounded-lg text-[13px] font-mono"
                                                     {...props}
                                                   >
                                                     {children}
                                                   </code>
                                                 );
                                               },
-                                              // ── IMAGES ────────────────────────────────────────
                                               img({ src, alt, ...props }) {
                                                 return (
                                                   <div className="my-3">
                                                     <img
                                                       src={src}
-                                                      alt={alt || "Generated image"}
-                                                      className="max-w-full rounded-xl border border-border shadow-md cursor-pointer hover:opacity-90 transition-opacity"
+                                                      alt={alt || "Image"}
+                                                      className="max-w-full rounded-xl border border-border shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
                                                       loading="lazy"
                                                       onClick={() => window.open(src, "_blank")}
                                                     />
                                                     {alt && (
-                                                      <p className="text-xs text-muted-foreground mt-1.5 text-center italic">
+                                                      <p className="text-xs text-muted-foreground mt-1.5 text-center italic sk-font-body">
                                                         {alt}
                                                       </p>
                                                     )}
@@ -2428,7 +2611,7 @@ const ChatPage = () => {
                                           <input
                                             value={editingMsgText}
                                             onChange={(e) => setEditingMsgText(e.target.value)}
-                                            className="flex-1 bg-transparent border-b border-primary-foreground/50 outline-none text-sm"
+                                            className="flex-1 bg-transparent border-b border-white/50 outline-none text-sm sk-font-body"
                                             autoFocus
                                           />
                                           <button type="submit" className="p-0.5">
@@ -2439,7 +2622,7 @@ const ChatPage = () => {
                                           </button>
                                         </form>
                                       ) : (
-                                        <span className="break-words [word-break:break-word] [overflow-wrap:anywhere]">
+                                        <span className="break-words [word-break:break-word] [overflow-wrap:anywhere] sk-font-body">
                                           {msg.text}
                                         </span>
                                       )}
@@ -2451,135 +2634,151 @@ const ChatPage = () => {
                                 <div
                                   className={`flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                                 >
-                                  <button
-                                    onClick={() => copyToClipboard(msg.text)}
-                                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                    title="Copy"
-                                  >
-                                    <Copy className="w-3 h-3" />
-                                  </button>
-                                  {msg.sender === "user" && (
+                                  {[
+                                    { icon: Copy, title: "Copy", onClick: () => copyToClipboard(msg.text) },
+                                    ...(msg.sender === "user"
+                                      ? [
+                                          {
+                                            icon: Pen,
+                                            title: "Edit",
+                                            onClick: () => {
+                                              setEditingMsgId(msg.id);
+                                              setEditingMsgText(msg.text);
+                                            },
+                                          },
+                                        ]
+                                      : []),
+                                    ...(msg.sender === "bot"
+                                      ? [
+                                          { icon: ThumbsUp, title: "Good response", onClick: () => {} },
+                                          { icon: ThumbsDown, title: "Bad response", onClick: () => {} },
+                                          { icon: RotateCcw, title: "Retry", onClick: () => handleRetry(msgIndex) },
+                                        ]
+                                      : []),
+                                  ].map((btn, idx) => (
                                     <button
-                                      onClick={() => {
-                                        setEditingMsgId(msg.id);
-                                        setEditingMsgText(msg.text);
-                                      }}
-                                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                      title="Edit"
+                                      key={idx}
+                                      onClick={btn.onClick}
+                                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                      title={btn.title}
                                     >
-                                      <Pen className="w-3 h-3" />
+                                      <btn.icon className="w-3 h-3" />
                                     </button>
-                                  )}
-                                  {msg.sender === "bot" && (
-                                    <>
-                                      <button
-                                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                        title="Good response"
-                                      >
-                                        <ThumbsUp className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                        title="Bad response"
-                                      >
-                                        <ThumbsDown className="w-3 h-3" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleRetry(msgIndex)}
-                                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                        title="Retry"
-                                      >
-                                        <RotateCcw className="w-3 h-3" />
-                                      </button>
-                                    </>
-                                  )}
+                                  ))}
                                   {msg.sender === "bot" && msg.text.length > 100 && (
                                     <Popover>
                                       <PopoverTrigger asChild>
                                         <button
-                                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                                           title="Download"
                                         >
                                           <Download className="w-3 h-3" />
                                         </button>
                                       </PopoverTrigger>
-                                      <PopoverContent side="top" align="start" className="w-40 p-1.5">
-                                        <button
-                                          onClick={() => generatePDF(msg.text, activeChat?.title || "Document")}
-                                          className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors"
-                                        >
-                                          📄 PDF
-                                        </button>
-                                        <button
-                                          onClick={() => generateDOCX(msg.text, activeChat?.title || "Document")}
-                                          className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors"
-                                        >
-                                          📝 Word (.docx)
-                                        </button>
-                                        <button
-                                          onClick={() => generatePPTX(msg.text, activeChat?.title || "Presentation")}
-                                          className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors"
-                                        >
-                                          📊 PowerPoint (.pptx)
-                                        </button>
-                                        <button
-                                          onClick={() => generateXLSX(msg.text, activeChat?.title || "Spreadsheet")}
-                                          className="flex items-center gap-2 w-full px-3 py-1.5 rounded text-xs hover:bg-accent transition-colors"
-                                        >
-                                          📈 Excel (.xlsx)
-                                        </button>
+                                      <PopoverContent side="top" align="start" className="w-44 p-1.5 rounded-xl">
+                                        {[
+                                          {
+                                            emoji: "📄",
+                                            label: "PDF",
+                                            fn: () => generatePDF(msg.text, activeChat?.title || "Document"),
+                                          },
+                                          {
+                                            emoji: "📝",
+                                            label: "Word (.docx)",
+                                            fn: () => generateDOCX(msg.text, activeChat?.title || "Document"),
+                                          },
+                                          {
+                                            emoji: "📊",
+                                            label: "PowerPoint",
+                                            fn: () => generatePPTX(msg.text, activeChat?.title || "Presentation"),
+                                          },
+                                          {
+                                            emoji: "📈",
+                                            label: "Excel",
+                                            fn: () => generateXLSX(msg.text, activeChat?.title || "Spreadsheet"),
+                                          },
+                                        ].map((item) => (
+                                          <button
+                                            key={item.label}
+                                            onClick={item.fn}
+                                            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs hover:bg-accent transition-colors sk-font-body"
+                                          >
+                                            {item.emoji} {item.label}
+                                          </button>
+                                        ))}
                                       </PopoverContent>
                                     </Popover>
                                   )}
                                 </div>
 
-                                {/* Smart Suggestions after bot messages */}
+                                {/* Smart suggestions */}
                                 {msg.sender === "bot" &&
                                   msg.text.length > 50 &&
                                   msgIndex === activeChat!.messages.length - 1 &&
                                   !isStreaming && (
                                     <div className="flex flex-wrap gap-1.5 mt-1">
-                                      <button
-                                        onClick={() => handleSend("Explain that in simpler terms, like I'm a beginner")}
-                                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
-                                      >
-                                        💡 Explain simpler
-                                      </button>
-                                      <button
-                                        onClick={() => handleSend("Quiz me on what you just explained")}
-                                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
-                                      >
-                                        🎯 Quiz me
-                                      </button>
-                                      <button
-                                        onClick={() => handleSend("Give me exam-style questions on this topic")}
-                                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
-                                      >
-                                        📝 Exam questions
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          handleSend(
-                                            "Summarize the key points from your last response in bullet points",
-                                          )
-                                        }
-                                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-colors font-medium"
-                                      >
-                                        📋 Summarize
-                                      </button>
+                                      {[
+                                        {
+                                          emoji: "💡",
+                                          label: "Explain simpler",
+                                          prompt: "Explain that in simpler terms, like I'm a beginner",
+                                        },
+                                        { emoji: "🎯", label: "Quiz me", prompt: "Quiz me on what you just explained" },
+                                        {
+                                          emoji: "📝",
+                                          label: "Exam questions",
+                                          prompt: "Give me exam-style questions on this topic",
+                                        },
+                                        {
+                                          emoji: "📋",
+                                          label: "Summarize",
+                                          prompt: "Summarize the key points from your last response in bullet points",
+                                        },
+                                      ].map((sug) => (
+                                        <button
+                                          key={sug.label}
+                                          onClick={() => handleSend(sug.prompt)}
+                                          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/40 bg-indigo-50/80 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 transition-colors font-medium sk-font-body"
+                                        >
+                                          {sug.emoji} {sug.label}
+                                        </button>
+                                      ))}
                                     </div>
                                   )}
+
                                 <span
-                                  className={`text-[10px] text-muted-foreground px-1 ${msg.sender === "user" ? "text-right" : "text-left"}`}
+                                  className={`text-[10px] text-muted-foreground px-1 sk-font-body ${msg.sender === "user" ? "text-right" : "text-left"}`}
                                 >
                                   {formatTime(msg.timestamp)}
                                 </span>
                               </div>
+
+                              {/* User avatar */}
+                              {msg.sender === "user" && (
+                                <div className="flex-shrink-0 mt-1">
+                                  <div
+                                    className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-bold text-white"
+                                    style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}
+                                  >
+                                    {displayName.charAt(0).toUpperCase()}
+                                  </div>
+                                </div>
+                              )}
                             </motion.div>
                           ))}
                           <AnimatePresence>
                             {isStreaming && activeChat!.messages[activeChat!.messages.length - 1]?.sender !== "bot" && (
-                              <TypingIndicator />
+                              <div className="flex justify-start gap-3">
+                                <div className="flex-shrink-0 mt-1">
+                                  <div
+                                    className="w-7 h-7 rounded-xl flex items-center justify-center"
+                                    style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}
+                                  >
+                                    <img src={sekaniLogo} alt="S" className="w-4 h-4 object-contain" />
+                                  </div>
+                                </div>
+                                <TypingIndicator />
+                              </div>
                             )}
                           </AnimatePresence>
                           <div ref={messagesEndRef} />
@@ -2598,15 +2797,15 @@ const ChatPage = () => {
                               behavior: "smooth",
                             })
                           }
-                          className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 w-8 h-8 rounded-full bg-card border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                          className="absolute -top-14 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border shadow-lg text-xs text-muted-foreground hover:text-foreground transition-colors sk-font-body"
                         >
-                          <ChevronDown className="w-4 h-4" />
+                          <ChevronDown className="w-3.5 h-3.5" /> Scroll to bottom
                         </button>
                       )}
                       <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
                         className="absolute bottom-4 left-0 right-0 z-20 px-4 pointer-events-none"
                         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
                       >
@@ -2656,7 +2855,7 @@ const ChatPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Sources Panel (desktop) */}
+        {/* Sources Panel */}
         {sourcesOpen && selectedUnitId && selectedUnit && !viewerOpen && !teachMeActive && (
           <SourcesPanel
             unitId={selectedUnitId}
@@ -2665,15 +2864,15 @@ const ChatPage = () => {
           />
         )}
 
-        {/* ── RIGHT UNITS PANEL (desktop) ── */}
+        {/* Right Units Panel (desktop) */}
         {!viewerOpen && !teachMeActive && !sourcesOpen && (
-          <aside className="hidden md:flex flex-col w-[260px] flex-shrink-0 border-l border-border bg-card/50">
+          <aside className="hidden md:flex flex-col w-[260px] flex-shrink-0 border-l border-border/50">
             {unitsPanelContent}
           </aside>
         )}
       </div>
 
-      {/* ── RIGHT UNITS PANEL (mobile bottom sheet) ── */}
+      {/* Right Units Panel (mobile bottom sheet) */}
       <AnimatePresence>
         {mobileUnitsOpen && (
           <>
@@ -2682,7 +2881,7 @@ const ChatPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
               onClick={() => setMobileUnitsOpen(false)}
             />
             <motion.div
@@ -2690,13 +2889,13 @@ const ChatPage = () => {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl border-t border-border md:hidden"
-              style={{ maxHeight: "85vh" }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl border-t border-border md:hidden shadow-2xl"
+              style={{ maxHeight: "88vh" }}
             >
               <div className="flex justify-center pt-3 pb-1">
                 <div className="w-10 h-1 rounded-full bg-border" />
               </div>
-              <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 32px)" }}>
+              <div className="overflow-y-auto sk-scroll" style={{ maxHeight: "calc(88vh - 28px)" }}>
                 {unitsPanelContent}
               </div>
             </motion.div>
@@ -2706,66 +2905,53 @@ const ChatPage = () => {
 
       {/* ── DIALOGS ── */}
 
-      {/* Settings */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="font-display">Settings</DialogTitle>
+            <DialogTitle className="sk-font-display">Settings</DialogTitle>
           </DialogHeader>
           <Tabs defaultValue="account">
-            <TabsList className="bg-muted w-full">
-              <TabsTrigger value="account" className="flex-1">
+            <TabsList className="bg-muted w-full rounded-xl">
+              <TabsTrigger value="account" className="flex-1 rounded-lg sk-font-body">
                 Account
               </TabsTrigger>
-              <TabsTrigger value="general" className="flex-1">
+              <TabsTrigger value="general" className="flex-1 rounded-lg sk-font-body">
                 General
               </TabsTrigger>
             </TabsList>
             <TabsContent value="account" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Name</Label>
-                <Input value={profile?.name || ""} readOnly />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Email</Label>
-                <Input value={profile?.email || ""} readOnly />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Program</Label>
-                <Input value={profile?.program || ""} readOnly />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                  Admission #
-                </Label>
-                <Input value={profile?.admission_number || "Not set"} readOnly />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Course</Label>
-                <Input value={profile?.course_name || ""} readOnly />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                  Year / Semester
-                </Label>
-                <Input value={`Year ${profile?.year || "-"} • Semester ${profile?.semester || "-"}`} readOnly />
-              </div>
+              {[
+                { label: "Name", value: profile?.name || "" },
+                { label: "Email", value: profile?.email || "" },
+                { label: "Program", value: profile?.program || "" },
+                { label: "Admission #", value: profile?.admission_number || "Not set" },
+                { label: "Course", value: profile?.course_name || "" },
+                {
+                  label: "Year / Semester",
+                  value: `Year ${profile?.year || "-"} • Semester ${profile?.semester || "-"}`,
+                },
+              ].map((field) => (
+                <div key={field.label} className="space-y-1.5">
+                  <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground sk-font-body">
+                    {field.label}
+                  </Label>
+                  <Input value={field.value} readOnly className="rounded-xl sk-font-body" />
+                </div>
+              ))}
             </TabsContent>
             <TabsContent value="general" className="space-y-4 mt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Sound Notifications</p>
-                  <p className="text-xs text-muted-foreground">Play sound for new messages</p>
+              {[
+                { label: "Sound Notifications", desc: "Play sound for new messages" },
+                { label: "Show Timestamps", desc: "Display time on messages" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium sk-font-body">{item.label}</p>
+                    <p className="text-xs text-muted-foreground sk-font-body">{item.desc}</p>
+                  </div>
+                  <Switch defaultChecked />
                 </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Show Timestamps</p>
-                  <p className="text-xs text-muted-foreground">Display time on messages</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
+              ))}
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -2819,69 +3005,67 @@ const ChatPage = () => {
           if (!paymentVerifying) setShowPaymentDialog(open);
         }}
       >
-        <DialogContent className="backdrop-blur-xl bg-card/80 border-border/50 shadow-2xl max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="backdrop-blur-xl bg-card/90 border-border/50 shadow-2xl max-w-md max-h-[90vh] overflow-y-auto rounded-3xl sk-scroll">
           {paymentVerifying ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Loader2 className="w-12 h-12 animate-spin text-primary" />
-              <p className="text-lg font-semibold">Authenticating Payment...</p>
-              <p className="text-sm text-muted-foreground text-center">
+              <div className="relative w-14 h-14">
+                <div className="absolute inset-0 rounded-full border-2 border-indigo-200" />
+                <div className="absolute inset-0 rounded-full border-2 border-t-indigo-500 animate-spin" />
+              </div>
+              <p className="text-lg font-semibold sk-font-display">Verifying Payment…</p>
+              <p className="text-sm text-muted-foreground text-center sk-font-body">
                 {paymentMethod === "card"
                   ? "Complete payment in the new tab."
-                  : "Please complete the M-Pesa prompt on your phone."}
+                  : "Check your phone for the M-Pesa prompt."}
                 <br />
                 We'll detect it automatically.
               </p>
-              <Button variant="outline" size="sm" onClick={cancelPaymentPolling} className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cancelPaymentPolling}
+                className="mt-4 rounded-xl sk-font-body"
+              >
                 Cancel
               </Button>
             </div>
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold text-center">Upgrade to Premium</DialogTitle>
+                <DialogTitle className="text-xl font-bold text-center sk-font-display">Upgrade to Premium</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
-                <p className="text-sm text-muted-foreground text-center">
+                <p className="text-sm text-muted-foreground text-center sk-font-body">
                   You've reached your free daily limit. Upgrade to keep learning!
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setPaymentPlan("individual")}
-                    className={`border rounded-xl p-4 text-center transition-all ${paymentPlan === "individual" ? "border-2 border-primary bg-primary/5" : "border-border"}`}
-                  >
-                    <p
-                      className="text-xs font-semibold uppercase"
-                      style={{
-                        color: paymentPlan === "individual" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
-                      }}
+                  {[
+                    { plan: "individual" as const, label: "Individual", price: "KES 129", users: "1 user" },
+                    { plan: "group" as const, label: "Group", price: "KES 499", users: "5 users" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.plan}
+                      onClick={() => setPaymentPlan(opt.plan)}
+                      className={`border rounded-2xl p-4 text-center transition-all ${paymentPlan === opt.plan ? "border-2 border-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/20" : "border-border"}`}
                     >
-                      Individual
-                    </p>
-                    <p className="text-2xl font-bold mt-1">KES 129</p>
-                    <p className="text-xs text-muted-foreground">1 user</p>
-                  </button>
-                  <button
-                    onClick={() => setPaymentPlan("group")}
-                    className={`border rounded-xl p-4 text-center transition-all ${paymentPlan === "group" ? "border-2 border-primary bg-primary/5" : "border-border"}`}
-                  >
-                    <p
-                      className="text-xs font-semibold uppercase"
-                      style={{
-                        color: paymentPlan === "group" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
-                      }}
-                    >
-                      Group
-                    </p>
-                    <p className="text-2xl font-bold mt-1">KES 499</p>
-                    <p className="text-xs text-muted-foreground">5 users</p>
-                  </button>
+                      <p
+                        className="text-[10px] font-bold uppercase tracking-wider sk-font-body"
+                        style={{ color: paymentPlan === opt.plan ? "#6366f1" : undefined }}
+                      >
+                        {opt.label}
+                      </p>
+                      <p className="text-2xl font-bold mt-1 sk-font-display">{opt.price}</p>
+                      <p className="text-xs text-muted-foreground sk-font-body">{opt.users}</p>
+                    </button>
+                  ))}
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground">Unlimited tokens • One-time payment</p>
-                </div>
+                <p className="text-center text-xs text-muted-foreground sk-font-body">
+                  Unlimited tokens • One-time payment
+                </p>
+
                 {paymentPlan === "group" && (
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Group Member Emails (5 required)</Label>
+                    <Label className="text-sm font-medium sk-font-body">Group Member Emails (5 required)</Label>
                     {groupEmails.map((ge, i) => (
                       <Input
                         key={i}
@@ -2894,44 +3078,47 @@ const ChatPage = () => {
                           updated[i] = e.target.value;
                           setGroupEmails(updated);
                         }}
-                        className={`text-sm ${i === 0 ? "bg-muted/50" : ""}`}
+                        className={`text-sm rounded-xl sk-font-body ${i === 0 ? "bg-muted/50" : ""}`}
                       />
                     ))}
                   </div>
                 )}
-                <div className="flex gap-2 p-1 bg-muted/50 rounded-lg">
-                  <button
-                    onClick={() => setPaymentMethod("mpesa")}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "mpesa" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    📱 M-Pesa
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod("card")}
-                    className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${paymentMethod === "card" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    💳 Card
-                  </button>
+
+                <div className="flex gap-2 p-1 bg-muted/50 rounded-xl">
+                  {[
+                    { id: "mpesa" as const, label: "📱 M-Pesa" },
+                    { id: "card" as const, label: "💳 Card" },
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setPaymentMethod(m.id)}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all sk-font-body ${paymentMethod === m.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
                 </div>
+
                 {paymentMethod === "mpesa" ? (
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Phone Number (M-Pesa)</Label>
+                    <Label className="text-sm font-medium sk-font-body">Phone Number (M-Pesa)</Label>
                     <Input
                       type="tel"
                       placeholder="e.g. 0712345678"
                       value={paymentPhone}
                       onChange={(e) => setPaymentPhone(e.target.value)}
-                      className="text-center text-lg tracking-wider"
+                      className="text-center text-lg tracking-wider rounded-xl sk-font-body"
                     />
-                    <p className="text-xs text-muted-foreground text-center">
-                      Enter your M-Pesa number to receive the payment prompt
+                    <p className="text-xs text-muted-foreground text-center sk-font-body">
+                      You'll receive an M-Pesa prompt on your phone
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-2">
-                    You'll be redirected to a secure Paystack page to complete your card payment.
+                  <p className="text-sm text-muted-foreground text-center py-2 sk-font-body">
+                    You'll be redirected to a secure Paystack page to complete card payment.
                   </p>
                 )}
+
                 <Button
                   onClick={handlePayment}
                   disabled={
@@ -2939,17 +3126,15 @@ const ChatPage = () => {
                     (paymentMethod === "mpesa" && !paymentPhone.trim()) ||
                     (paymentPlan === "group" && groupEmails.slice(1).some((e) => !e.trim()))
                   }
-                  className="w-full text-white font-semibold py-3"
-                  style={{ backgroundColor: "#1D2A3A" }}
+                  className="w-full text-white font-semibold py-3 rounded-xl sk-font-body"
+                  style={{ background: "linear-gradient(135deg,#1D2A3A,#b91c1c)" }}
                 >
                   {paymentLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing...
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Processing…
                     </>
-                  ) : paymentMethod === "mpesa" ? (
-                    `Pay KES ${paymentPlan === "group" ? "499" : "129"} via M-Pesa`
                   ) : (
-                    `Pay KES ${paymentPlan === "group" ? "499" : "129"} via Card`
+                    `Pay KES ${paymentPlan === "group" ? "499" : "129"} via ${paymentMethod === "mpesa" ? "M-Pesa" : "Card"}`
                   )}
                 </Button>
               </div>
