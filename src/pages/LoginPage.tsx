@@ -539,7 +539,7 @@ const LoginPage = () => {
                           </label>
                         </div>
                       </div>
-                      <Button type="button" onClick={handleStep0Verify} className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading || !canProceedStep0}>
+                      <Button type="button" onClick={handleStep0Verify} className="w-full btn-sns-yellow" disabled={loading || !canProceedStep0}>
                         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                         Create Account <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -590,7 +590,7 @@ const LoginPage = () => {
                         </div>
                       </div>
                       <div className="flex gap-3">
-                        <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" disabled={!canProceedStep1} onClick={handleStep1Next}>
+                        <Button type="button" className="flex-1 btn-sns-yellow" disabled={!canProceedStep1} onClick={handleStep1Next}>
                           Next <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                       </div>
@@ -667,7 +667,7 @@ const LoginPage = () => {
                         <Button type="button" variant="outline" onClick={() => { setSignupStep(1); setUnitSearch(""); }} className="flex-1">
                           <ArrowLeft className="mr-2 w-4 h-4" /> Back
                         </Button>
-                        <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" onClick={handleStep2Next} disabled={selectedUnitIds.length === 0}>
+                        <Button type="button" className="flex-1 btn-sns-yellow" onClick={handleStep2Next} disabled={selectedUnitIds.length === 0}>
                           Next <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                       </div>
@@ -778,7 +778,7 @@ const LoginPage = () => {
                         </Button>
                         <Button
                           type="button"
-                          className="flex-1 bg-gradient-maroon hover:opacity-90"
+                          className="flex-1 btn-sns-yellow"
                           onClick={handleUploadAndFinish}
                           disabled={uploading}
                         >
