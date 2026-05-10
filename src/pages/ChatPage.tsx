@@ -1283,15 +1283,10 @@ const ChatPage = () => {
               setShowArtifacts(false);
               if (isMobile) setMobileSidebarOpen(false);
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group/newchat sk-font-body"
-            style={{
-              background: "rgba(99,102,241,0.12)",
-              border: "1px solid rgba(99,102,241,0.25)",
-              color: "rgba(255,255,255,0.75)",
-            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group/newchat sk-font-body btn-sns-yellow"
           >
-            <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0 group-hover/newchat:bg-indigo-500/30 transition-colors">
-              <Plus className="w-3.5 h-3.5 text-indigo-300" />
+            <div className="w-6 h-6 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
+              <Plus className="w-3.5 h-3.5" />
             </div>
             <span>New Chat</span>
           </button>
@@ -1301,10 +1296,9 @@ const ChatPage = () => {
               onClick={() => {
                 selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
               }}
-              className="w-full flex items-center justify-center p-2 rounded-xl transition-colors"
-              style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}
+              className="w-full flex items-center justify-center p-2 rounded-xl transition-colors btn-sns-yellow"
             >
-              <Plus className="w-4 h-4 text-indigo-300" />
+              <Plus className="w-4 h-4" />
             </button>
             <span className="sk-tooltip">New Chat</span>
           </div>
@@ -2033,8 +2027,7 @@ const ChatPage = () => {
         <button
           onClick={() => handleSend()}
           disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming}
-          className="w-9 h-9 flex items-center justify-center rounded-xl transition-all flex-shrink-0 disabled:opacity-30"
-          style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "white" }}
+          className="w-9 h-9 flex items-center justify-center rounded-xl transition-all flex-shrink-0 disabled:opacity-30 btn-sns-yellow"
         >
           {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
         </button>
@@ -2343,7 +2336,7 @@ const ChatPage = () => {
                                   const hasCustomBg = chatBg && chatBg.url;
                                   const userStyle = hasCustomBg
                                     ? { background: chatBg.userBubble, color: chatBg.userText }
-                                    : { background: "linear-gradient(135deg, #4f46e5, #7c3aed)", color: "white" };
+                                    : { background: "#F4F4F4", color: "hsl(var(--sns-ink))" };
                                   const botStyle = hasCustomBg
                                     ? { background: chatBg.botBubble, color: chatBg.botText }
                                     : undefined;
