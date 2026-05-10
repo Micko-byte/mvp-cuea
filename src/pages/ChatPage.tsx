@@ -1419,7 +1419,18 @@ const ChatPage = () => {
                 </div>
               </div>
               <div className="py-1.5">
-                {role === "admin" && (
+                {role === "super_admin" && (
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      navigate("/superadmin");
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-popover-foreground hover:bg-accent transition-colors sk-font-body"
+                  >
+                    <Shield className="w-4 h-4 text-muted-foreground" /> Super Admin
+                  </button>
+                )}
+                {(role === "admin" || role === "super_admin") && (
                   <button
                     onClick={() => {
                       setProfileMenuOpen(false);
