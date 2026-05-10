@@ -1283,16 +1283,13 @@ const ChatPage = () => {
               setShowArtifacts(false);
               if (isMobile) setMobileSidebarOpen(false);
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group/newchat sk-font-body"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group/newchat sk-font-body hover:opacity-90"
             style={{
-              background: "rgba(99,102,241,0.12)",
-              border: "1px solid rgba(99,102,241,0.25)",
-              color: "rgba(255,255,255,0.75)",
+              background: "#F5B208",
+              color: "#1D2B3B",
             }}
           >
-            <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0 group-hover/newchat:bg-indigo-500/30 transition-colors">
-              <Plus className="w-3.5 h-3.5 text-indigo-300" />
-            </div>
+            <Plus className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />
             <span>New Chat</span>
           </button>
         ) : (
@@ -1302,9 +1299,9 @@ const ChatPage = () => {
                 selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
               }}
               className="w-full flex items-center justify-center p-2 rounded-xl transition-colors"
-              style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}
+              style={{ background: "#F5B208" }}
             >
-              <Plus className="w-4 h-4 text-indigo-300" />
+              <Plus className="w-4 h-4" style={{ color: "#1D2B3B" }} strokeWidth={2.5} />
             </button>
             <span className="sk-tooltip">New Chat</span>
           </div>
