@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X, Search, Brain, Eye, EyeOff } from "lucide-react";
 import sekaniLogo from "@/assets/sekani-logo.png";
-import sekaniPeeping from "@/assets/sekani-peeping.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -401,7 +400,7 @@ const LoginPage = () => {
   const selectedUnitsData = dbUnits.filter(u => selectedUnitIds.includes(u.id));
 
   return (
-    <div className="auth-page min-h-screen flex items-center justify-center bg-gradient-hero p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -416,13 +415,7 @@ const LoginPage = () => {
           <p className="text-primary-foreground/60 mt-1 font-body">Your AI Study Assistant</p>
         </div>
 
-        <div className="relative bg-card rounded-2xl shadow-lg p-8 border border-border">
-          <img
-            src={sekaniPeeping}
-            alt=""
-            aria-hidden="true"
-            className="hidden md:block pointer-events-none select-none absolute -left-[90px] top-10 w-[120px] z-10"
-          />
+        <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
           <AnimatePresence mode="wait">
             {isLogin ? (
               <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
@@ -448,7 +441,7 @@ const LoginPage = () => {
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full btn-sns-yellow" disabled={loading}>
+                <Button type="submit" className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading}>
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Sign In <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
@@ -539,7 +532,7 @@ const LoginPage = () => {
                           </label>
                         </div>
                       </div>
-                      <Button type="button" onClick={handleStep0Verify} className="w-full btn-sns-yellow" disabled={loading || !canProceedStep0}>
+                      <Button type="button" onClick={handleStep0Verify} className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading || !canProceedStep0}>
                         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                         Create Account <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -590,7 +583,7 @@ const LoginPage = () => {
                         </div>
                       </div>
                       <div className="flex gap-3">
-                        <Button type="button" className="flex-1 btn-sns-yellow" disabled={!canProceedStep1} onClick={handleStep1Next}>
+                        <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" disabled={!canProceedStep1} onClick={handleStep1Next}>
                           Next <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                       </div>
@@ -667,7 +660,7 @@ const LoginPage = () => {
                         <Button type="button" variant="outline" onClick={() => { setSignupStep(1); setUnitSearch(""); }} className="flex-1">
                           <ArrowLeft className="mr-2 w-4 h-4" /> Back
                         </Button>
-                        <Button type="button" className="flex-1 btn-sns-yellow" onClick={handleStep2Next} disabled={selectedUnitIds.length === 0}>
+                        <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" onClick={handleStep2Next} disabled={selectedUnitIds.length === 0}>
                           Next <ArrowRight className="ml-2 w-4 h-4" />
                         </Button>
                       </div>
@@ -778,7 +771,7 @@ const LoginPage = () => {
                         </Button>
                         <Button
                           type="button"
-                          className="flex-1 btn-sns-yellow"
+                          className="flex-1 bg-gradient-maroon hover:opacity-90"
                           onClick={handleUploadAndFinish}
                           disabled={uploading}
                         >

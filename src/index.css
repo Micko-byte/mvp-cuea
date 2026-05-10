@@ -70,12 +70,6 @@
 
     --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'DM Sans', sans-serif;
-
-    /* SNS brand tokens */
-    --sns-yellow: 43 94% 50%;       /* #F5B208 */
-    --sns-yellow-fg: 210 30% 17%;   /* ink on yellow */
-    --sns-ink: 210 30% 17%;         /* #1D2B3B */
-    --sns-user-bubble: 0 0% 96%;    /* #F4F4F4 */
   }
 
   .dark {
@@ -109,11 +103,6 @@
     --sidebar-ring: 213 33% 25%;
 
     --chat-input-bg: 0 0% 19%;
-
-    --sns-yellow: 43 94% 50%;
-    --sns-yellow-fg: 210 30% 17%;
-    --sns-ink: 0 0% 100%;
-    --sns-user-bubble: 213 33% 25%;
   }
 }
 
@@ -131,21 +120,6 @@
 }
 
 @layer utilities {
-  .btn-sns-yellow {
-    background-color: hsl(var(--sns-yellow));
-    color: hsl(var(--sns-yellow-fg));
-  }
-  .btn-sns-yellow:hover { opacity: 0.92; }
-  .btn-sns-yellow:disabled { opacity: 0.55; }
-
-  /* Auth page: 12px radius on inputs/buttons */
-  .auth-page input,
-  .auth-page button,
-  .auth-page [role="combobox"],
-  .auth-page .auth-radius {
-    border-radius: 12px !important;
-  }
-
   .text-gradient-maroon {
     background: var(--gradient-maroon);
     -webkit-background-clip: text;
