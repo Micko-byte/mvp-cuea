@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Mail, User, ArrowRight, ArrowLeft, Loader2, BookOpen, CheckSquare, Upload, FileText, AlertCircle, X, Search, Brain, Eye, EyeOff } from "lucide-react";
-import sekaniLogo from "@/assets/sekani-logo.png";
+import sekaniLogo from "@/assets/sekani.png";
+import loginHeroImage from "@/assets/SEKANILOGINBG.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,9 @@ const ACCEPTED_FILE_TYPES = [
   "text/csv",
   "text/markdown",
 ];
+
+// Shared navy button styling — swap here if the brand navy changes
+const NAVY_BUTTON = "bg-[#0B1E3F] hover:bg-[#132A54] text-white";
 
 const LoginPage = () => {
   const { login, signup, isAuthenticated, role, isLoading: authLoading, user } = useAuth();
@@ -400,28 +404,29 @@ const LoginPage = () => {
   const selectedUnitsData = dbUnits.filter(u => selectedUnitIds.includes(u.id));
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-md"
-      >
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 mb-4">
-            <img src={sekaniLogo} alt="Sekani" className="w-12 h-12" />
-          </div>
-          <h1 className="text-3xl font-display font-bold text-primary-foreground">Sekani</h1>
-          <p className="text-primary-foreground/60 mt-1 font-body">Your AI Study Assistant</p>
-        </div>
-
-        <div className="bg-card rounded-2xl shadow-lg p-8 border border-border">
+    <div
+      className="min-h-screen w-full flex bg-white"
+      style={{ fontFamily: "'Lexend', sans-serif" }}
+    >
+      {/* LEFT: form panel */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-20 py-10 overflow-y-auto">
+        <div className="w-full max-w-md mx-auto">
+{/* Brand row */}
+<div className="flex items-center justify-center mb-3">
+  <div className="w-80 h-32 flex items-center justify-center">
+    <img
+      src={sekaniLogo}
+      alt="Sekani"
+      className="w-full h-full object-contain"
+    />
+  </div>
+</div>
           <AnimatePresence mode="wait">
             {isLogin ? (
               <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-display font-semibold text-foreground">Welcome Back</h2>
-                  <p className="text-muted-foreground text-sm mt-1">Sign in to continue</p>
+                <div className="mb-8 text-center">
+                  <h1 className="text-3xl font-semibold text-foreground">Welcome back</h1>
+                  <p className="text-muted-foreground mt-1">Sign in to continue to Sekani</p>
                 </div>
                 {error && <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg border-l-4 border-destructive">{error}</div>}
                 <div className="space-y-2">
@@ -441,9 +446,9 @@ const LoginPage = () => {
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading}>
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Sign In <ArrowRight className="ml-2 w-4 h-4" />
+                <Button type="submit" className={`w-full rounded-full ${NAVY_BUTTON}`} disabled={loading}>
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-4" /> : null}
+                  Sign In
                 </Button>
                 <button
                   type="button"
@@ -457,23 +462,23 @@ const LoginPage = () => {
                     if (err) setError(err.message);
                     else toast.success("Password reset link sent! Check your email.");
                   }}
-                  className="w-full text-center text-sm text-primary hover:underline font-medium"
+                  className="w-full text-center text-sm text-[#0B1E3F] hover:underline font-medium"
                 >
                   Forgot password?
                 </button>
                 <p className="text-center text-sm text-muted-foreground">
                   Don't have an account?{" "}
-                  <button type="button" onClick={() => { setIsLogin(false); setError(""); }} className="text-primary font-semibold hover:underline">Sign Up</button>
+                  <button type="button" onClick={() => { setIsLogin(false); setError(""); }} className="text-[#0B1E3F] font-semibold hover:underline">Sign Up</button>
                 </p>
               </motion.form>
             ) : (
               <motion.div key="signup" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-5">
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-display font-semibold text-foreground">Create Account</h2>
-                  <p className="text-muted-foreground text-sm mt-1">Step {currentStepDisplay} of {totalSteps}</p>
-                  <div className="flex gap-2 mt-3">
+                <div className="mb-8">
+                  <h1 className="text-3xl font-semibold text-foreground">Create account</h1>
+                  <p className="text-muted-foreground mt-1">Step {currentStepDisplay} of {totalSteps}</p>
+                  <div className="flex gap-2 mt-4">
                     {[1, 2, 3, 4, 5].map(s => (
-                      <div key={s} className={`h-1 flex-1 rounded-full ${currentStepDisplay >= s ? "bg-primary" : "bg-muted"}`} />
+                      <div key={s} className={`h-1 flex-1 rounded-full ${currentStepDisplay >= s ? "bg-[#0B1E3F]" : "bg-muted"}`} />
                     ))}
                   </div>
                 </div>
@@ -526,15 +531,15 @@ const LoginPage = () => {
                           <Checkbox id="terms" checked={termsAccepted} onCheckedChange={(checked) => setTermsAccepted(checked === true)} className="mt-0.5" />
                           <label htmlFor="terms" className="text-sm text-muted-foreground leading-tight">
                             I agree to the{" "}
-                            <Link to="/terms" target="_blank" className="text-primary font-semibold hover:underline">Terms & Conditions</Link>{" "}
+                            <Link to="/terms" target="_blank" className="text-[#0B1E3F] font-semibold hover:underline">Terms & Conditions</Link>{" "}
                             and{" "}
-                            <Link to="/terms" target="_blank" className="text-primary font-semibold hover:underline">Privacy Policy</Link>
+                            <Link to="/terms" target="_blank" className="text-[#0B1E3F] font-semibold hover:underline">Privacy Policy</Link>
                           </label>
                         </div>
                       </div>
-                      <Button type="button" onClick={handleStep0Verify} className="w-full bg-gradient-maroon hover:opacity-90" disabled={loading || !canProceedStep0}>
+                      <Button type="button" onClick={handleStep0Verify} className={`w-full rounded-full ${NAVY_BUTTON}`} disabled={loading || !canProceedStep0}>
                         {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                        Create Account <ArrowRight className="ml-2 w-4 h-4" />
+                        Create Account
                       </Button>
                     </motion.div>
                   )}
@@ -583,8 +588,8 @@ const LoginPage = () => {
                         </div>
                       </div>
                       <div className="flex gap-3">
-                        <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" disabled={!canProceedStep1} onClick={handleStep1Next}>
-                          Next <ArrowRight className="ml-2 w-4 h-4" />
+                        <Button type="button" className={`flex-1 rounded-full ${NAVY_BUTTON}`} disabled={!canProceedStep1} onClick={handleStep1Next}>
+                          Next 
                         </Button>
                       </div>
                     </motion.div>
@@ -628,7 +633,7 @@ const LoginPage = () => {
                               key={unit.id}
                               className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                                 selectedUnitIds.includes(unit.id)
-                                  ? "border-primary bg-primary/5"
+                                  ? "border-[#0B1E3F] bg-[#0B1E3F]/5"
                                   : "border-border hover:bg-muted/50"
                               }`}
                             >
@@ -650,18 +655,18 @@ const LoginPage = () => {
                       )}
 
                       {selectedUnitIds.length > 0 && (
-                        <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                        <div className="flex items-center gap-2 text-xs text-[#0B1E3F] font-medium">
                           <CheckSquare className="w-3.5 h-3.5" />
                           {selectedUnitIds.length} unit{selectedUnitIds.length !== 1 ? "s" : ""} selected
                         </div>
                       )}
 
                       <div className="flex gap-3">
-                        <Button type="button" variant="outline" onClick={() => { setSignupStep(1); setUnitSearch(""); }} className="flex-1">
-                          <ArrowLeft className="mr-2 w-4 h-4" /> Back
+                        <Button type="button" variant="outline" onClick={() => { setSignupStep(1); setUnitSearch(""); }} className="flex-1 rounded-full">
+                         Back
                         </Button>
-                        <Button type="button" className="flex-1 bg-gradient-maroon hover:opacity-90" onClick={handleStep2Next} disabled={selectedUnitIds.length === 0}>
-                          Next <ArrowRight className="ml-2 w-4 h-4" />
+                        <Button type="button" className={`flex-1 rounded-full ${NAVY_BUTTON}`} onClick={handleStep2Next} disabled={selectedUnitIds.length === 0}>
+                          Next
                         </Button>
                       </div>
                     </motion.div>
@@ -671,7 +676,7 @@ const LoginPage = () => {
                   {signupStep === 3 && (
                     <motion.div key="s3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                       <div className="flex items-center gap-2 text-sm text-foreground font-medium">
-                        <Brain className="w-4 h-4 text-primary" />
+                        <Brain className="w-4 h-4 text-[#0B1E3F]" />
                         <span>Now let's train your AI by uploading notes</span>
                       </div>
 
@@ -693,14 +698,14 @@ const LoginPage = () => {
                           const isActive = activeUploadUnitId === unit.id;
 
                           return (
-                            <div key={unit.id} className={`rounded-lg border transition-colors ${isActive ? "border-primary bg-primary/5" : "border-border"}`}>
+                            <div key={unit.id} className={`rounded-lg border transition-colors ${isActive ? "border-[#0B1E3F] bg-[#0B1E3F]/5" : "border-border"}`}>
                               <button
                                 type="button"
                                 onClick={() => setActiveUploadUnitId(isActive ? null : unit.id)}
-                                className="w-full flex items-center justify-between p-3 text-left"
+                                className="w-full flex items-center justify-between p-3 text-left rounded-full"
                               >
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <BookOpen className="w-4 h-4 text-primary shrink-0" />
+                                  <BookOpen className="w-4 h-4 text-[#0B1E3F] shrink-0" />
                                   <div className="min-w-0">
                                     <p className="text-sm font-medium text-foreground">{unit.code}</p>
                                     <p className="text-xs text-muted-foreground truncate">{unit.name}</p>
@@ -708,11 +713,11 @@ const LoginPage = () => {
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                   {unitFiles.length > 0 && (
-                                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                                    <span className="text-xs bg-[#0B1E3F]/10 text-[#0B1E3F] px-2 py-0.5 rounded-full font-medium">
                                       {unitFiles.length} file{unitFiles.length !== 1 ? "s" : ""}
                                     </span>
                                   )}
-                                  <Upload className={`w-4 h-4 transition-transform ${isActive ? "text-primary rotate-180" : "text-muted-foreground"}`} />
+                                  <Upload className={`w-4 h-4 transition-transform ${isActive ? "text-[#0B1E3F] rotate-180" : "text-muted-foreground"}`} />
                                 </div>
                               </button>
 
@@ -731,7 +736,7 @@ const LoginPage = () => {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="w-full border-dashed border-2"
+                                    className="w-full border-dashed border-2 rounded-full"
                                     disabled={uploading}
                                   >
                                     <FileText className="mr-2 w-4 h-4" />
@@ -766,12 +771,12 @@ const LoginPage = () => {
                       </div>
 
                       <div className="flex gap-3">
-                        <Button type="button" variant="outline" onClick={() => setSignupStep(2)} className="flex-1" disabled={uploading}>
-                          <ArrowLeft className="mr-2 w-4 h-4" /> Back
+                        <Button type="button" variant="outline" onClick={() => setSignupStep(2)} className="flex-1 rounded-full" disabled={uploading}>
+                           Back
                         </Button>
                         <Button
                           type="button"
-                          className="flex-1 bg-gradient-maroon hover:opacity-90"
+                          className={`flex-1 ${NAVY_BUTTON}`}
                           onClick={handleUploadAndFinish}
                           disabled={uploading}
                         >
@@ -786,14 +791,24 @@ const LoginPage = () => {
                 {signupStep === 0 && (
                   <p className="text-center text-sm text-muted-foreground">
                     Already have an account?{" "}
-                    <button type="button" onClick={() => { setIsLogin(true); setSignupStep(0); setError(""); }} className="text-primary font-semibold hover:underline">Sign In</button>
+                    <button type="button" onClick={() => { setIsLogin(true); setSignupStep(0); setError(""); }} className="text-[#0B1E3F] font-semibold hover:underline">Sign In</button>
                   </p>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </div>
+
+      {/* RIGHT: image panel */}
+      <div className="hidden lg:block lg:w-1/2 relative overflow-hidden border-l border-border">
+        <img
+          src={loginHeroImage}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-[#0B1E3F]/20" />
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Type, Palette, Image as ImageIcon, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Type, Palette, Image as ImageIcon, AtSign , Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +59,7 @@ const PersonalizationPage = () => {
           onClick={handleSave}
           disabled={!hasChanges}
           className="text-sm font-semibold transition-colors"
-          style={hasChanges ? { backgroundColor: "#800000", color: "white" } : undefined}
+          style={hasChanges ? { backgroundColor: "#151C26", color: "white" } : undefined}
           variant={hasChanges ? "default" : "secondary"}
         >
           Save
@@ -70,10 +70,10 @@ const PersonalizationPage = () => {
         {/* 1. AI Nickname */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="font-display font-semibold text-foreground text-lg">AI Nickname</h2>
+            <AtSign className="w-5 h-5 text-primary" />
+            <h2 className="font-display font-semibold text-foreground text-lg">Nickname</h2>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">Choose a nickname the AI should call you</p>
+          <p className="text-sm text-muted-foreground mb-3">Choose a nickname Sekani should call you</p>
           <Input
             value={draft.nickname}
             onChange={(e) => setDraft((d) => ({ ...d, nickname: e.target.value }))}

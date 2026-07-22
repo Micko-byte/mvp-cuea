@@ -25,7 +25,7 @@ const ArtifactsPage = () => {
       {artifacts.length === 0 ? (
         <div className="text-center py-20">
           <Code2 className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h2 className="text-lg font-display font-semibold text-foreground mb-2">No artifacts yet</h2>
+          <h2 className="text-[30.4px] font-display font-semibold text-foreground mb-2">No artifacts yet</h2>
           <p className="text-sm text-muted-foreground">
             When the AI generates code, HTML, or other structured content, it will appear here.
           </p>

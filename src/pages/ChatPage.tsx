@@ -16,9 +16,10 @@ import remarkGfm from "remark-gfm";
 import { MermaidBlock } from "@/components/MermaidBlock";
 import rehypeKatex from "rehype-katex";
 import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
-import sekaniLogo from "@/assets/sekani-logo.png";
+import sekaniLogo from "@/assets/sekani.png";
 import { Download } from "lucide-react";
 import {
+  SquarePen,
   Plus,
   ArrowUp,
   BookOpen,
@@ -116,21 +117,26 @@ interface EnrolledUnit {
 // ─── Global styles injected once ─────────────────────────────────────────────
 
 const GLOBAL_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Cal+Sans:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
 
   :root {
-    --sk-sidebar-bg: #0c1220;
-    --sk-sidebar-border: rgba(255,255,255,0.06);
-    --sk-sidebar-item-hover: rgba(255,255,255,0.05);
-    --sk-sidebar-item-active: rgba(99,102,241,0.18);
-    --sk-sidebar-text: rgba(255,255,255,0.55);
-    --sk-sidebar-text-active: rgba(255,255,255,0.92);
-    --sk-accent: #6366f1;
-    --sk-accent2: #8b5cf6;
-    --sk-user-bubble-from: #4f46e5;
-    --sk-user-bubble-to: #7c3aed;
-    --sk-font-display: 'Cal Sans', 'DM Sans', system-ui, sans-serif;
-    --sk-font-body: 'DM Sans', system-ui, sans-serif;
+    --sk-sidebar-bg: #F7F7F5;
+    --sk-sidebar-border: rgba(15,23,42,0.08);
+    --sk-sidebar-item-hover: rgba(15,23,42,0.04);
+    --sk-sidebar-item-active: rgba(11,30,63,0.08);
+    --sk-sidebar-text: rgba(15,23,42,0.55);
+    --sk-sidebar-text-active: rgba(15,23,42,0.92);
+    --sk-accent: #0B1E3F;
+    --sk-accent2: #132A54;
+    --sk-user-bubble-from: #0B1E3F;
+    --sk-user-bubble-to: #132A54;
+    --sk-user-bubble-solid: #f3f3f3;
+    --sk-font-display: 'Lexend', sans-serif;
+    --sk-font-body: 'Lexend', sans-serif;
+  }
+
+  .dark {
+    --sk-user-bubble-solid: #2A2A2A;
   }
 
   .sk-font-display { font-family: var(--sk-font-display); }
@@ -149,11 +155,11 @@ const GLOBAL_STYLES = `
   .sk-sidebar-scroll::-webkit-scrollbar { width: 3px; }
   .sk-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
   .sk-sidebar-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.1);
+    background: rgba(15,23,42,0.12);
     border-radius: 99px;
   }
   .sk-sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(15,23,42,0.2);
   }
 
   /* ── Typing dots ── */
@@ -164,9 +170,9 @@ const GLOBAL_STYLES = `
 
   /* ── Mic pulse ── */
   @keyframes sk-mic-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
-    70% { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
-    100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+    0% { box-shadow: 0 0 0 0 rgba(11,30,63,0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(11,30,63,0); }
+    100% { box-shadow: 0 0 0 0 rgba(11,30,63,0); }
   }
   .sk-mic-active { animation: sk-mic-pulse 1.2s ease-out infinite; }
 
@@ -194,17 +200,20 @@ const GLOBAL_STYLES = `
 
   /* ── Input focus ring ── */
   .sk-input-bar:focus-within {
-    border-color: rgba(99,102,241,0.5) !important;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.08);
+    border-color: rgba(11,30,63,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(11,30,63,0.08);
   }
 `;
 
 function injectStyles() {
-  if (document.getElementById("sk-global-styles")) return;
-  const el = document.createElement("style");
-  el.id = "sk-global-styles";
+  let el = document.getElementById("sk-global-styles") as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "sk-global-styles";
+    document.head.appendChild(el);
+  }
+  // Always overwrite — prevents a stale cached version (e.g. from HMR) from sticking around
   el.textContent = GLOBAL_STYLES;
-  document.head.appendChild(el);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -220,7 +229,7 @@ const TypingIndicator = () => (
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="w-2 h-2 rounded-full bg-indigo-400/60"
+          className="w-2 h-2 rounded-full bg-[#0B1E3F]/50"
           style={{
             animation: `sk-bounce 0.9s ease-in-out infinite`,
             animationDelay: `${i * 0.15}s`,
@@ -237,7 +246,7 @@ const VoiceInputVisualizer = () => (
     {[0, 1, 2, 3, 4].map((i) => (
       <motion.div
         key={i}
-        className="w-1 rounded-full bg-indigo-500"
+        className="w-1 rounded-full bg-[#0B1E3F]"
         animate={{ height: [8, 22 - i * 2, 12 + (i % 2) * 8, 18 - (i % 3) * 3, 8] }}
         transition={{ duration: 0.85, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
       />
@@ -306,6 +315,8 @@ const ChatPage = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [rightPanelWidth, setRightPanelWidth] = useState(260);
+  const isResizingPanelRef = useRef(false);
 
   // Refs
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -529,6 +540,34 @@ const ChatPage = () => {
       document.removeEventListener("touchend", handleTouchEnd);
     };
   }, [handleTouchStart, handleTouchEnd]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingPanelRef.current) return;
+      const newWidth = window.innerWidth - e.clientX;
+      setRightPanelWidth(Math.min(480, Math.max(200, newWidth)));
+    };
+    const handleMouseUp = () => {
+      if (isResizingPanelRef.current) {
+        isResizingPanelRef.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  const handlePanelResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingPanelRef.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1110,8 +1149,8 @@ const ChatPage = () => {
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="relative w-12 h-12">
-            <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20" />
-            <div className="absolute inset-0 rounded-full border-2 border-t-indigo-500 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-2 border-[#0B1E3F]/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-t-[#0B1E3F] animate-spin" />
           </div>
           <p className="text-sm text-muted-foreground sk-font-body">Loading Sekani…</p>
         </div>
@@ -1142,11 +1181,11 @@ const ChatPage = () => {
           }
         }}
         className={`group/ci relative flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 text-sm ${
-          isActive ? "bg-indigo-500/15 border border-indigo-500/20" : "border border-transparent hover:bg-white/5"
+          isActive ? "bg-[#0B1E3F]/10 border border-[#0B1E3F]/20" : "border border-transparent hover:bg-black/[0.04]"
         }`}
       >
         {/* Active indicator bar */}
-        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-400 rounded-full" />}
+        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#0B1E3F] rounded-full" />}
 
         <div className="flex-1 min-w-0 pl-1">
           {isRenaming ? (
@@ -1165,25 +1204,25 @@ const ChatPage = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setRenamingChatId(null);
                 }}
-                className="bg-transparent border-b border-indigo-400/60 text-sm w-full outline-none py-0.5 text-white/90 sk-font-body"
+                className="bg-transparent border-b border-[#0B1E3F]/60 text-sm w-full outline-none py-0.5 text-[#151b28]/90 sk-font-body"
                 onClick={(e) => e.stopPropagation()}
               />
-              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-indigo-400">
+              <button type="submit" onClick={(e) => e.stopPropagation()} className="p-0.5 text-[#0B1E3F]">
                 <Check className="w-3 h-3" />
               </button>
             </form>
           ) : (
             <>
               <span
-                className={`truncate block text-[13px] font-medium leading-tight sk-font-body ${isActive ? "text-white/90" : "text-white/55"}`}
+                className={`truncate block text-[13px] font-medium leading-tight sk-font-body ${isActive ? "text-[#151b28]/90" : "text-[#151b28]/55"}`}
               >
                 {chat.title}
               </span>
               <div className="flex items-center justify-between mt-0.5 gap-2">
-                <span className={`text-[11px] truncate ${isActive ? "text-white/40" : "text-white/25"}`}>
+                <span className={`text-[11px] truncate ${isActive ? "text-[#151b28]/40" : "text-[#151b28]/25"}`}>
                   {preview}
                 </span>
-                <span className={`text-[10px] flex-shrink-0 ${isActive ? "text-indigo-300/60" : "text-white/20"}`}>
+                <span className={`text-[10px] flex-shrink-0 ${isActive ? "text-[#0B1E3F]/60" : "text-[#151b28]/20"}`}>
                   {time}
                 </span>
               </div>
@@ -1196,9 +1235,9 @@ const ChatPage = () => {
             <PopoverTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="p-1 opacity-0 group-hover/ci:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-white/10 rounded-md"
+                className="p-1 opacity-0 group-hover/ci:opacity-100 transition-opacity flex-shrink-0 ml-1 hover:bg-black/[0.06] rounded-md"
               >
-                <MoreVertical className="w-3.5 h-3.5 text-white/40" />
+                <MoreVertical className="w-3.5 h-3.5 text-[#151b28]/40" />
               </button>
             </PopoverTrigger>
             <PopoverContent side="right" align="start" className="w-36 p-1" onClick={(e) => e.stopPropagation()}>
@@ -1228,173 +1267,233 @@ const ChatPage = () => {
     );
   };
 
-  // ─── LEFT SIDEBAR content ─────────────────────────────────────────────────────
+// ─── LEFT SIDEBAR content ─────────────────────────────────────────────────────
 
-  const sidebarContent = (
+const sidebarContent = (
+  <div
+    className="flex flex-col h-full sk-sidebar-scroll overflow-y-auto"
+    style={{ background: "var(--sk-sidebar-bg)" }}
+  >
+    {/* Logo area */}
     <div
-      className="flex flex-col h-full sk-sidebar-scroll overflow-y-auto"
-      style={{ background: "var(--sk-sidebar-bg)" }}
+      className={`flex-shrink-0 ${
+        sidebarExpanded || isMobile
+          ? "px-4 pt-2 pb-0"
+          : "px-2 pt-4 pb-3"
+      }`}
     >
-      {/* Logo area */}
-      <div className={`flex-shrink-0 ${sidebarExpanded || isMobile ? "px-4 pt-5 pb-3" : "px-2 pt-4 pb-3"}`}>
-        {sidebarExpanded || isMobile ? (
-          <div className="flex items-center gap-3 mb-5">
-            {/* Logo renders as SVG/PNG — supports both */}
-            <div className="relative flex-shrink-0">
-              <img src={sekaniLogo} alt="Sekani" className="w-9 h-9 object-contain" />
-              <div className="absolute inset-0 rounded-xl bg-indigo-500/10 -z-10" />
-            </div>
-            <span
-              className="sk-font-display font-semibold text-white/90 tracking-tight"
-              style={{ fontSize: "22px", letterSpacing: "-0.02em" }}
-            >
-              Sekani
-            </span>
-            <motion.button
-              onClick={toggleSidebar}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="ml-auto p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/8 transition-colors"
-              title="Collapse sidebar"
-            >
-              <PanelRight className="w-4 h-4" />
-            </motion.button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 mb-3">
-            <img src={sekaniLogo} alt="Sekani" className="w-9 h-9 object-contain" />
-            <motion.button
-              onClick={toggleSidebar}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/8 transition-colors"
-              title="Expand sidebar"
-            >
-              <PanelLeft className="w-4.5 h-4.5" />
-            </motion.button>
-          </div>
-        )}
-
-        {/* New Chat button */}
-        {sidebarExpanded || isMobile ? (
-          <button
-            onClick={() => {
-              selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
-              setShowArtifacts(false);
-              if (isMobile) setMobileSidebarOpen(false);
-            }}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group/newchat sk-font-body hover:opacity-90"
-            style={{
-              background: "#F5B208",
-              color: "#1D2B3B",
-            }}
-          >
-            <Plus className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />
-            <span>New Chat</span>
-          </button>
-        ) : (
-          <div className="sk-icon-btn-wrap">
-            <button
-              onClick={() => {
-                selectedUnitId ? createChat("unit", selectedUnitId) : createChat("general");
-              }}
-              className="w-full flex items-center justify-center p-2 rounded-xl transition-colors"
-              style={{ background: "#F5B208" }}
-            >
-              <Plus className="w-4 h-4" style={{ color: "#1D2B3B" }} strokeWidth={2.5} />
-            </button>
-            <span className="sk-tooltip">New Chat</span>
-          </div>
-        )}
-      </div>
-
-      {/* Artifacts link */}
       {sidebarExpanded || isMobile ? (
-        <div className="px-3 mb-1">
-          <button
-            onClick={() => {
-              setShowArtifacts(true);
-              if (isMobile) setMobileSidebarOpen(false);
-            }}
-            className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all sk-font-body ${
-              showArtifacts
-                ? "bg-indigo-500/15 text-white/85 border border-indigo-500/20"
-                : "text-white/40 hover:text-white/65 hover:bg-white/5 border border-transparent"
-            }`}
+        <div className="flex items-center gap-1 mb-1">
+          {/* Logo renders as SVG/PNG — supports both */}
+          <div className="relative flex-shrink-0 -my-10">
+            <img
+              src={sekaniLogo}
+              alt="Sekani"
+              className="w-40 h-40 object-contain"
+            />
+
+            <div className="absolute inset-0 rounded-xl bg-[#0B1E3F]/8 -z-10" />
+          </div>
+
+          <motion.button
+            onClick={toggleSidebar}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="ml-auto p-1.5 rounded-lg text-[#151b28]/30 hover:text-[#151b28]/70 hover:bg-black/[0.06] transition-colors"
+            title="Collapse sidebar"
           >
-            <LayoutGrid className="w-4 h-4 flex-shrink-0" />
-            <span className="font-medium">Artifacts</span>
-          </button>
+            <PanelRight className="w-4 h-4" />
+          </motion.button>
         </div>
       ) : (
-        <div className="flex flex-col items-center px-2 mb-2">
-          <div className="sk-icon-btn-wrap w-full">
-            <button
-              onClick={() => setShowArtifacts(true)}
-              className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-colors ${showArtifacts ? "bg-indigo-500/15 text-indigo-300" : "text-white/30 hover:bg-white/5 hover:text-white/60"}`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <span className="sk-tooltip">Artifacts</span>
-          </div>
+        <div className="flex flex-col items-center gap-3 mb-3">
+          <img
+            src={sekaniLogo}
+            alt="Sekani"
+            className="w-9 h-9 object-contain"
+          />
+
+          <motion.button
+            onClick={toggleSidebar}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="p-1.5 rounded-lg text-[#151b28]/30 hover:text-[#151b28]/60 hover:bg-black/[0.06] transition-colors"
+            title="Expand sidebar"
+          >
+            <PanelLeft className="w-4.5 h-4.5" />
+          </motion.button>
         </div>
       )}
 
-      {/* Divider */}
-      {(sidebarExpanded || isMobile) && (
-        <div className="mx-4 mb-3 mt-1" style={{ height: "1px", background: "rgba(255,255,255,0.06)" }} />
+      {/* New Chat button */}
+      {sidebarExpanded || isMobile ? (
+        <button
+          onClick={() => {
+            selectedUnitId
+              ? createChat("unit", selectedUnitId)
+              : createChat("general");
+
+            setShowArtifacts(false);
+
+            if (isMobile) {
+              setMobileSidebarOpen(false);
+            }
+          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm  transition-all duration-150 group/newchat sk-font-body hover:opacity-90"
+          style={{
+            background: "#0B1E3F",
+            color: "#FFFFFF",
+          }}
+        >
+          <SquarePen
+            className="w-4 h-4 flex-shrink-0"
+            strokeWidth={2.5}
+          />
+
+          <span>New Chat</span>
+        </button>
+      ) : (
+        <div className="sk-icon-btn-wrap">
+          <button
+            onClick={() => {
+              selectedUnitId
+                ? createChat("unit", selectedUnitId)
+                : createChat("general");
+            }}
+            className="w-full flex items-center justify-center p-2 rounded-xl transition-colors"
+            style={{ background: "#0B1E3F" }}
+          >
+            <SquarePen
+              className="w-4 h-4"
+              style={{ color: "#FFFFFF" }}
+              strokeWidth={2.5}
+            />
+          </button>
+
+          <span className="sk-tooltip">New Chat</span>
+        </div>
       )}
+    </div>
 
-      {/* Chat history */}
-      <div className="flex-1 overflow-y-auto px-3 py-1 sk-sidebar-scroll">
-        {sidebarExpanded || isMobile ? (
-          activeChatList.length === 0 ? (
-            <div className="flex flex-col items-center py-10 gap-2">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-white/20" />
-              </div>
-              <p className="text-[12px] text-white/25 sk-font-body text-center">
-                {selectedUnit ? `No ${selectedUnit.unit_code} chats yet` : "No conversations yet"}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between px-1">
-                <p className="text-[10px] uppercase tracking-[0.1em] font-semibold text-white/25 sk-font-body">
-                  {selectedUnit ? `${selectedUnit.unit_code} Chats` : "History"}
-                </p>
-                {!selectedUnit && (
-                  <button
-                    onClick={() => setShowDeleteAllConfirm(true)}
-                    className="text-[10px] text-red-400/50 hover:text-red-400 transition-colors sk-font-body"
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
-              {DATE_GROUP_ORDER.map((group) => {
-                const groupChats = groupedChats[group];
-                if (!groupChats || groupChats.length === 0) return null;
-                return (
-                  <div key={group}>
-                    <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-white/20 px-1 mb-1.5 sk-font-body">
-                      {group}
-                    </p>
-                    <div className="space-y-0.5">{groupChats.map(renderChatItem)}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        ) : null}
+    {/* Artifacts link */}
+    {sidebarExpanded || isMobile ? (
+      <div className="px-3 mb-1">
+        <button
+          onClick={() => {
+            setShowArtifacts(true);
+
+            if (isMobile) {
+              setMobileSidebarOpen(false);
+            }
+          }}
+          className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-full text-[13px] transition-all sk-font-body ${
+            showArtifacts
+              ? "bg-[#0B1E3F]/10 text-[#151b28]/85 border border-[#0B1E3F]/20"
+              : "text-[#151b28]/40 hover:text-[#151b28]/65 hover:bg-black/[0.04] border border-transparent"
+          }`}
+        >
+          <LayoutGrid className="w-4 h-4 flex-shrink-0" />
+          <span className="font-medium">Artifacts</span>
+        </button>
       </div>
+    ) : (
+      <div className="flex flex-col items-center px-2 mb-2">
+        <div className="sk-icon-btn-wrap w-full">
+          <button
+            onClick={() => setShowArtifacts(true)}
+            className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-colors ${
+              showArtifacts
+                ? "bg-[#0B1E3F]/10 text-[#0B1E3F]"
+                : "text-[#151b28]/30 hover:bg-black/[0.04] hover:text-[#151b28]/60"
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
 
-      {/* Profile */}
+          <span className="sk-tooltip">Artifacts</span>
+        </div>
+      </div>
+    )}
+
+    {/* Divider */}
+    {(sidebarExpanded || isMobile) && (
       <div
-        ref={profileMenuRef}
-        className={`relative flex-shrink-0 ${sidebarExpanded || isMobile ? "p-3" : "px-2 py-3"}`}
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-      >
+        className="mx-4 mb-3 mt-1"
+        style={{
+          height: "1px",
+          background: "rgba(15,23,42,0.08)",
+        }}
+      />
+    )}
+
+    {/* Chat history */}
+    <div className="flex-1 overflow-y-auto px-3 py-1 sk-sidebar-scroll">
+      {sidebarExpanded || isMobile ? (
+        activeChatList.length === 0 ? (
+          <div className="flex flex-col items-center py-10 gap-2">
+            <div className="w-10 h-10 rounded-full bg-black/[0.04] flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-[#151b28]/20" />
+            </div>
+
+            <p className="text-[12px] text-[#151b28]/35 sk-font-body text-center">
+              {selectedUnit
+                ? `No ${selectedUnit.unit_code} chats yet`
+                : "No chats yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-1">
+              <p className="text-[10px] uppercase tracking-[0.1em] font-semibold text-[#151b28]/35 sk-font-body">
+                {selectedUnit
+                  ? `${selectedUnit.unit_code} Chats`
+                  : "History"}
+              </p>
+
+              {!selectedUnit && (
+                <button
+                  onClick={() => setShowDeleteAllConfirm(true)}
+                  className="text-[10px] text-red-500/60 hover:text-red-500 transition-colors sk-font-body"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {DATE_GROUP_ORDER.map((group) => {
+              const groupChats = groupedChats[group];
+
+              if (!groupChats || groupChats.length === 0) {
+                return null;
+              }
+
+              return (
+                <div key={group}>
+                  <p className="text-[10px] uppercase tracking-[0.08em] font-semibold text-[#151b28]/30 px-1 mb-1.5 sk-font-body">
+                    {group}
+                  </p>
+
+                  <div className="space-y-0.5">
+                    {groupChats.map(renderChatItem)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : null}
+    </div>
+
+    {/* Profile */}
+    <div
+      ref={profileMenuRef}
+      className={`relative flex-shrink-0 ${
+        sidebarExpanded || isMobile ? "p-3" : "px-2 py-3"
+      }`}
+      style={{
+        borderTop: "1px solid rgba(15,23,42,0.08)",
+      }}
+    >
         <AnimatePresence>
           {profileMenuOpen && (sidebarExpanded || isMobile) && (
             <motion.div
@@ -1408,7 +1507,7 @@ const ChatPage = () => {
                 <div className="flex items-center gap-3">
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+                    style={{ background: "linear-gradient(135deg,#0B1E3F,#132A54)" }}
                   >
                     {displayName.charAt(0).toUpperCase()}
                   </div>
@@ -1470,7 +1569,7 @@ const ChatPage = () => {
                       setShowPaymentDialog(true);
                     }}
                     className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm font-semibold rounded-xl transition-opacity hover:opacity-90 sk-font-body"
-                    style={{ background: "linear-gradient(135deg,#1D2A3A,#b91c1c)", color: "white" }}
+                    style={{ background: "linear-gradient(135deg,#0B1E3F,#b91c1c)", color: "white" }}
                   >
                     <Sparkles className="w-4 h-4" /> Upgrade to Premium
                   </button>
@@ -1493,20 +1592,20 @@ const ChatPage = () => {
         {sidebarExpanded || isMobile ? (
           <button
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="flex items-center gap-3 w-full p-2 rounded-xl transition-colors hover:bg-white/5"
+            className="flex items-center gap-3 w-full p-2 rounded-xl transition-colors hover:bg-black/[0.04]"
           >
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg,#0B1E3F,#132A54)" }}
             >
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-[13px] font-medium text-white/75 truncate sk-font-body">{displayName}</p>
-              <p className="text-[11px] text-white/30 truncate sk-font-body">{profile?.course_name || "Student"}</p>
+              <p className="text-[13px] font-medium text-[#151b28]/75 truncate sk-font-body">{displayName}</p>
+              <p className="text-[11px] text-[#151b28]/40 truncate sk-font-body">{profile?.course_name || "Student"}</p>
             </div>
             <ChevronUp
-              className={`w-3.5 h-3.5 text-white/25 transition-transform duration-200 ${profileMenuOpen ? "" : "rotate-180"}`}
+              className={`w-3.5 h-3.5 text-[#151b28]/35 transition-transform duration-200 ${profileMenuOpen ? "" : "rotate-180"}`}
             />
           </button>
         ) : (
@@ -1514,7 +1613,7 @@ const ChatPage = () => {
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg,#0B1E3F,#132A54)" }}
               title={displayName}
             >
               {displayName.charAt(0).toUpperCase()}
@@ -1534,10 +1633,10 @@ const ChatPage = () => {
       <div className="px-4 py-4 border-b border-border/50 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center">
-              <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+            <div className="w-6 h-6 rounded-lg bg-[#FFFFFF]/10 flex items-center justify-center">
+              <GraduationCap className="w-5.5 h-5.5 text-[#0B1E3F]" />
             </div>
-            <h2 className="font-semibold text-foreground text-[13px] sk-font-display">My Units</h2>
+            <h2 className="font-semibold text-foreground text-[16px] sk-font-display">My Units</h2>
           </div>
           {isMobile && (
             <button
@@ -1548,7 +1647,7 @@ const ChatPage = () => {
             </button>
           )}
         </div>
-        <p className="text-[11px] text-muted-foreground mt-1 sk-font-body">Select a unit to start studying</p>
+        <p className="text-[14px] text-muted-foreground mt-1 sk-font-body">Select a unit to start studying</p>
       </div>
 
       {/* Hidden file inputs */}
@@ -1579,7 +1678,7 @@ const ChatPage = () => {
       <div className="flex-1 overflow-y-auto p-3 space-y-2 sk-scroll">
         {enrolledUnits.length === 0 ? (
           <div className="flex flex-col items-center py-14 gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-muted-foreground/40" />
             </div>
             <div className="text-center">
@@ -1595,7 +1694,7 @@ const ChatPage = () => {
                 key={unit.unit_id}
                 className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isExpanded
-                    ? "border-indigo-300/30 dark:border-indigo-700/40 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-sm"
+                    ? "border-[#0B1E3F]/30 bg-[#0B1E3F]/5 shadow-sm"
                     : "border-border/60 bg-card hover:border-border"
                 }`}
               >
@@ -1607,13 +1706,13 @@ const ChatPage = () => {
                   className="w-full flex items-center gap-3 p-3 text-left"
                 >
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold sk-font-display ${isExpanded ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground"}`}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold sk-font-display ${isExpanded ? "bg-[#0B1E3F] text-white" : "bg-muted text-muted-foreground"}`}
                   >
                     {unit.unit_code.slice(-2)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p
-                      className={`text-[11px] font-bold tracking-wide sk-font-body ${isExpanded ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground"}`}
+                      className={`text-[11px] font-bold tracking-wide sk-font-body ${isExpanded ? "text-[#0B1E3F]" : "text-muted-foreground"}`}
                     >
                       {unit.unit_code}
                     </p>
@@ -1638,7 +1737,7 @@ const ChatPage = () => {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="px-3 pb-3 space-y-2.5 border-t border-indigo-200/30 dark:border-indigo-800/30">
+                      <div className="px-3 pb-3 space-y-2.5 border-t border-[#0B1E3F]/15">
                         <div className="flex gap-2 pt-2.5">
                           <div className="flex-1 bg-background rounded-xl p-2.5 text-center border border-border/50">
                             <p className="text-xl font-bold text-foreground sk-font-display">{notesCount}</p>
@@ -1705,7 +1804,7 @@ const ChatPage = () => {
                             onClick={() => handleNewUnitChat(unit.unit_id)}
                             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-sm hover:bg-background transition-colors text-left border border-dashed border-border mb-1 sk-font-body"
                           >
-                            <Plus className="w-4 h-4 flex-shrink-0 text-indigo-500" />
+                            <Plus className="w-4 h-4 flex-shrink-0 text-[#0B1E3F]" />
                             <span className="font-medium text-foreground">New Chat</span>
                           </button>
 
@@ -1836,11 +1935,11 @@ const ChatPage = () => {
     <div className="max-w-[700px] w-full mx-auto pointer-events-auto">
       {/* Voice recording indicator */}
       {(isListening || isTranscribing) && (
-        <div className="mb-2.5 rounded-2xl border border-indigo-200/60 dark:border-indigo-800/40 bg-indigo-50/80 dark:bg-indigo-950/30 px-4 py-3 backdrop-blur-sm">
+        <div className="mb-2.5 rounded-2xl border border-[#0B1E3F]/20 bg-[#0B1E3F]/5 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               {isTranscribing ? (
-                <Loader2 className="w-5 h-5 animate-spin text-indigo-500 flex-shrink-0" />
+                <Loader2 className="w-5 h-5 animate-spin text-[#0B1E3F] flex-shrink-0" />
               ) : (
                 <VoiceInputVisualizer />
               )}
@@ -1856,7 +1955,7 @@ const ChatPage = () => {
             {isListening && (
               <button
                 onClick={toggleVoice}
-                className="rounded-full border border-indigo-300/40 bg-white/80 dark:bg-black/20 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white dark:hover:bg-black/30 transition-colors sk-font-body"
+                className="rounded-full border border-[#0B1E3F]/25 bg-white/80 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white transition-colors sk-font-body"
               >
                 Stop
               </button>
@@ -1885,7 +1984,7 @@ const ChatPage = () => {
               </button>
               <button
                 onClick={applyVoiceDraft}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0B1E3F] text-white hover:bg-[#132A54] transition-colors"
                 title="Use transcript"
               >
                 <Check className="w-3.5 h-3.5" />
@@ -1970,7 +2069,7 @@ const ChatPage = () => {
         {/* Attach button */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="flex w-9 h-9 items-center justify-center rounded-xl text-muted-foreground hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors flex-shrink-0">
+            <button className="flex w-9 h-9 items-center justify-center rounded-xl text-muted-foreground hover:text-[#0B1E3F] hover:bg-[#0B1E3F]/8 transition-colors flex-shrink-0">
               <Paperclip className="w-4 h-4" />
             </button>
           </PopoverTrigger>
@@ -2028,10 +2127,10 @@ const ChatPage = () => {
           disabled={!micSupported || isTranscribing}
           className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all flex-shrink-0 ${
             isListening
-              ? "text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 sk-mic-active"
+              ? "text-[#0B1E3F] bg-[#0B1E3F]/8 sk-mic-active"
               : isTranscribing
-                ? "text-indigo-500 animate-pulse"
-                : "text-muted-foreground hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+                ? "text-[#0B1E3F] animate-pulse"
+                : "text-muted-foreground hover:text-[#0B1E3F] hover:bg-[#0B1E3F]/8"
           } ${!micSupported ? "opacity-30 cursor-not-allowed" : ""}`}
         >
           {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
@@ -2041,8 +2140,8 @@ const ChatPage = () => {
         <button
           onClick={() => handleSend()}
           disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming}
-          className="w-9 h-9 flex items-center justify-center rounded-xl transition-all flex-shrink-0 disabled:opacity-30"
-          style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "white" }}
+          className="w-9 h-9 flex items-center justify-center rounded-full transition-all flex-shrink-0 disabled:opacity-30"
+          style={{ background: "linear-gradient(135deg,#0B1E3F,#132A54)", color: "white" }}
         >
           {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
         </button>
@@ -2117,7 +2216,7 @@ const ChatPage = () => {
                 <div className="flex flex-col gap-0.5">
                   <span
                     className="inline-flex text-[10px] font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded-md w-fit sk-font-body"
-                    style={{ background: "rgba(99,102,241,0.12)", color: "#6366f1" }}
+                    style={{ background: "rgba(11,30,63,0.1)", color: "#0B1E3F" }}
                   >
                     {selectedUnit.unit_code}
                   </span>
@@ -2166,7 +2265,7 @@ const ChatPage = () => {
                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 sk-font-body font-medium ${
                   teachMeActive
                     ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
-                    : "border-border text-muted-foreground hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    : "border-border text-muted-foreground hover:border-[#0B1E3F]/40 hover:text-[#0B1E3F]"
                 }`}
               >
                 <BookOpen className="w-3 h-3" />
@@ -2179,8 +2278,8 @@ const ChatPage = () => {
                 onClick={() => setSourcesOpen(!sourcesOpen)}
                 className={`hidden md:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all flex-shrink-0 sk-font-body font-medium ${
                   sourcesOpen
-                    ? "bg-indigo-500 text-white border-indigo-500"
-                    : "border-border text-muted-foreground hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                    ? "bg-[#0B1E3F] text-white border-[#0B1E3F]"
+                    : "border-border text-muted-foreground hover:border-[#0B1E3F]/40 hover:text-[#0B1E3F]"
                 }`}
               >
                 <ScrollText className="w-3 h-3" />
@@ -2249,12 +2348,9 @@ const ChatPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="text-center mb-8"
                           >
-                            <div className="flex items-center justify-center gap-2 mb-4">
-                              <img src={sekaniLogo} alt="Sekani" className="w-10 h-10 object-contain" />
-                            </div>
                             <h2
-                              className="sk-font-display font-semibold text-foreground mb-2"
-                              style={{ fontSize: "clamp(1.4rem, 4vw, 1.9rem)", letterSpacing: "0.04em" }}
+                              className="sk-font-display font-body text-foreground mb-2"
+                              style={{ fontSize: "clamp(1.4rem, 4vw, 1.9rem)", letterSpacing: "0.01em" }}
                             >
                               {greeting}, {displayName.split(" ")[0]}
                             </h2>
@@ -2288,10 +2384,10 @@ const ChatPage = () => {
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ delay: 0.25 + i * 0.07 }}
                                   onClick={() => handleSuggestion(s.prompt)}
-                                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[30px] border border-border/60 bg-card/80 backdrop-blur-sm hover:border-indigo-300/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 hover:-translate-y-0.5 transition-all shadow-sm sk-font-body"
+                                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[30px] border border-border/60 bg-card/80 backdrop-blur-sm hover:border-[#0B1E3F]/30 hover:bg-[#0B1E3F]/5 hover:-translate-y-0.5 transition-all shadow-sm sk-font-body"
                                 >
-                                  <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
-                                    <s.icon className="w-3.5 h-3.5 text-indigo-500" />
+                                  <div className="w-6 h-6 rounded-lg bg-[#0B1E3F]/10 flex items-center justify-center flex-shrink-0">
+                                    <s.icon className="w-3.5 h-3.5 text-[#0B1E3F]" />
                                   </div>
                                   <span className="font-medium text-sm text-foreground">{s.label}</span>
                                 </motion.button>
@@ -2308,7 +2404,7 @@ const ChatPage = () => {
                             >
                               <button
                                 onClick={() => setMobileUnitsOpen(true)}
-                                className="flex items-center gap-2 text-sm text-indigo-500 border border-indigo-300/40 rounded-full px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors sk-font-body font-medium"
+                                className="flex items-center gap-2 text-sm text-[#0B1E3F] border border-[#0B1E3F]/30 rounded-full px-4 py-2 hover:bg-[#0B1E3F]/5 transition-colors sk-font-body font-medium"
                               >
                                 <GraduationCap className="w-4 h-4" /> Browse My Units
                               </button>
@@ -2331,18 +2427,6 @@ const ChatPage = () => {
                               transition={{ duration: 0.2 }}
                               className={`group/msg flex ${msg.sender === "user" ? "justify-end" : "justify-start"} gap-3`}
                             >
-                              {/* Bot avatar */}
-                              {msg.sender === "bot" && (
-                                <div className="flex-shrink-0 mt-1">
-                                  <div
-                                    className="w-7 h-7 rounded-xl flex items-center justify-center"
-                                    style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}
-                                  >
-                                    <img src={sekaniLogo} alt="S" className="w-4 h-4 object-contain" />
-                                  </div>
-                                </div>
-                              )}
-
                               <div
                                 className={`flex flex-col gap-1 ${msg.sender === "user" ? "items-end max-w-[82%]" : "items-start max-w-[85%]"}`}
                               >
@@ -2351,7 +2435,7 @@ const ChatPage = () => {
                                   const hasCustomBg = chatBg && chatBg.url;
                                   const userStyle = hasCustomBg
                                     ? { background: chatBg.userBubble, color: chatBg.userText }
-                                    : { background: "linear-gradient(135deg, #4f46e5, #7c3aed)", color: "white" };
+                                    : { background: "var(--sk-user-bubble-solid)" };
                                   const botStyle = hasCustomBg
                                     ? { background: chatBg.botBubble, color: chatBg.botText }
                                     : undefined;
@@ -2360,8 +2444,8 @@ const ChatPage = () => {
                                     <div
                                       className={`px-4 py-3 text-[13.5px] leading-relaxed ${
                                         msg.sender === "user"
-                                          ? "rounded-2xl rounded-br-[5px] shadow-sm"
-                                          : `rounded-2xl rounded-bl-[5px] shadow-sm ${!hasCustomBg ? "bg-card border border-border/60 text-foreground" : ""}`
+                                          ? `rounded-2xl rounded-br-[5px] ${!hasCustomBg ? "text-foreground" : ""}`
+                                          : `rounded-2xl rounded-bl-[5px] ${!hasCustomBg ? "text-foreground" : ""}`
                                       }`}
                                       style={msg.sender === "user" ? userStyle : botStyle}
                                     >
@@ -2561,7 +2645,7 @@ const ChatPage = () => {
                                                       {!lang && (
                                                         <button
                                                           onClick={() => handleCreateArtifact(codeStr, "text")}
-                                                          className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-indigo-500 text-white px-2 py-1 rounded-lg sk-font-body"
+                                                          className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 text-xs bg-[#0B1E3F] text-white px-2 py-1 rounded-lg sk-font-body"
                                                         >
                                                           <Code2 className="w-3 h-3" /> Artifact
                                                         </button>
@@ -2746,7 +2830,7 @@ const ChatPage = () => {
                                         <button
                                           key={sug.label}
                                           onClick={() => handleSend(sug.prompt)}
-                                          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/40 bg-indigo-50/80 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 transition-colors font-medium sk-font-body"
+                                          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-[#0B1E3F]/20 bg-[#0B1E3F]/5 hover:bg-[#0B1E3F]/10 text-[#0B1E3F] transition-colors font-medium sk-font-body"
                                         >
                                           {sug.emoji} {sug.label}
                                         </button>
@@ -2760,31 +2844,11 @@ const ChatPage = () => {
                                   {formatTime(msg.timestamp)}
                                 </span>
                               </div>
-
-                              {/* User avatar */}
-                              {msg.sender === "user" && (
-                                <div className="flex-shrink-0 mt-1">
-                                  <div
-                                    className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-bold text-white"
-                                    style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}
-                                  >
-                                    {displayName.charAt(0).toUpperCase()}
-                                  </div>
-                                </div>
-                              )}
                             </motion.div>
                           ))}
                           <AnimatePresence>
                             {isStreaming && activeChat!.messages[activeChat!.messages.length - 1]?.sender !== "bot" && (
                               <div className="flex justify-start gap-3">
-                                <div className="flex-shrink-0 mt-1">
-                                  <div
-                                    className="w-7 h-7 rounded-xl flex items-center justify-center"
-                                    style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)" }}
-                                  >
-                                    <img src={sekaniLogo} alt="S" className="w-4 h-4 object-contain" />
-                                  </div>
-                                </div>
                                 <TypingIndicator />
                               </div>
                             )}
@@ -2874,7 +2938,14 @@ const ChatPage = () => {
 
         {/* Right Units Panel (desktop) */}
         {!viewerOpen && !teachMeActive && !sourcesOpen && (
-          <aside className="hidden md:flex flex-col w-[260px] flex-shrink-0 border-l border-border/50">
+          <aside
+            className="hidden md:flex flex-col flex-shrink-0 border-l border-border/50 relative"
+            style={{ width: rightPanelWidth }}
+          >
+            <div
+              onMouseDown={handlePanelResizeStart}
+              className="absolute left-0 top-0 bottom-0 w-1.5 -ml-[3px] cursor-col-resize z-10 hover:bg-[#0B1E3F]/25 active:bg-[#0B1E3F]/35 transition-colors"
+            />
             {unitsPanelContent}
           </aside>
         )}
@@ -3017,8 +3088,8 @@ const ChatPage = () => {
           {paymentVerifying ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               <div className="relative w-14 h-14">
-                <div className="absolute inset-0 rounded-full border-2 border-indigo-200" />
-                <div className="absolute inset-0 rounded-full border-2 border-t-indigo-500 animate-spin" />
+                <div className="absolute inset-0 rounded-full border-2 border-[#0B1E3F]/20" />
+                <div className="absolute inset-0 rounded-full border-2 border-t-[#0B1E3F] animate-spin" />
               </div>
               <p className="text-lg font-semibold sk-font-display">Verifying Payment…</p>
               <p className="text-sm text-muted-foreground text-center sk-font-body">
@@ -3054,11 +3125,11 @@ const ChatPage = () => {
                     <button
                       key={opt.plan}
                       onClick={() => setPaymentPlan(opt.plan)}
-                      className={`border rounded-2xl p-4 text-center transition-all ${paymentPlan === opt.plan ? "border-2 border-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/20" : "border-border"}`}
+                      className={`border rounded-2xl p-4 text-center transition-all ${paymentPlan === opt.plan ? "border-2 border-[#0B1E3F]/50 bg-[#0B1E3F]/5" : "border-border"}`}
                     >
                       <p
                         className="text-[10px] font-bold uppercase tracking-wider sk-font-body"
-                        style={{ color: paymentPlan === opt.plan ? "#6366f1" : undefined }}
+                        style={{ color: paymentPlan === opt.plan ? "#0B1E3F" : undefined }}
                       >
                         {opt.label}
                       </p>
@@ -3135,7 +3206,7 @@ const ChatPage = () => {
                     (paymentPlan === "group" && groupEmails.slice(1).some((e) => !e.trim()))
                   }
                   className="w-full text-white font-semibold py-3 rounded-xl sk-font-body"
-                  style={{ background: "linear-gradient(135deg,#1D2A3A,#b91c1c)" }}
+                  style={{ background: "linear-gradient(135deg,#0B1E3F,#b91c1c)" }}
                 >
                   {paymentLoading ? (
                     <>
