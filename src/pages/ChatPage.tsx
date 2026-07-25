@@ -1264,7 +1264,7 @@ const ChatPage = () => {
 
 const sidebarContent = (
   <div
-    className="flex flex-col h-full sk-sidebar-scroll overflow-y-auto"
+    className="sk-sidebar flex flex-col h-full sk-sidebar-scroll overflow-y-auto"
     style={{ background: "var(--sk-sidebar-bg)" }}
   >
     {/* Logo area */}
