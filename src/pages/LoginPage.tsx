@@ -305,7 +305,7 @@ const LoginPage = () => {
             .maybeSingle();
 
           if (existing) {
-            progress[key] = "⚠️ Duplicate - skipped";
+            progress[key] = "Duplicate - skipped";
             setUploadProgress({ ...progress });
             continue;
           }
@@ -319,7 +319,7 @@ const LoginPage = () => {
             .upload(storagePath, file);
 
           if (uploadError) {
-            progress[key] = `❌ Upload failed: ${uploadError.message}`;
+            progress[key] = `Upload failed: ${uploadError.message}`;
             setUploadProgress({ ...progress });
             continue;
           }
@@ -340,7 +340,7 @@ const LoginPage = () => {
             .single();
 
           if (matError) {
-            progress[key] = `❌ Error: ${matError.message}`;
+            progress[key] = `Error: ${matError.message}`;
             setUploadProgress({ ...progress });
             continue;
           }
@@ -353,7 +353,7 @@ const LoginPage = () => {
             material_id: material?.id,
           });
 
-          progress[key] = "🧠 Training AI...";
+          progress[key] = "Training AI...";
           setUploadProgress({ ...progress });
 
           const { error: embedError } = await supabase.functions.invoke("process-document", {
@@ -367,7 +367,7 @@ const LoginPage = () => {
           });
 
           if (embedError) {
-            progress[key] = `❌ Training failed: ${embedError.message}`;
+            progress[key] = `Training failed: ${embedError.message}`;
             setUploadProgress({ ...progress });
 
             await supabase
@@ -378,10 +378,10 @@ const LoginPage = () => {
             continue;
           }
 
-          progress[key] = "✅ Uploaded & trained";
+          progress[key] = "Uploaded & trained";
           setUploadProgress({ ...progress });
         } catch (err) {
-          progress[key] = `❌ Error: ${err instanceof Error ? err.message : "Unknown"}`;
+          progress[key] = `Error: ${err instanceof Error ? err.message : "Unknown"}`;
           setUploadProgress({ ...progress });
         }
       }
