@@ -5,10 +5,10 @@ import { useState } from "react";
 
 type SectionId = "about" | "terms" | "privacy";
 
-const sections: { id: SectionId; icon: React.ReactNode; label: string; emoji: string }[] = [
-  { id: "about", icon: <BookOpen className="w-4 h-4" />, label: "About Sekani", emoji: "🤖" },
-  { id: "terms", icon: <ScrollText className="w-4 h-4" />, label: "Terms of Service", emoji: "📜" },
-  { id: "privacy", icon: <Shield className="w-4 h-4" />, label: "Privacy Policy", emoji: "📄" },
+const sections: { id: SectionId; icon: React.ReactNode; label: string }[] = [
+  { id: "about", icon: <BookOpen className="w-4 h-4" />, label: "About Sekani" },
+  { id: "terms", icon: <ScrollText className="w-4 h-4" />, label: "Terms of Service" },
+  { id: "privacy", icon: <Shield className="w-4 h-4" />, label: "Privacy Policy" },
 ];
 
 const Collapsible = ({
@@ -90,7 +90,7 @@ const TermsPage = () => {
         {activeSection === "about" && (
           <section className="space-y-4">
             <div>
-              <h2 className="text-2xl font-display font-bold mb-1">🤖 About Sekani</h2>
+              <h2 className="text-2xl font-display font-bold mb-1">About Sekani</h2>
               <p className="text-sm text-muted-foreground">Last updated: March 25, 2026</p>
             </div>
 
@@ -158,7 +158,7 @@ const TermsPage = () => {
         {activeSection === "terms" && (
           <section className="space-y-4">
             <div>
-              <h2 className="text-2xl font-display font-bold mb-1">📜 Terms of Service</h2>
+              <h2 className="text-2xl font-display font-bold mb-1">Terms of Service</h2>
               <p className="text-sm text-muted-foreground">Effective Date: March 25, 2026</p>
             </div>
 
@@ -326,7 +326,7 @@ const TermsPage = () => {
         {activeSection === "privacy" && (
           <section className="space-y-4">
             <div>
-              <h2 className="text-2xl font-display font-bold mb-1">📄 Privacy Policy</h2>
+              <h2 className="text-2xl font-display font-bold mb-1">Privacy Policy</h2>
               <p className="text-sm text-muted-foreground">Effective Date: March 25, 2026</p>
             </div>
 

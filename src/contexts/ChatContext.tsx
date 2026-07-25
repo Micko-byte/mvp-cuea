@@ -73,7 +73,7 @@ const extractAttachmentLabel = (text: string) => {
 
 const getDisplayTextPart = (text: string) => {
   const attachmentLabel = extractAttachmentLabel(text);
-  if (attachmentLabel) return `📎 ${attachmentLabel}`;
+  if (attachmentLabel) return attachmentLabel;
   return text.trim();
 };
 
@@ -86,7 +86,7 @@ const getDisplayText = (content: string | MessagePart[]) => {
 
   for (const part of content) {
     if (part.type === "image_url") {
-      parts.push("🖼️ Image attached");
+      parts.push("Image attached");
       continue;
     }
 
@@ -224,7 +224,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      toast.success(`📚 ${files.map((file) => `"${file.file.name}"`).join(", ")} added to unit knowledge base`);
+      toast.success(`${files.map((file) => `"${file.file.name}"`).join(", ")} added to unit knowledge base`);
     } catch (error) {
       console.error("Background embedding failed:", error);
     }

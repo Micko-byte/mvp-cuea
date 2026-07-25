@@ -139,6 +139,57 @@ const GLOBAL_STYLES = `
     --sk-user-bubble-solid: #2A2A2A;
   }
 
+  /* ── Theme-aware sidebar (dark + custom themes) ── */
+  .dark,
+  [data-sk-theme="maroon"],
+  [data-sk-theme="ocean"],
+  [data-sk-theme="forest"],
+  [data-sk-theme="lavender"],
+  [data-sk-theme="amber"] {
+    --sk-sidebar-bg: hsl(var(--sidebar-background));
+    --sk-sidebar-border: hsl(var(--sidebar-border));
+    --sk-sidebar-item-hover: hsl(var(--sidebar-foreground) / 0.06);
+    --sk-sidebar-item-active: hsl(var(--sidebar-foreground) / 0.12);
+    --sk-sidebar-text: hsl(var(--sidebar-foreground) / 0.7);
+    --sk-sidebar-text-active: hsl(var(--sidebar-foreground));
+  }
+
+  /* Dark mode: sidebar icons and hardcoded text become white */
+  .dark .sk-sidebar,
+  .dark .sk-sidebar [class*="text-[#151b28"],
+  .dark .sk-sidebar [class*="text-[#0B1E3F"] {
+    color: #ffffff !important;
+  }
+  .dark .sk-sidebar svg { color: #ffffff !important; }
+
+  /* Custom themes: use sidebar-foreground */
+  [data-sk-theme="maroon"] .sk-sidebar,
+  [data-sk-theme="ocean"] .sk-sidebar,
+  [data-sk-theme="forest"] .sk-sidebar,
+  [data-sk-theme="lavender"] .sk-sidebar,
+  [data-sk-theme="amber"] .sk-sidebar {
+    color: hsl(var(--sidebar-foreground));
+  }
+  [data-sk-theme="maroon"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="ocean"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="forest"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="lavender"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="amber"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="maroon"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="ocean"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="forest"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="lavender"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="amber"] .sk-sidebar [class*="text-[#0B1E3F"] {
+    color: hsl(var(--sidebar-foreground)) !important;
+  }
+  [data-sk-theme="maroon"] .sk-sidebar svg,
+  [data-sk-theme="ocean"] .sk-sidebar svg,
+  [data-sk-theme="forest"] .sk-sidebar svg,
+  [data-sk-theme="lavender"] .sk-sidebar svg,
+  [data-sk-theme="amber"] .sk-sidebar svg {
+    color: hsl(var(--sidebar-foreground)) !important;
+  }
+
   .sk-font-display { font-family: var(--sk-font-display); }
   .sk-font-body { font-family: var(--sk-font-body); }
 
@@ -427,7 +478,7 @@ const ChatPage = () => {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get("payment");
     if (payment === "success") {
-      toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
+      toast.success("Payment successful! Welcome to Sekani Premium!");
       window.history.replaceState({}, "", window.location.pathname);
     } else if (payment === "failed") {
       toast.error("Payment was not completed. Please try again.");
@@ -484,7 +535,7 @@ const ChatPage = () => {
         teachMe.upsertStudentMemory(tags.memoryUpdate.topicName, tags.memoryUpdate.unit, tags.memoryUpdate.strength);
       if (tags.unitComplete) {
         teachMe.markComplete(teachMe.session.id);
-        toast.success("🎓 Unit complete! Amazing work!");
+        toast.success("Unit complete! Amazing work!");
       }
     }
   }, [activeChat?.messages, isStreaming, teachMeActive]);
@@ -750,7 +801,7 @@ const ChatPage = () => {
         const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage.from("materials").upload(storagePath, file);
         if (uploadError) {
-          progress[key] = `❌ ${uploadError.message}`;
+          progress[key] = uploadError.message;
           setUnitUploadProgress({ ...progress });
           continue;
         }
@@ -769,11 +820,11 @@ const ChatPage = () => {
           .select("id")
           .single();
         if (matError) {
-          progress[key] = `❌ ${matError.message}`;
+          progress[key] = matError.message;
           setUnitUploadProgress({ ...progress });
           continue;
         }
-        progress[key] = "🧠 Training AI...";
+        progress[key] = "Training AI...";
         setUnitUploadProgress({ ...progress });
         const { error: embedError } = await supabase.functions.invoke("process-document", {
           body: {
@@ -785,14 +836,14 @@ const ChatPage = () => {
           },
         });
         if (embedError) {
-          progress[key] = `❌ ${embedError.message}`;
+          progress[key] = embedError.message;
           setUnitUploadProgress({ ...progress });
           continue;
         }
-        progress[key] = "✅ Trained";
+        progress[key] = "Trained";
         setUnitUploadProgress({ ...progress });
       } catch (err) {
-        progress[key] = `❌ ${err instanceof Error ? err.message : "Unknown"}`;
+        progress[key] = err instanceof Error ? err.message : "Unknown";
         setUnitUploadProgress({ ...progress });
       }
     }
@@ -806,7 +857,7 @@ const ChatPage = () => {
         .eq("document_type", "notes");
       setNotesCount(count || 0);
     }
-    toast.success("Training complete! Your AI is now smarter. 🧠");
+    toast.success("Training complete! Your AI is now smarter.");
   };
 
   const handlePastPaperUpload = async (files: FileList | null) => {
@@ -823,7 +874,7 @@ const ChatPage = () => {
         const storagePath = `uploads/${user.id}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage.from("materials").upload(storagePath, file);
         if (uploadError) {
-          progress[key] = `❌ ${uploadError.message}`;
+          progress[key] = uploadError.message;
           setPastPaperUploadProgress({ ...progress });
           continue;
         }
@@ -843,11 +894,11 @@ const ChatPage = () => {
           .select("id")
           .single();
         if (matError) {
-          progress[key] = `❌ ${matError.message}`;
+          progress[key] = matError.message;
           setPastPaperUploadProgress({ ...progress });
           continue;
         }
-        progress[key] = "🧠 Analyzing...";
+        progress[key] = "Analyzing...";
         setPastPaperUploadProgress({ ...progress });
         const { error: embedError } = await supabase.functions.invoke("process-document", {
           body: {
@@ -861,14 +912,14 @@ const ChatPage = () => {
           },
         });
         if (embedError) {
-          progress[key] = `❌ ${embedError.message}`;
+          progress[key] = embedError.message;
           setPastPaperUploadProgress({ ...progress });
           continue;
         }
-        progress[key] = "✅ Analyzed";
+        progress[key] = "Analyzed";
         setPastPaperUploadProgress({ ...progress });
       } catch (err) {
-        progress[key] = `❌ ${err instanceof Error ? err.message : "Unknown"}`;
+        progress[key] = err instanceof Error ? err.message : "Unknown";
         setPastPaperUploadProgress({ ...progress });
       }
     }
@@ -880,7 +931,7 @@ const ChatPage = () => {
       .eq("unit_id", selectedUnitId)
       .eq("document_type", "past_paper");
     setPastPaperCount(count || 0);
-    toast.success("Past papers analyzed! Exam Mode is ready. 📝");
+    toast.success("Past papers analyzed! Exam Mode is ready.");
   };
 
   // ─── Voice ────────────────────────────────────────────────────────────────────
@@ -991,7 +1042,7 @@ const ChatPage = () => {
       if (data?.status === "success") {
         setPaymentVerifying(false);
         setShowPaymentDialog(false);
-        toast.success("Payment successful! 🎉 Welcome to Sekani Premium!");
+        toast.success("Payment successful! Welcome to Sekani Premium!");
         await refreshProfile();
         return;
       } else if (data?.status === "failed") {
@@ -1168,7 +1219,6 @@ const ChatPage = () => {
   const renderChatItem = (chat: (typeof chats)[0]) => {
     const isRenaming = renamingChatId === chat.id;
     const isActive = activeChat?.id === chat.id;
-    const preview = chat.messages[0]?.text?.slice(0, 45) || "Empty chat";
     const time = formatTime(chat.timestamp);
     return (
       <div
@@ -1180,13 +1230,10 @@ const ChatPage = () => {
             if (isMobile) setMobileSidebarOpen(false);
           }
         }}
-        className={`group/ci relative flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 text-sm ${
+        className={`group/ci relative flex items-center justify-between px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-150 text-sm ${
           isActive ? "bg-[#0B1E3F]/10 border border-[#0B1E3F]/20" : "border border-transparent hover:bg-black/[0.04]"
         }`}
       >
-        {/* Active indicator bar */}
-        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#0B1E3F] rounded-full" />}
-
         <div className="flex-1 min-w-0 pl-1">
           {isRenaming ? (
             <form
@@ -1218,11 +1265,8 @@ const ChatPage = () => {
               >
                 {chat.title}
               </span>
-              <div className="flex items-center justify-between mt-0.5 gap-2">
-                <span className={`text-[11px] truncate ${isActive ? "text-[#151b28]/40" : "text-[#151b28]/25"}`}>
-                  {preview}
-                </span>
-                <span className={`text-[10px] flex-shrink-0 ${isActive ? "text-[#0B1E3F]/60" : "text-[#151b28]/20"}`}>
+              <div className="flex items-center justify-end mt-0.5">
+                <span className={`text-[10px] flex-shrink-0 ${isActive ? "text-[#0B1E3F]/60" : "text-[#151b28]/25"}`}>
                   {time}
                 </span>
               </div>
@@ -1271,7 +1315,7 @@ const ChatPage = () => {
 
 const sidebarContent = (
   <div
-    className="flex flex-col h-full sk-sidebar-scroll overflow-y-auto"
+    className="sk-sidebar flex flex-col h-full sk-sidebar-scroll overflow-y-auto"
     style={{ background: "var(--sk-sidebar-bg)" }}
   >
     {/* Logo area */}
@@ -2551,7 +2595,7 @@ const sidebarContent = (
                                                       }}
                                                     >
                                                       <Download className="w-4 h-4" />
-                                                      <span>{String(children).replace("📥 ", "")}</span>
+                                                      <span>{String(children).replace(/^\p{Extended_Pictographic}\s*/u, "")}</span>
                                                     </button>
                                                   );
                                                 }
@@ -2770,22 +2814,18 @@ const sidebarContent = (
                                       <PopoverContent side="top" align="start" className="w-44 p-1.5 rounded-xl">
                                         {[
                                           {
-                                            emoji: "📄",
                                             label: "PDF",
                                             fn: () => generatePDF(msg.text, activeChat?.title || "Document"),
                                           },
                                           {
-                                            emoji: "📝",
                                             label: "Word (.docx)",
                                             fn: () => generateDOCX(msg.text, activeChat?.title || "Document"),
                                           },
                                           {
-                                            emoji: "📊",
                                             label: "PowerPoint",
                                             fn: () => generatePPTX(msg.text, activeChat?.title || "Presentation"),
                                           },
                                           {
-                                            emoji: "📈",
                                             label: "Excel",
                                             fn: () => generateXLSX(msg.text, activeChat?.title || "Spreadsheet"),
                                           },
@@ -2795,7 +2835,7 @@ const sidebarContent = (
                                             onClick={item.fn}
                                             className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs hover:bg-accent transition-colors sk-font-body"
                                           >
-                                            {item.emoji} {item.label}
+                                            <Download className="w-3 h-3" /> {item.label}
                                           </button>
                                         ))}
                                       </PopoverContent>
@@ -2811,18 +2851,15 @@ const sidebarContent = (
                                     <div className="flex flex-wrap gap-1.5 mt-1">
                                       {[
                                         {
-                                          emoji: "💡",
                                           label: "Explain simpler",
                                           prompt: "Explain that in simpler terms, like I'm a beginner",
                                         },
-                                        { emoji: "🎯", label: "Quiz me", prompt: "Quiz me on what you just explained" },
+                                        { label: "Quiz me", prompt: "Quiz me on what you just explained" },
                                         {
-                                          emoji: "📝",
                                           label: "Exam questions",
                                           prompt: "Give me exam-style questions on this topic",
                                         },
                                         {
-                                          emoji: "📋",
                                           label: "Summarize",
                                           prompt: "Summarize the key points from your last response in bullet points",
                                         },
@@ -2832,7 +2869,7 @@ const sidebarContent = (
                                           onClick={() => handleSend(sug.prompt)}
                                           className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-[#0B1E3F]/20 bg-[#0B1E3F]/5 hover:bg-[#0B1E3F]/10 text-[#0B1E3F] transition-colors font-medium sk-font-body"
                                         >
-                                          {sug.emoji} {sug.label}
+                                          {sug.label}
                                         </button>
                                       ))}
                                     </div>
@@ -3165,8 +3202,8 @@ const sidebarContent = (
 
                 <div className="flex gap-2 p-1 bg-muted/50 rounded-xl">
                   {[
-                    { id: "mpesa" as const, label: "📱 M-Pesa" },
-                    { id: "card" as const, label: "💳 Card" },
+                    { id: "mpesa" as const, label: "M-Pesa" },
+                    { id: "card" as const, label: "Card" },
                   ].map((m) => (
                     <button
                       key={m.id}

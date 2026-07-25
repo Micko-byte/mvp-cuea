@@ -316,7 +316,7 @@ const ArtifactViewer = () => {
             <div className="flex flex-col flex-1">
               <div className="p-4 bg-muted/30 border-b border-border">
                 <p className="text-sm text-muted-foreground">
-                  🐍 Python runs server-side. Copy and run in your environment.
+                  Python runs server-side. Copy and run in your environment.
                 </p>
                 <div className="flex gap-2 mt-2">
                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleCopy}>

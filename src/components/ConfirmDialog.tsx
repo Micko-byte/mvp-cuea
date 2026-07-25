@@ -30,7 +30,7 @@ const ConfirmDialog = ({ open, onOpenChange, title, description, confirmLabel, o
         <AlertDialogAction
           onClick={onConfirm}
           className="text-white hover:opacity-90"
-          style={{ backgroundColor: "#800000" }}
+          style={{ backgroundColor: "#0B1E3F" }}
         >
           {confirmLabel}
         </AlertDialogAction>

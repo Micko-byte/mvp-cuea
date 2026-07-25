@@ -1140,10 +1140,10 @@ const AdminPage = () => {
                         onClick={() => {
                           setBroadcastType(type.value);
                           if (type.value === "downtime") {
-                            setBroadcastSubject("⚠️ Sekani — Scheduled Maintenance");
+                            setBroadcastSubject("Sekani — Scheduled Maintenance");
                             setBroadcastMessage("We're currently performing maintenance on Sekani. The system will be temporarily unavailable. We'll notify you as soon as we're back online. Thank you for your patience!");
                           } else if (type.value === "back_online") {
-                            setBroadcastSubject("✅ Sekani is Back Online!");
+                            setBroadcastSubject("Sekani is Back Online!");
                             setBroadcastMessage("Great news! Sekani is back up and running. You can now continue using the platform as usual. Thank you for your patience during the maintenance period.");
                           } else {
                             setBroadcastSubject("");

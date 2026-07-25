@@ -226,14 +226,17 @@ export const PersonalizationProvider: React.FC<{ children: React.ReactNode }> = 
       root.classList.add("dark");
       // Clear any custom vars
       Object.keys(THEME_VARS.maroon).forEach((k) => root.style.removeProperty(k));
+      root.removeAttribute("data-sk-theme");
     } else if (state.theme === "light") {
       Object.keys(THEME_VARS.maroon).forEach((k) => root.style.removeProperty(k));
+      root.removeAttribute("data-sk-theme");
     } else {
       // Custom theme — apply vars
       const vars = THEME_VARS[state.theme];
       if (vars) {
         Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
       }
+      root.setAttribute("data-sk-theme", state.theme);
     }
   }, [state.theme]);
 
