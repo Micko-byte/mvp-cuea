@@ -139,6 +139,57 @@ const GLOBAL_STYLES = `
     --sk-user-bubble-solid: #2A2A2A;
   }
 
+  /* ── Theme-aware sidebar (dark + custom themes) ── */
+  .dark,
+  [data-sk-theme="maroon"],
+  [data-sk-theme="ocean"],
+  [data-sk-theme="forest"],
+  [data-sk-theme="lavender"],
+  [data-sk-theme="amber"] {
+    --sk-sidebar-bg: hsl(var(--sidebar-background));
+    --sk-sidebar-border: hsl(var(--sidebar-border));
+    --sk-sidebar-item-hover: hsl(var(--sidebar-foreground) / 0.06);
+    --sk-sidebar-item-active: hsl(var(--sidebar-foreground) / 0.12);
+    --sk-sidebar-text: hsl(var(--sidebar-foreground) / 0.7);
+    --sk-sidebar-text-active: hsl(var(--sidebar-foreground));
+  }
+
+  /* Dark mode: sidebar icons and hardcoded text become white */
+  .dark .sk-sidebar,
+  .dark .sk-sidebar [class*="text-[#151b28"],
+  .dark .sk-sidebar [class*="text-[#0B1E3F"] {
+    color: #ffffff !important;
+  }
+  .dark .sk-sidebar svg { color: #ffffff !important; }
+
+  /* Custom themes: use sidebar-foreground */
+  [data-sk-theme="maroon"] .sk-sidebar,
+  [data-sk-theme="ocean"] .sk-sidebar,
+  [data-sk-theme="forest"] .sk-sidebar,
+  [data-sk-theme="lavender"] .sk-sidebar,
+  [data-sk-theme="amber"] .sk-sidebar {
+    color: hsl(var(--sidebar-foreground));
+  }
+  [data-sk-theme="maroon"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="ocean"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="forest"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="lavender"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="amber"] .sk-sidebar [class*="text-[#151b28"],
+  [data-sk-theme="maroon"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="ocean"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="forest"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="lavender"] .sk-sidebar [class*="text-[#0B1E3F"],
+  [data-sk-theme="amber"] .sk-sidebar [class*="text-[#0B1E3F"] {
+    color: hsl(var(--sidebar-foreground)) !important;
+  }
+  [data-sk-theme="maroon"] .sk-sidebar svg,
+  [data-sk-theme="ocean"] .sk-sidebar svg,
+  [data-sk-theme="forest"] .sk-sidebar svg,
+  [data-sk-theme="lavender"] .sk-sidebar svg,
+  [data-sk-theme="amber"] .sk-sidebar svg {
+    color: hsl(var(--sidebar-foreground)) !important;
+  }
+
   .sk-font-display { font-family: var(--sk-font-display); }
   .sk-font-body { font-family: var(--sk-font-body); }
 
