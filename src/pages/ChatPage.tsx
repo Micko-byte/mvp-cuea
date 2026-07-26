@@ -2449,12 +2449,12 @@ const sidebarContent = (
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ delay: 0.25 + i * 0.07 }}
                                   onClick={() => handleSuggestion(s.prompt)}
-                                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[30px] border border-border/60 bg-card/80 backdrop-blur-sm hover:border-[#0B1E3F]/30 hover:bg-[#0B1E3F]/5 hover:-translate-y-0.5 transition-all shadow-sm sk-font-body"
+                                  className="sk-quick-action inline-flex items-center gap-2 px-4 py-2.5 rounded-[30px] border hover:-translate-y-0.5 transition-all shadow-sm sk-font-body"
                                 >
-                                  <div className="w-6 h-6 rounded-lg bg-[#0B1E3F]/10 flex items-center justify-center flex-shrink-0">
-                                    <s.icon className="w-3.5 h-3.5 text-[#0B1E3F]" />
+                                  <div className="sk-quick-action-icon w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <s.icon className="w-3.5 h-3.5" />
                                   </div>
-                                  <span className="font-medium text-sm text-foreground">{s.label}</span>
+                                  <span className="font-medium text-sm">{s.label}</span>
                                 </motion.button>
                               ))}
                             </motion.div>
