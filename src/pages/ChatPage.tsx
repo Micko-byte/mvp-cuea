@@ -2888,7 +2888,7 @@ const sidebarContent = (
                                         <button
                                           key={sug.label}
                                           onClick={() => handleSend(sug.prompt)}
-                                          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-[#0B1E3F]/20 bg-[#0B1E3F]/5 hover:bg-[#0B1E3F]/10 text-[#0B1E3F] transition-colors font-medium sk-font-body"
+                                          className="sk-followup-chip inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-[#0B1E3F]/20 bg-[#0B1E3F]/5 hover:bg-[#0B1E3F]/10 text-[#0B1E3F] transition-colors font-medium sk-font-body"
                                         >
                                           {sug.label}
                                         </button>
