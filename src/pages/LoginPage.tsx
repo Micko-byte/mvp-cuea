@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { useForceLightTheme } from "@/hooks/useForceLightTheme";
 
 interface DbCourse {
   id: string;
@@ -55,6 +56,7 @@ const ACCEPTED_FILE_TYPES = [
 const NAVY_BUTTON = "bg-[#0B1E3F] hover:bg-[#132A54] text-white";
 
 const LoginPage = () => {
+  useForceLightTheme();
   const { login, signup, isAuthenticated, role, isLoading: authLoading, user } = useAuth();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
