@@ -2478,8 +2478,8 @@ const sidebarContent = (
                                   const chatBg = getChatBg();
                                   const hasCustomBg = chatBg && chatBg.url;
                                   const userStyle = hasCustomBg
-                                    ? { background: chatBg.userBubble, color: chatBg.userText }
-                                    : { background: "var(--sk-user-bubble-solid)" };
+                                    ? { background: chatBg.userBubble, color: "#ffffff" }
+                                    : { background: "var(--sk-user-bubble-solid)", color: "#ffffff" };
                                   const botStyle = hasCustomBg
                                     ? { background: chatBg.botBubble, color: chatBg.botText }
                                     : undefined;
@@ -2488,7 +2488,7 @@ const sidebarContent = (
                                     <div
                                       className={`px-4 py-3 text-[13.5px] leading-relaxed ${
                                         msg.sender === "user"
-                                          ? `rounded-2xl rounded-br-[5px] ${!hasCustomBg ? "text-foreground" : ""}`
+                                          ? "rounded-2xl rounded-br-[5px] sk-user-bubble"
                                           : `rounded-2xl rounded-bl-[5px] ${!hasCustomBg ? "text-foreground" : ""}`
                                       }`}
                                       style={msg.sender === "user" ? userStyle : botStyle}
