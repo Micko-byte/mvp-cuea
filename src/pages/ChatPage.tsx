@@ -160,6 +160,31 @@ const GLOBAL_STYLES = `
     background: rgba(255,255,255,0.18) !important;
   }
 
+  /* Light mode: restore original light quick action look */
+  :root:not(.dark):not([data-sk-theme]) .sk-quick-action {
+    background: #ffffff !important;
+    border-color: rgba(11,30,63,0.12) !important;
+  }
+  :root:not(.dark):not([data-sk-theme]) .sk-quick-action,
+  :root:not(.dark):not([data-sk-theme]) .sk-quick-action * {
+    color: #0B1E3F !important;
+  }
+  :root:not(.dark):not([data-sk-theme]) .sk-quick-action .sk-quick-action-icon {
+    background: rgba(11,30,63,0.08) !important;
+  }
+
+  /* Follow-up chips under bot replies: white text in dark/custom themes */
+  .dark .sk-followup-chip,
+  [data-sk-theme] .sk-followup-chip {
+    color: #ffffff !important;
+    border-color: rgba(255,255,255,0.25) !important;
+    background: rgba(255,255,255,0.08) !important;
+  }
+  .dark .sk-followup-chip:hover,
+  [data-sk-theme] .sk-followup-chip:hover {
+    background: rgba(255,255,255,0.16) !important;
+  }
+
   /* ── Theme-aware sidebar (dark + custom themes) ── */
   .dark,
   [data-sk-theme="maroon"],
@@ -2888,7 +2913,7 @@ const sidebarContent = (
                                         <button
                                           key={sug.label}
                                           onClick={() => handleSend(sug.prompt)}
-                                          className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-[#0B1E3F]/20 bg-[#0B1E3F]/5 hover:bg-[#0B1E3F]/10 text-[#0B1E3F] transition-colors font-medium sk-font-body"
+                                          className="sk-followup-chip inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-full border border-[#0B1E3F]/20 bg-[#0B1E3F]/5 hover:bg-[#0B1E3F]/10 text-[#0B1E3F] transition-colors font-medium sk-font-body"
                                         >
                                           {sug.label}
                                         </button>
