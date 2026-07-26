@@ -130,13 +130,34 @@ const GLOBAL_STYLES = `
     --sk-accent2: #132A54;
     --sk-user-bubble-from: #0B1E3F;
     --sk-user-bubble-to: #132A54;
-    --sk-user-bubble-solid: #f3f3f3;
+    --sk-user-bubble-solid: hsl(var(--primary));
     --sk-font-display: 'Lexend', sans-serif;
     --sk-font-body: 'Lexend', sans-serif;
   }
 
   .dark {
-    --sk-user-bubble-solid: #2A2A2A;
+    --sk-user-bubble-solid: hsl(var(--primary));
+  }
+
+  /* ── User chat bubble: theme background, always-white text ── */
+  .sk-user-bubble,
+  .sk-user-bubble * {
+    color: #ffffff !important;
+  }
+  .sk-user-bubble a { color: #ffffff !important; text-decoration: underline; }
+
+  /* ── Quick action buttons: always-white text on theme-colored surface ── */
+  .sk-quick-action {
+    background: hsl(var(--primary)) !important;
+    border-color: hsl(var(--primary)) !important;
+  }
+  .sk-quick-action:hover { filter: brightness(1.12); }
+  .sk-quick-action,
+  .sk-quick-action * {
+    color: #ffffff !important;
+  }
+  .sk-quick-action .sk-quick-action-icon {
+    background: rgba(255,255,255,0.18) !important;
   }
 
   /* ── Theme-aware sidebar (dark + custom themes) ── */
