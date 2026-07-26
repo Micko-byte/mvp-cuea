@@ -44,10 +44,10 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "Sekani - Your AI Study Assistant",
+        name: "Sekani",
         short_name: "Sekani",
         description: "Your AI-powered study assistant by Soma na Sekani",
-        theme_color: "#800020",
+        theme_color: "#1D2A3A",
         background_color: "#fafafa",
         display: "standalone",
         orientation: "portrait-primary",
