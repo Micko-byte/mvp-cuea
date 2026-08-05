@@ -17,6 +17,7 @@ import { MermaidBlock } from "@/components/MermaidBlock";
 import rehypeKatex from "rehype-katex";
 import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
 import sekaniLogo from "@/assets/sekani.png";
+import sekaniMarkAsset from "@/assets/sekani-mark.png.asset.json";
 import { Download } from "lucide-react";
 import {
   SquarePen,
@@ -1398,7 +1399,7 @@ const sidebarContent = (
       ) : (
         <div className="flex flex-col items-center gap-3 mb-3">
           <img
-            src={sekaniLogo}
+            src={sekaniMarkAsset.url}
             alt="Sekani"
             className="w-9 h-9 object-contain"
           />
