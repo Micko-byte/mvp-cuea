@@ -98,14 +98,14 @@ function getDateGroup(timestamp: number): string {
   const yesterday = new Date(today.getTime() - 86400000);
   const weekAgo = new Date(today.getTime() - 7 * 86400000);
   const monthAgo = new Date(today.getTime() - 30 * 86400000);
-  if (date >= today) return "Today";
+  if (date >= today) return "Recent";
   if (date >= yesterday) return "Yesterday";
   if (date >= weekAgo) return "Previous 7 Days";
   if (date >= monthAgo) return "Previous 30 Days";
   return "Older";
 }
 
-const DATE_GROUP_ORDER = ["Today", "Yesterday", "Previous 7 Days", "Previous 30 Days", "Older"];
+const DATE_GROUP_ORDER = ["Recent", "Yesterday", "Previous 7 Days", "Previous 30 Days", "Older"];
 
 interface EnrolledUnit {
   unit_id: string;
@@ -1533,22 +1533,13 @@ const sidebarContent = (
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <p className="text-[10px] uppercase tracking-[0.1em] font-semibold text-[#151b28]/35 sk-font-body">
-                {selectedUnit
-                  ? `${selectedUnit.unit_code} Chats`
-                  : "History"}
-              </p>
-
-              {!selectedUnit && (
-                <button
-                  onClick={() => setShowDeleteAllConfirm(true)}
-                  className="text-[10px] text-red-500/60 hover:text-red-500 transition-colors sk-font-body"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
+            {selectedUnit && (
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[10px] uppercase tracking-[0.1em] font-semibold text-[#151b28]/35 sk-font-body">
+                  {`${selectedUnit.unit_code} Chats`}
+                </p>
+              </div>
+            )}
 
             {DATE_GROUP_ORDER.map((group) => {
               const groupChats = groupedChats[group];
