@@ -17,6 +17,7 @@ import { MermaidBlock } from "@/components/MermaidBlock";
 import rehypeKatex from "rehype-katex";
 import { generatePDF, generateDOCX, generatePPTX, generateXLSX } from "@/utils/documentGenerator";
 import sekaniLogo from "@/assets/sekani.png";
+import sekaniMarkAsset from "@/assets/sekani-mark.png.asset.json";
 import { Download } from "lucide-react";
 import {
   SquarePen,
