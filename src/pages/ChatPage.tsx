@@ -1399,7 +1399,7 @@ const sidebarContent = (
       ) : (
         <div className="flex flex-col items-center gap-3 mb-3">
           <img
-            src={sekaniLogo}
+            src={sekaniMarkAsset.url}
             alt="Sekani"
             className="w-9 h-9 object-contain"
           />
