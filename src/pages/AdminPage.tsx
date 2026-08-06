@@ -103,6 +103,8 @@ const AdminPage = () => {
   const [addUnitOpen, setAddUnitOpen] = useState(false);
   const [editRoleDialog, setEditRoleDialog] = useState<{ userId: string; currentRole: string } | null>(null);
   const [editTokenDialog, setEditTokenDialog] = useState<{ userId: string; email: string } | null>(null);
+  const [deleteUserDialog, setDeleteUserDialog] = useState<{ userId: string; name: string; email: string } | null>(null);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [tokenAdjustAmount, setTokenAdjustAmount] = useState("");
   const [tokenAdjustType, setTokenAdjustType] = useState<"add" | "subtract">("add");
   const [userTokenUsage] = useState<Record<string, number>>({});
@@ -632,18 +634,13 @@ const AdminPage = () => {
                             <button onClick={() => setEditTokenDialog({ userId: u.user_id, email: u.email })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Tokens"><Zap className="w-3.5 h-3.5" /></button>
                             <button onClick={() => setEditRoleDialog({ userId: u.user_id, currentRole: userRole })} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground" title="Edit Role"><Edit className="w-3.5 h-3.5" /></button>
                             <button
-                              onClick={async () => {
-                                const confirmed = window.confirm('Delete this user permanently? This cannot be undone.');
-                                if (!confirmed) return;
-                                try {
-                                  const { error } = await supabase.functions.invoke('delete-user', { body: { userId: u.user_id } });
-                                  if (error) { toast.error('Failed to delete user: ' + error.message); return; }
-                                  setProfiles(prev => prev.filter(p => p.user_id !== u.user_id));
-                                  toast.success('User deleted.');
-                                } catch (err: any) { toast.error(err.message || 'Delete failed'); }
+                              onClick={() => {
+                                if (u.user_id === user?.id) { toast.error("You can't delete your own account here."); return; }
+                                setDeleteUserDialog({ userId: u.user_id, name: u.name, email: u.email });
                               }}
-                              className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
-                              title="Delete user"
+                              disabled={u.user_id === user?.id}
+                              className="p-1.5 hover:bg-destructive/10 rounded-lg text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                              title={u.user_id === user?.id ? "You can't delete yourself" : "Delete user"}
                             ><Trash2 className="w-3.5 h-3.5" /></button>
                           </td>
                         </tr>
