@@ -348,18 +348,20 @@ serve(async (req) => {
     } else {
       const [profileRes, roleRes, unitsRes, paymentRes] = await Promise.all([
         supabaseAdmin.from("profiles").select("name, program, course_name, year, semester, course").eq("user_id", userId).single(),
-        supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).single(),
+        supabaseAdmin.from("user_roles").select("role").eq("user_id", userId),
         supabaseAdmin.from("student_units").select("unit_id, units(code, name, lecturer)").eq("user_id", userId),
         supabaseAdmin.from("payments").select("id").eq("user_id", userId).eq("status", "success").limit(1),
       ]);
       profileData = profileRes.data;
-      roleData = roleRes.data;
+      roleData = { roles: (roleRes.data || []).map((r: any) => r.role) };
       studentUnits = unitsRes.data;
       isPaidUser = (paymentRes.data && paymentRes.data.length > 0) || false;
       await redis.set(profileCacheKey, { profile: profileData, studentUnits, roleData, isPaidUser }, 600);
     }
 
-    const isAdmin = roleData?.role === "admin";
+    const isAdmin = Array.isArray(roleData?.roles)
+      ? roleData.roles.includes("admin")
+      : roleData?.role === "admin"; // fallback for older cached shape
     const userDailyLimit = isPaidUser ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
 
     // Admins bypass ALL limits
