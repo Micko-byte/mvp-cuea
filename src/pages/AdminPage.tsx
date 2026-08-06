@@ -1516,6 +1516,45 @@ const AdminPage = () => {
       </Dialog>
 
 
+      <Dialog open={!!deleteUserDialog} onOpenChange={() => { if (!deletingUser) setDeleteUserDialog(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="font-display">Delete user</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-foreground">
+              Permanently delete <strong>{deleteUserDialog?.name || "this user"}</strong>?
+            </p>
+            <p className="text-sm text-muted-foreground">{deleteUserDialog?.email}</p>
+            <p className="text-sm text-muted-foreground">
+              This removes their account, profile, chats and uploads. This cannot be undone.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" disabled={deletingUser} onClick={() => setDeleteUserDialog(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={deletingUser}
+              onClick={async () => {
+                if (!deleteUserDialog) return;
+                setDeletingUser(true);
+                try {
+                  const { error } = await supabase.functions.invoke("delete-user", { body: { userId: deleteUserDialog.userId } });
+                  if (error) { toast.error("Failed to delete user: " + error.message); return; }
+                  setProfiles(prev => prev.filter(p => p.user_id !== deleteUserDialog.userId));
+                  toast.success("User deleted.");
+                  setDeleteUserDialog(null);
+                } catch (err: any) {
+                  toast.error(err.message || "Delete failed");
+                } finally {
+                  setDeletingUser(false);
+                }
+              }}
+            >
+              {deletingUser ? <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Deleting...</> : "Delete user"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={addBulkUnitsOpen} onOpenChange={setAddBulkUnitsOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle className="font-display">Bulk Add Units</DialogTitle></DialogHeader>
